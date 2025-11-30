@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cuadro Principal - Torneo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cuadro Principal</title>
 
   <style>
     body {
@@ -16,77 +16,81 @@
     header {
       background: #333;
       color: white;
+      padding: 12px;
       text-align: center;
-      padding: 10px;
       font-size: 22px;
     }
 
-    .selector {
+    .filters {
       background: white;
       padding: 10px;
-      border-bottom: 1px solid #ccc;
       display: flex;
-      justify-content: center;
+      flex-wrap: wrap;
       gap: 10px;
+      border-bottom: 1px solid #ccc;
+      justify-content: center;
     }
 
-    .round-block {
-      margin: 20px;
+    .match-card {
       background: white;
-      padding: 10px 15px;
+      margin: 10px;
+      padding: 12px;
       border-radius: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,.15);
     }
 
-    .round-title {
-      font-size: 20px;
+    .match-header {
       font-weight: bold;
-      margin-bottom: 12px;
+      margin-bottom: 6px;
     }
 
-    .match {
-      background: #fafafa;
-      border: 1px solid #ddd;
-      padding: 10px;
-      margin-bottom: 8px;
-      border-radius: 8px;
+    .team-line {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
     }
 
-    .match p {
-      margin: 4px 0;
+    .winner {
+      color: green;
+      font-weight: bold;
     }
   </style>
 </head>
+
 <body>
+<header>Cuadro Principal</header>
 
-<header>
-  Cuadro Principal
-</header>
-
-<div class="selector">
-  <select id="ramaSelector">
+<div class="filters">
+  <select id="filterRama">
     <option value="F">Femenino</option>
     <option value="M">Masculino</option>
   </select>
+
+  <select id="filterRound">
+    <option value="all">Todas las fases</option>
+  </select>
+
+  <select id="filterStatus">
+    <option value="all">Todos los estados</option>
+    <option value="pending">Pendientes</option>
+    <option value="in_progress">En juego</option>
+    <option value="finished">Finalizados</option>
+  </select>
+
+  <input id="filterTeam" placeholder="Buscar equipo..." style="padding:5px;" />
 </div>
 
-<div id="cuadroContainer"></div>
+<div id="matchesContainer"></div>
 
 
-
-<!-- FIREBASE + LÓGICA DEL CUADRO -->
 <script type="module">
-
-  // ============================
-  // Firebase INIT
-  // ============================
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-  import { 
-    getFirestore, 
-    collection, 
-    query, 
-    where, 
-    getDocs 
+  import {
+    getFirestore,
+    collection,
+    query,
+    where,
+    getDocs
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -99,34 +103,29 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  const db  = getFirestore(app);
 
+  const matchesContainer = document.getElementById("matchesContainer");
+  const filterRama  = document.getElementById("filterRama");
+  const filterRound = document.getElementById("filterRound");
+  const filterStatus= document.getElementById("filterStatus");
+  const filterTeam  = document.getElementById("filterTeam");
 
+  filterRama.addEventListener("change", loadMatches);
+  filterRound.addEventListener("change", renderFilteredMatches);
+  filterStatus.addEventListener("change", renderFilteredMatches);
+  filterTeam.addEventListener("input", renderFilteredMatches);
 
-  // ============================
-  // ELEMENTOS DEL DOM
-  // ============================
-  const cuadroContainer = document.getElementById("cuadroContainer");
-  const ramaSelector    = document.getElementById("ramaSelector");
+  let allMatches = [];
+  let availableRounds = new Set();
 
+  async function loadMatches() {
+    matchesContainer.innerHTML = "<p>Cargando...</p>";
+    allMatches = [];
+    availableRounds.clear();
 
-  ramaSelector.addEventListener("change", loadCuadro);
-  window.addEventListener("DOMContentLoaded", loadCuadro);
+    const rama = filterRama.value;
 
-
-
-  // ============================
-  // CARGAR CUADRO DESDE FIRESTORE
-  // ============================
-  async function loadCuadro() {
-
-    const rama = ramaSelector.value;
-
-    cuadroContainer.innerHTML = `
-      <p style="padding:20px; text-align:center;">Cargando cuadro...</p>
-    `;
-
-    // Traer solo partidos del MAIN DRAW
     const q = query(
       collection(db, "matches"),
       where("phase", "==", "maindraw"),
@@ -134,54 +133,72 @@
     );
 
     const snap = await getDocs(q);
+    snap.forEach(d => {
+      let m = d.data();
+      allMatches.push(m);
+      availableRounds.add(m.roundLabel);
+    });
 
-    if (snap.empty) {
-      cuadroContainer.innerHTML = `
-        <p style="padding:20px; text-align:center;">
-          🟡 Todavía no se generó el cuadro principal para <b>${rama === "F" ? "Femenino" : "Masculino"}</b>.
-        </p>`;
-      return;
-    }
-
-    // Convertir docs a array ordenado
-    const matches = snap.docs.map(d => d.data());
-
-    // Agrupar por roundLabel
-    const porRonda = {};
-    for (const m of matches) {
-      if (!porRonda[m.roundLabel]) porRonda[m.roundLabel] = [];
-      porRonda[m.roundLabel].push(m);
-    }
-
-    // Ordenar cada ronda por drawMatchNumber
-    for (const r in porRonda) {
-      porRonda[r].sort((a, b) => a.drawMatchNumber - b.drawMatchNumber);
-    }
-
-    cuadroContainer.innerHTML = "";
-
-    // Renderizar rondas
-    for (const [ronda, lista] of Object.entries(porRonda)) {
-
-      const block = document.createElement("div");
-      block.className = "round-block";
-
-      block.innerHTML += `<div class="round-title">${ronda}</div>`;
-
-      lista.forEach(m => {
-        block.innerHTML += `
-          <div class="match">
-            <p><b>Partido #${m.drawMatchNumber}</b></p>
-            <p>${m.team1Name || "----"} vs ${m.team2Name || "----"}</p>
-            ${m.status === "finished" ? `<p><b>Ganó:</b> ${m.winnerTeamName}</p>` : ""}
-          </div>
-        `;
-      });
-
-      cuadroContainer.appendChild(block);
-    }
+    loadRoundFilter();
+    renderFilteredMatches();
   }
 
+  function loadRoundFilter() {
+    filterRound.innerHTML = `<option value="all">Todas las fases</option>`;
+    [...availableRounds].sort().forEach(r => {
+      filterRound.innerHTML += `<option value="${r}">${r}</option>`;
+    });
+  }
+
+  function renderFilteredMatches() {
+    let rama = filterRama.value;
+    let round = filterRound.value;
+    let status = filterStatus.value;
+    let team = filterTeam.value.toLowerCase();
+
+    let list = allMatches.filter(m => {
+
+      if (round !== "all" && m.roundLabel !== round) return false;
+      if (status !== "all" && m.status !== status) return false;
+
+      if (team.length > 0) {
+        const t1 = (m.team1Name || "").toLowerCase();
+        const t2 = (m.team2Name || "").toLowerCase();
+        if (!t1.includes(team) && !t2.includes(team)) return false;
+      }
+
+      return true;
+    });
+
+    // ordenar por número de partido
+    list.sort((a, b) => a.drawMatchNumber - b.drawMatchNumber);
+
+    matchesContainer.innerHTML = "";
+
+    list.forEach(m => {
+      const card = document.createElement("div");
+      card.className = "match-card";
+
+      card.innerHTML = `
+        <div class="match-header">#${m.drawMatchNumber} — ${m.roundLabel}</div>
+
+        <div class="team-line ${m.winnerTeamId === m.team1Id ? "winner" : ""}">
+          <span>${m.team1Name || "---"}</span>
+          <span>${m.team1Score ?? ""}</span>
+        </div>
+        <div class="team-line ${m.winnerTeamId === m.team2Id ? "winner" : ""}">
+          <span>${m.team2Name || "---"}</span>
+          <span>${m.team2Score ?? ""}</span>
+        </div>
+
+        ${m.status === "finished" ? `<div><b>Ganador: ${m.winnerTeamName}</b></div>` : ""}
+      `;
+
+      matchesContainer.appendChild(card);
+    });
+  }
+
+  loadMatches();
 </script>
 
 </body>
