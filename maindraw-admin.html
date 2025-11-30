@@ -151,10 +151,16 @@
       <button id="btnCheckMainDraw" type="button" class="btn-secondary">
         Ver estado del cuadro
       </button>
+	  
+	  <button id="btnExportMainDraw" type="button" class="btn-secondary">
+		Exportar partidos (CSV)
+	  </button>
+
 
       <button id="btnImportMainDraw" type="button" class="btn-secondary">
         Importar partidos (CSV)
       </button>
+	  
 
       <button id="btnAssignFromRanking" type="button" class="btn-primary">
         Asignar equipos según ranking
@@ -213,6 +219,11 @@
   const btnAssignFromRanking = document.getElementById("btnAssignFromRanking");
   const mainDrawStatus       = document.getElementById("mainDrawStatus");
   const fileInput            = document.getElementById("fileInput");
+  const btnExportMainDraw = document.getElementById("btnExportMainDraw");
+	btnExportMainDraw.addEventListener("click", () => {
+		const rama = mainDrawRamaSelect.value;
+		exportMainDrawToCSV(rama);
+	});
 
   btnCheckMainDraw.addEventListener("click", () => {
     const rama = mainDrawRamaSelect.value;
@@ -612,6 +623,68 @@
       mainDrawStatus.textContent = "❌ Error al asignar equipos desde el ranking. Revisá la consola para más detalles.";
     }
   }
+  
+  async function exportMainDrawToCSV(rama) {
+  try {
+    mainDrawStatus.textContent = "Exportando partidos del cuadro…";
+
+    const q = query(
+      collection(db, "matches"),
+      where("phase", "==", "maindraw"),
+      where("rama", "==", rama)
+    );
+
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      mainDrawStatus.textContent =
+        `No hay partidos cargados del cuadro para ${rama === "F" ? "Femenino" : "Masculino"}.`;
+      return;
+    }
+
+    // Construimos matriz de datos
+    const rows = [
+      ["numeroPartido", "cruce", "fecha", "hora", "cancha"]
+    ];
+
+    const items = snap.docs
+      .map(d => d.data())
+      .sort((a, b) => (a.numeroPartido || 0) - (b.numeroPartido || 0));
+
+    items.forEach(m => {
+      rows.push([
+        m.numeroPartido || "",
+        m.cruce || "",
+        m.fecha || "",
+        m.hora || "",
+        m.cancha || ""
+      ]);
+    });
+
+    // Convertir a CSV
+    const csvContent = rows
+      .map(r => r.map(v => String(v)).join(";"))
+      .join("\n");
+
+    // Descargar archivo
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `maindraw_${rama}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    mainDrawStatus.textContent = "✔ Exportación lista.";
+
+  } catch (error) {
+    console.error(error);
+    mainDrawStatus.textContent = "❌ Error exportando el cuadro.";
+  }
+}
+
 </script>
 
 </body>
