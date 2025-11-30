@@ -486,6 +486,206 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
   const MATCHES_COLLECTION = "matches";
+  
+  // Progresión del cuadro principal (maindraw)
+// from = número de partido de origen en el cuadro
+// winnerTo / loserTo = a qué partido y en qué slot van
+const MAIN_DRAW_PROGRESSIONS = [
+    // ==========================
+  // MASCULINO
+  // ==========================
+
+  // 1RA RONDA (partidos 1–16)
+  { rama: "M", from: 1,  winnerTo: { match: 17, slot: 1 }, loserTo: { match: 25, slot: 1 } },
+  { rama: "M", from: 2,  winnerTo: { match: 17, slot: 2 }, loserTo: { match: 25, slot: 2 } },
+
+  { rama: "M", from: 3,  winnerTo: { match: 18, slot: 1 }, loserTo: { match: 26, slot: 1 } },
+  { rama: "M", from: 4,  winnerTo: { match: 18, slot: 2 }, loserTo: { match: 26, slot: 2 } },
+
+  { rama: "M", from: 5,  winnerTo: { match: 19, slot: 1 }, loserTo: { match: 27, slot: 1 } },
+  { rama: "M", from: 6,  winnerTo: { match: 19, slot: 2 }, loserTo: { match: 27, slot: 2 } },
+
+  { rama: "M", from: 7,  winnerTo: { match: 20, slot: 1 }, loserTo: { match: 28, slot: 1 } },
+  { rama: "M", from: 8,  winnerTo: { match: 20, slot: 2 }, loserTo: { match: 28, slot: 2 } },
+
+  { rama: "M", from: 9,  winnerTo: { match: 21, slot: 1 }, loserTo: { match: 29, slot: 1 } },
+  { rama: "M", from: 10, winnerTo: { match: 21, slot: 2 }, loserTo: { match: 29, slot: 2 } },
+
+  { rama: "M", from: 11, winnerTo: { match: 22, slot: 1 }, loserTo: { match: 30, slot: 1 } },
+  { rama: "M", from: 12, winnerTo: { match: 22, slot: 2 }, loserTo: { match: 30, slot: 2 } },
+
+  { rama: "M", from: 13, winnerTo: { match: 23, slot: 1 }, loserTo: { match: 31, slot: 1 } },
+  { rama: "M", from: 14, winnerTo: { match: 23, slot: 2 }, loserTo: { match: 31, slot: 2 } },
+
+  { rama: "M", from: 15, winnerTo: { match: 24, slot: 1 }, loserTo: { match: 32, slot: 1 } },
+  { rama: "M", from: 16, winnerTo: { match: 24, slot: 2 }, loserTo: { match: 32, slot: 2 } },
+
+  // 2DA RONDA PRINCIPAL (17–24)
+  { rama: "M", from: 17, winnerTo: { match: 45, slot: 1 }, loserTo: { match: 40, slot: 2 } },
+  { rama: "M", from: 18, winnerTo: { match: 45, slot: 2 }, loserTo: { match: 39, slot: 2 } },
+
+  { rama: "M", from: 19, winnerTo: { match: 46, slot: 1 }, loserTo: { match: 38, slot: 2 } },
+  { rama: "M", from: 20, winnerTo: { match: 46, slot: 2 }, loserTo: { match: 37, slot: 2 } },
+
+  { rama: "M", from: 21, winnerTo: { match: 47, slot: 1 }, loserTo: { match: 36, slot: 2 } },
+  { rama: "M", from: 22, winnerTo: { match: 47, slot: 2 }, loserTo: { match: 35, slot: 2 } },
+
+  { rama: "M", from: 23, winnerTo: { match: 48, slot: 1 }, loserTo: { match: 34, slot: 2 } },
+  { rama: "M", from: 24, winnerTo: { match: 48, slot: 2 }, loserTo: { match: 33, slot: 2 } },
+
+  // 1RA RONDA PERDEDORES (25–32)
+  { rama: "M", from: 25, winnerTo: { match: 33, slot: 1 }, loserTo: null },
+  { rama: "M", from: 26, winnerTo: { match: 34, slot: 1 }, loserTo: null },
+  { rama: "M", from: 27, winnerTo: { match: 35, slot: 1 }, loserTo: null },
+  { rama: "M", from: 28, winnerTo: { match: 36, slot: 1 }, loserTo: null },
+  { rama: "M", from: 29, winnerTo: { match: 37, slot: 1 }, loserTo: null },
+  { rama: "M", from: 30, winnerTo: { match: 38, slot: 1 }, loserTo: null },
+  { rama: "M", from: 31, winnerTo: { match: 39, slot: 1 }, loserTo: null },
+  { rama: "M", from: 32, winnerTo: { match: 40, slot: 1 }, loserTo: null },
+
+  // 2DA RONDA PERDEDORES (33–40)
+  { rama: "M", from: 33, winnerTo: { match: 41, slot: 1 }, loserTo: null },
+  { rama: "M", from: 34, winnerTo: { match: 41, slot: 2 }, loserTo: null },
+  { rama: "M", from: 35, winnerTo: { match: 42, slot: 1 }, loserTo: null },
+  { rama: "M", from: 36, winnerTo: { match: 42, slot: 2 }, loserTo: null },
+  { rama: "M", from: 37, winnerTo: { match: 43, slot: 1 }, loserTo: null },
+  { rama: "M", from: 38, winnerTo: { match: 43, slot: 2 }, loserTo: null },
+  { rama: "M", from: 39, winnerTo: { match: 44, slot: 1 }, loserTo: null },
+  { rama: "M", from: 40, winnerTo: { match: 44, slot: 2 }, loserTo: null },
+
+  // 3RA RONDA PERDEDORES (41–44)
+  { rama: "M", from: 41, winnerTo: { match: 49, slot: 1 }, loserTo: null },
+  { rama: "M", from: 42, winnerTo: { match: 50, slot: 1 }, loserTo: null },
+  { rama: "M", from: 43, winnerTo: { match: 51, slot: 1 }, loserTo: null },
+  { rama: "M", from: 44, winnerTo: { match: 52, slot: 1 }, loserTo: null },
+
+  // 3RA RONDA PRINCIPAL (45–48)
+  { rama: "M", from: 45, winnerTo: { match: 53, slot: 1 }, loserTo: { match: 50, slot: 2 } },
+  { rama: "M", from: 46, winnerTo: { match: 53, slot: 2 }, loserTo: { match: 49, slot: 2 } },
+  { rama: "M", from: 47, winnerTo: { match: 54, slot: 1 }, loserTo: { match: 52, slot: 2 } },
+  { rama: "M", from: 48, winnerTo: { match: 54, slot: 2 }, loserTo: { match: 51, slot: 2 } },
+
+  // 4TA RONDA PERDEDORES (49–52)
+  { rama: "M", from: 49, winnerTo: { match: 55, slot: 1 }, loserTo: null },
+  { rama: "M", from: 50, winnerTo: { match: 55, slot: 2 }, loserTo: null },
+  { rama: "M", from: 51, winnerTo: { match: 56, slot: 1 }, loserTo: null },
+  { rama: "M", from: 52, winnerTo: { match: 56, slot: 2 }, loserTo: null },
+
+  // PASE A SEMI (ganadores y perdedores cruzados, 53–56)
+  { rama: "M", from: 53, winnerTo: { match: 59, slot: 1 }, loserTo: { match: 58, slot: 2 } },
+  { rama: "M", from: 54, winnerTo: { match: 60, slot: 1 }, loserTo: { match: 57, slot: 2 } },
+  { rama: "M", from: 55, winnerTo: { match: 57, slot: 1 }, loserTo: null },
+  { rama: "M", from: 56, winnerTo: { match: 58, slot: 1 }, loserTo: null },
+
+  // PASE A SEMI (lado perdedores, 57–58)
+  { rama: "M", from: 57, winnerTo: { match: 59, slot: 2 }, loserTo: null },
+  { rama: "M", from: 58, winnerTo: { match: 60, slot: 2 }, loserTo: null },
+
+  // SEMIS, 3ER PUESTO Y FINAL (59–60, 61–62)
+  { rama: "M", from: 59, winnerTo: { match: 62, slot: 1 }, loserTo: { match: 61, slot: 1 } },
+  { rama: "M", from: 60, winnerTo: { match: 62, slot: 2 }, loserTo: { match: 61, slot: 2 } },
+
+  // Falta FEM
+];
+
+import {
+  // ... lo que ya tengas
+  getDocs, query, where, writeBatch, doc, collection
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+// ...
+
+// Decide ganador y perdedor según setsData
+function getWinnerLoserFromMatch(matchData) {
+  const sets = Array.isArray(matchData.setsData) ? matchData.setsData : [];
+  let setsLocal = 0;
+  let setsVisit = 0;
+
+  sets.forEach(s => {
+    const pl = s.puntosLocal ?? 0;
+    const pv = s.puntosVisitante ?? 0;
+    if (pl > pv) setsLocal++;
+    else if (pv > pl) setsVisit++;
+  });
+
+  // Si empatan o no hay sets, no decidimos nada
+  if (setsLocal === setsVisit) return null;
+
+  const team1Wins = setsLocal > setsVisit;
+
+  return {
+    winnerSide: team1Wins ? 1 : 2,
+    loserSide:  team1Wins ? 2 : 1
+  };
+}
+
+// Propaga el resultado de un partido del cuadro principal
+async function propagateMainDrawResult(matchData) {
+  // Solo para phase = "maindraw"
+  if (matchData.phase !== "maindraw") return;
+
+  const matchNumber = matchData.numeroPartido || matchData.drawMatchNumber;
+  if (!matchNumber) return;
+
+  const progression = MAIN_DRAW_PROGRESSIONS.find(p => p.from === matchNumber);
+  if (!progression) {
+    // Este partido no tiene progresión configurada (puede ser semi/final)
+    return;
+  }
+
+  const wl = getWinnerLoserFromMatch(matchData);
+  if (!wl) {
+    console.warn("No se pudo determinar ganador/perdedor para el partido", matchNumber);
+    return;
+  }
+
+  const winnerName = wl.winnerSide === 1 ? matchData.team1Name : matchData.team2Name;
+  const loserName  = wl.loserSide  === 1 ? matchData.team1Name : matchData.team2Name;
+
+  const batch = writeBatch(db);
+
+  // Helper para setear nombre en partido destino
+  async function setTeamInMatch(dest, isWinner) {
+    if (!dest || !dest.match) return;
+
+    // buscamos el partido de destino por numeroPartido y phase maindraw
+    const q = query(
+      collection(db, "matches"),
+      where("phase", "==", "maindraw"),
+      where("numeroPartido", "==", dest.match)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      console.warn("No se encontró partido destino", dest.match);
+      return;
+    }
+
+    const ref = snap.docs[0].ref;
+    const isSlot1 = dest.slot === 1;
+
+    const updateData = {};
+    if (isSlot1) {
+      updateData.team1Name = isWinner ? winnerName : loserName;
+      // si más adelante manejás team1Id, también se setea acá
+    } else {
+      updateData.team2Name = isWinner ? winnerName : loserName;
+    }
+
+    // Opcional: aseguramos que el partido destino quede "Pendiente" si todavía no se jugó
+    if (!snap.docs[0].data().estado || snap.docs[0].data().estado === "Pendiente") {
+      updateData.estado = "Pendiente";
+    }
+
+    batch.update(ref, updateData);
+  }
+
+  await setTeamInMatch(progression.winnerTo, true);
+  await setTeamInMatch(progression.loserTo,  false);
+
+  await batch.commit();
+}
+
+
 
   let allMatches = [];
   let currentMatchId = null;
@@ -775,6 +975,18 @@
       estado,
       setsMode
     });
+	// Después de guardar el partido como Finalizado, propagamos si es maindraw
+try {
+  const finalData = {
+    ...matchData,         // lo que ya tenés cargado del partido
+    estado: "Finalizado",
+    setsData: nuevosSets  // o como se llame en tu función
+  };
+  await propagateMainDrawResult(finalData);
+} catch (e) {
+  console.error("Error propagando resultado en maindraw:", e);
+}
+
   }
 
   // ----------- Cargar TODOS los partidos de matches -----------
