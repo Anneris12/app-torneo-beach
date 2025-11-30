@@ -19,6 +19,8 @@
       display: flex;
       justify-content: space-between;
       margin-bottom: 20px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .top-btn {
@@ -108,7 +110,7 @@
     #mainDrawStatus {
       margin-top: 10px;
       font-size: 14px;
-      min-height: 20px;
+      min-height: 24px;
       white-space: pre-line;
     }
 
@@ -128,7 +130,8 @@
 
 <div class="top-buttons">
   <a class="top-btn" href="admin.html">Volver</a>
-  <a class="top-btn" href="bracket.html">Ver cuadro</a>
+  <a class="top-btn" href="bracket.html">Ver cuadro (tabla)</a>
+  <a class="top-btn" href="bracket-visual.html">Ver cuadro (llaves)</a>
 </div>
 
 <h1>ADMIN CUADRO PRINCIPAL</h1>
@@ -137,7 +140,7 @@
   <div class="panel">
     <h2>Configurar cuadro principal (Main Draw)</h2>
     <p>
-      Paso 1: Importar los partidos del cuadro (1 al 62) con número de partido, cruce, fecha, hora y cancha.<br>
+      Paso 1: Importar los partidos del cuadro (1 al 62) con número de partido, ronda, cruce, fecha, hora y cancha.<br>
       Paso 2: Asignar los equipos de la 1ra ronda según el ranking general.
     </p>
 
@@ -151,28 +154,25 @@
       <button id="btnCheckMainDraw" type="button" class="btn-secondary">
         Ver estado del cuadro
       </button>
-	  
-	  <button id="btnExportMainDraw" type="button" class="btn-secondary">
-		Exportar partidos (CSV)
-	  </button>
-
 
       <button id="btnImportMainDraw" type="button" class="btn-secondary">
         Importar partidos (CSV)
       </button>
-	  
+
+      <button id="btnExportMainDraw" type="button" class="btn-secondary">
+        Exportar partidos (CSV)
+      </button>
 
       <button id="btnAssignFromRanking" type="button" class="btn-primary">
         Asignar equipos según ranking
       </button>
     </div>
 
-<p style="font-size:13px; color:#b0b0b0; margin-top:0;">
-  Formato CSV esperado (1ra fila encabezados):<br>
-  <code>numeroPartido;ronda;cruce;fecha;hora;cancha</code><br>
-  Ej: <code>1;1ra ronda;1 vs 32;2026-02-01;08:00;1</code>
-</p>
-
+    <p style="font-size:13px; color:#b0b0b0; margin-top:0;">
+      Formato CSV esperado (1ra fila encabezados):<br>
+      <code>numeroPartido;ronda;cruce;fecha;hora;cancha</code><br>
+      Ej: <code>1;1ra ronda;1 vs 32;2026-02-01;08:00;1</code>
+    </p>
 
     <div id="mainDrawStatus"></div>
 
@@ -209,7 +209,7 @@
   const auth = getAuth(app);
   const db   = getFirestore(app);
 
-  // proteger acceso (igual que en fixture)
+  // proteger acceso
   onAuthStateChanged(auth, u => {
     if (!u) location.href = "login.html";
   });
@@ -217,14 +217,10 @@
   const mainDrawRamaSelect   = document.getElementById("mainDrawRama");
   const btnCheckMainDraw     = document.getElementById("btnCheckMainDraw");
   const btnImportMainDraw    = document.getElementById("btnImportMainDraw");
+  const btnExportMainDraw    = document.getElementById("btnExportMainDraw");
   const btnAssignFromRanking = document.getElementById("btnAssignFromRanking");
   const mainDrawStatus       = document.getElementById("mainDrawStatus");
   const fileInput            = document.getElementById("fileInput");
-  const btnExportMainDraw = document.getElementById("btnExportMainDraw");
-	btnExportMainDraw.addEventListener("click", () => {
-		const rama = mainDrawRamaSelect.value;
-		exportMainDrawToCSV(rama);
-	});
 
   btnCheckMainDraw.addEventListener("click", () => {
     const rama = mainDrawRamaSelect.value;
@@ -243,16 +239,47 @@
     fileInput.value = "";
   });
 
+  btnExportMainDraw.addEventListener("click", () => {
+    const rama = mainDrawRamaSelect.value;
+    exportMainDrawToCSV(rama);
+  });
+
   btnAssignFromRanking.addEventListener("click", () => {
     const rama = mainDrawRamaSelect.value;
     assignTeamsFromRanking(rama);
   });
 
   /* ============================
-   * 1) CONFIG ESTRUCTURAL DEL CUADRO (NO HORARIOS)
+   * Helpers
    * ============================ */
 
-  // mapping de seeds a partidos de 1ª ronda
+  function normalizeHoraImport(h){
+    if(!h) return "";
+    let s = String(h).trim();
+
+    // Si ya viene en formato H:MM / HH:MM lo dejamos
+    if(/^\d{1,2}:\d{2}$/.test(s)) return s;
+
+    // Sacamos todo lo que no sea dígito
+    const dig = s.replace(/\D/g,"");
+
+    if (dig.length === 3) {
+      // 800 -> 8:00
+      return dig[0] + ":" + dig.substring(1).padEnd(2,"0");
+    }
+    if (dig.length === 4) {
+      // 0830 -> 08:30
+      return dig.substring(0,2) + ":" + dig.substring(2);
+    }
+
+    // Si es raro, lo dejamos como vino
+    return s;
+  }
+
+  /* ============================
+   * 1) CONFIG ESTRUCTURAL DEL CUADRO
+   * ============================ */
+
   const FIRST_ROUND_SEED_MAP = [
     { match: 1,  seed1: 1,  seed2: 32 },
     { match: 2,  seed1: 17, seed2: 16 },
@@ -272,9 +299,7 @@
     { match: 16, seed1: 31, seed2: 2 }
   ];
 
-  // Config del cuadro: para cada partido, de dónde viene cada equipo
   const MAIN_DRAW_CONFIG_32 = {
-    // 1ra RONDA
     1:  { roundLabel: "1ra ronda",        slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
     2:  { roundLabel: "1ra ronda",        slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
     3:  { roundLabel: "1ra ronda",        slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
@@ -292,7 +317,6 @@
     15: { roundLabel: "1ra ronda",        slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
     16: { roundLabel: "1ra ronda",        slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
 
-    // 2da RONDA (ganadores)
     17: { roundLabel: "2da ronda",        slot1SourceFrom: 1,  slot1SourceResult: "winner", slot2SourceFrom: 2,  slot2SourceResult: "winner" },
     18: { roundLabel: "2da ronda",        slot1SourceFrom: 3,  slot1SourceResult: "winner", slot2SourceFrom: 4,  slot2SourceResult: "winner" },
     19: { roundLabel: "2da ronda",        slot1SourceFrom: 5,  slot1SourceResult: "winner", slot2SourceFrom: 6,  slot2SourceResult: "winner" },
@@ -302,7 +326,6 @@
     23: { roundLabel: "2da ronda",        slot1SourceFrom: 13, slot1SourceResult: "winner", slot2SourceFrom: 14, slot2SourceResult: "winner" },
     24: { roundLabel: "2da ronda",        slot1SourceFrom: 15, slot1SourceResult: "winner", slot2SourceFrom: 16, slot2SourceResult: "winner" },
 
-    // 1er RONDA PERDEDORES
     25: { roundLabel: "1er ronda perd.",  slot1SourceFrom: 1,  slot1SourceResult: "loser",  slot2SourceFrom: 2,  slot2SourceResult: "loser" },
     26: { roundLabel: "1er ronda perd.",  slot1SourceFrom: 3,  slot1SourceResult: "loser",  slot2SourceFrom: 4,  slot2SourceResult: "loser" },
     27: { roundLabel: "1er ronda perd.",  slot1SourceFrom: 5,  slot1SourceResult: "loser",  slot2SourceFrom: 6,  slot2SourceResult: "loser" },
@@ -312,7 +335,6 @@
     31: { roundLabel: "1er ronda perd.",  slot1SourceFrom: 13, slot1SourceResult: "loser",  slot2SourceFrom: 14, slot2SourceResult: "loser" },
     32: { roundLabel: "1er ronda perd.",  slot1SourceFrom: 15, slot1SourceResult: "loser",  slot2SourceFrom: 16, slot2SourceResult: "loser" },
 
-    // 2da RONDA PERDEDORES
     33: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 25, slot1SourceResult: "winner", slot2SourceFrom: 23, slot2SourceResult: "loser" },
     34: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 26, slot1SourceResult: "winner", slot2SourceFrom: 24, slot2SourceResult: "loser" },
     35: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 27, slot1SourceResult: "winner", slot2SourceFrom: 21, slot2SourceResult: "loser" },
@@ -322,44 +344,34 @@
     39: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 31, slot1SourceResult: "winner", slot2SourceFrom: 19, slot2SourceResult: "loser" },
     40: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 32, slot1SourceResult: "winner", slot2SourceFrom: 20, slot2SourceResult: "loser" },
 
-    // 3ra RONDA PERDEDORES
     41: { roundLabel: "3ra ronda perd.",  slot1SourceFrom: 33, slot1SourceResult: "winner", slot2SourceFrom: 34, slot2SourceResult: "winner" },
     42: { roundLabel: "3ra ronda perd.",  slot1SourceFrom: 35, slot1SourceResult: "winner", slot2SourceFrom: 36, slot2SourceResult: "winner" },
     43: { roundLabel: "3ra ronda perd.",  slot1SourceFrom: 37, slot1SourceResult: "winner", slot2SourceFrom: 38, slot2SourceResult: "winner" },
     44: { roundLabel: "3ra ronda perd.",  slot1SourceFrom: 39, slot1SourceResult: "winner", slot2SourceFrom: 40, slot2SourceResult: "winner" },
 
-    // 3ra RONDA (ganadores)
     45: { roundLabel: "3ra ronda",        slot1SourceFrom: 17, slot1SourceResult: "winner", slot2SourceFrom: 18, slot2SourceResult: "winner" },
     46: { roundLabel: "3ra ronda",        slot1SourceFrom: 19, slot1SourceResult: "winner", slot2SourceFrom: 20, slot2SourceResult: "winner" },
     47: { roundLabel: "3ra ronda",        slot1SourceFrom: 21, slot1SourceResult: "winner", slot2SourceFrom: 22, slot2SourceResult: "winner" },
     48: { roundLabel: "3ra ronda",        slot1SourceFrom: 23, slot1SourceResult: "winner", slot2SourceFrom: 24, slot2SourceResult: "winner" },
 
-    // 4ta RONDA PERDEDORES
     49: { roundLabel: "4ta ronda perd.",  slot1SourceFrom: 41, slot1SourceResult: "winner", slot2SourceFrom: 46, slot2SourceResult: "loser" },
     50: { roundLabel: "4ta ronda perd.",  slot1SourceFrom: 42, slot1SourceResult: "winner", slot2SourceFrom: 45, slot2SourceResult: "loser" },
     51: { roundLabel: "4ta ronda perd.",  slot1SourceFrom: 43, slot1SourceResult: "winner", slot2SourceFrom: 48, slot2SourceResult: "loser" },
     52: { roundLabel: "4ta ronda perd.",  slot1SourceFrom: 44, slot1SourceResult: "winner", slot2SourceFrom: 47, slot2SourceResult: "loser" },
 
-    // PASE A SEMI
     53: { roundLabel: "Pase a semi",      slot1SourceFrom: 45, slot1SourceResult: "winner", slot2SourceFrom: 46, slot2SourceResult: "winner" },
     54: { roundLabel: "Pase a semi",      slot1SourceFrom: 47, slot1SourceResult: "winner", slot2SourceFrom: 48, slot2SourceResult: "winner" },
 
-    // 5ta RONDA PERDEDORES
     55: { roundLabel: "5ta ronda perd.",  slot1SourceFrom: 49, slot1SourceResult: "winner", slot2SourceFrom: 50, slot2SourceResult: "winner" },
     56: { roundLabel: "5ta ronda perd.",  slot1SourceFrom: 51, slot1SourceResult: "winner", slot2SourceFrom: 52, slot2SourceResult: "winner" },
 
-    // PASE A SEMI (2do bloque)
     57: { roundLabel: "Pase a semi",      slot1SourceFrom: 55, slot1SourceResult: "winner", slot2SourceFrom: 54, slot2SourceResult: "loser" },
     58: { roundLabel: "Pase a semi",      slot1SourceFrom: 56, slot1SourceResult: "winner", slot2SourceFrom: 53, slot2SourceResult: "loser" },
 
-    // SEMIFINALES
     59: { roundLabel: "Semi 1",           slot1SourceFrom: 53, slot1SourceResult: "winner", slot2SourceFrom: 57, slot2SourceResult: "winner" },
     60: { roundLabel: "Semi 2",           slot1SourceFrom: 54, slot1SourceResult: "winner", slot2SourceFrom: 58, slot2SourceResult: "winner" },
 
-    // 3er PUESTO
     61: { roundLabel: "3er puesto",       slot1SourceFrom: 59, slot1SourceResult: "loser",  slot2SourceFrom: 60, slot2SourceResult: "loser" },
-
-    // FINAL
     62: { roundLabel: "Final",            slot1SourceFrom: 59, slot1SourceResult: "winner", slot2SourceFrom: 60, slot2SourceResult: "winner" }
   };
 
@@ -399,45 +411,41 @@
         return;
       }
 
-      // Convertimos encabezados a minúsculas para comparar
-const headersRaw = headerLine.split(sep).map(h => h.trim());
-const headers = headersRaw.map(h => h.toLowerCase());
+      const headerLine = lines[0];
+      const sep = headerLine.includes(";") ? ";" : ",";
+      const headersRaw = headerLine.split(sep).map(h => h.trim());
+      const headers = headersRaw.map(h => h.toLowerCase());
 
-// Columnas requeridas
-const idxNum = headers.findIndex(h =>
-  [
-    "numero",
-    "numeropartido",
-    "numero_partido",
-    "numpartido",
-    "#",
-    "partido",
-    "match",
-    "drawmatchnumber"
-  ].includes(h)
-);
+      const idxNum = headers.findIndex(h =>
+        [
+          "numero",
+          "numeropartido",
+          "numero_partido",
+          "numpartido",
+          "#",
+          "partido",
+          "match",
+          "drawmatchnumber"
+        ].includes(h)
+      );
 
-// Columna opcional ronda
-const idxRonda = headers.findIndex(h =>
-  ["ronda", "round", "roundlabel"].includes(h)
-);
+      const idxRonda = headers.findIndex(h =>
+        ["ronda", "round", "roundlabel"].includes(h)
+      );
 
-// Columnas estándar
-const idxCruce = headers.findIndex(h => h.includes("cruce"));
-const idxFecha = headers.findIndex(h => h.startsWith("fecha"));
-const idxHora  = headers.findIndex(h => h.startsWith("hora"));
-const idxCancha= headers.findIndex(h => h.startsWith("cancha"));
+      const idxCruce = headers.findIndex(h => h.includes("cruce"));
+      const idxFecha = headers.findIndex(h => h.startsWith("fecha"));
+      const idxHora  = headers.findIndex(h => h.startsWith("hora"));
+      const idxCancha= headers.findIndex(h => h.startsWith("cancha"));
 
-// Validación mínima
-if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idxCancha === -1) {
-  mainDrawStatus.textContent =
-    "No se encontraron las columnas requeridas en el CSV.\n" +
-    "Necesita al menos: numeroPartido, cruce, fecha, hora, cancha.";
-  return;
-}
+      if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idxCancha === -1) {
+        mainDrawStatus.textContent =
+          "No se encontraron las columnas requeridas en el CSV.\n" +
+          "Necesita al menos: numeroPartido, cruce, fecha, hora, cancha.";
+        return;
+      }
 
-
-      // 1) Borrar partidos previos de este cuadro + rama
+      // borrar partidos previos de esta rama
       mainDrawStatus.textContent = "Eliminando partidos anteriores del cuadro para esta rama...";
       const existingQ = query(
         collection(db, "matches"),
@@ -454,7 +462,7 @@ if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idx
         await batchDel.commit();
       }
 
-      // 2) Crear nuevos partidos según CSV + estructura del cuadro
+      // crear nuevos
       mainDrawStatus.textContent = "Creando partidos del cuadro a partir del CSV...";
 
       const matchesCol = collection(db, "matches");
@@ -466,7 +474,9 @@ if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idx
         const line = lines[i].trim();
         if (!line) continue;
 
-        const parts = line.split(sep).map(x => x.trim());
+        const partsRaw = line.split(sep);
+        const parts = partsRaw.map(x => (x ?? "").toString().trim());
+
         const numStr = parts[idxNum] || "";
         if (!numStr) continue;
 
@@ -474,17 +484,14 @@ if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idx
         if (isNaN(matchNum)) continue;
 
         const cfg = MAIN_DRAW_CONFIG_32[matchNum];
-        if (!cfg) {
-          // partido fuera del rango del cuadro
-          continue;
-        }
+        if (!cfg) continue;
 
-        const cruceVal = idxCruce >= 0 ? (parts[idxCruce] || "") : "";
+        const cruceVal = parts[idxCruce] || "";
         const fechaVal = parts[idxFecha] || "";
         const horaVal  = parts[idxHora]  || "";
         const canchaVal= parts[idxCancha] || "";
+        const rondaCSV = idxRonda >= 0 ? (parts[idxRonda] || "") : "";
 
-        // Si no viene cruce, para 1ra ronda lo calculamos
         let cruceFinal = cruceVal;
         if (!cruceFinal) {
           const seedMap = FIRST_ROUND_SEED_MAP.find(m => m.match === matchNum);
@@ -501,7 +508,6 @@ if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idx
           numeroPartido: matchNum,
           roundLabel: cfg.roundLabel,
           status: "pending",
-          // equipos se asignan después con el ranking
           team1Id: null,
           team1Name: null,
           team2Id: null,
@@ -517,13 +523,20 @@ if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idx
           setsData: []
         };
 
+        if (rondaCSV) {
+          baseData.roundLabelCSV = rondaCSV;
+        }
+
         batch.set(docRef, baseData);
         totalRows++;
       }
 
       await batch.commit();
 
-      mainDrawStatus.textContent = `✅ Importación completa. Se crearon ${totalRows} partidos de cuadro para ${rama === "F" ? "Femenino" : "Masculino"}.\nAhora podés asignar los equipos de la 1ra ronda según el ranking.`;
+      mainDrawStatus.textContent =
+        `✅ Importación completa. Se crearon ${totalRows} partidos de cuadro para ` +
+        `${rama === "F" ? "Femenino" : "Masculino"}.\n` +
+        "Ahora podés asignar los equipos de la 1ra ronda según el ranking.";
 
     } catch (err) {
       console.error(err);
@@ -532,10 +545,72 @@ if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idx
   }
 
   /* ============================
-   * 4) LEER RANKING GENERAL
+   * 4) EXPORTAR PARTIDOS A CSV
    * ============================ */
 
-  // ⚠️ Ajustá este nombre y campos a tu estructura real de ranking
+  async function exportMainDrawToCSV(rama) {
+    try {
+      mainDrawStatus.textContent = "Exportando partidos del cuadro…";
+
+      const q = query(
+        collection(db, "matches"),
+        where("phase", "==", "maindraw"),
+        where("rama", "==", rama)
+      );
+
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        mainDrawStatus.textContent =
+          `No hay partidos cargados del cuadro para ${rama === "F" ? "Femenino" : "Masculino"}.`;
+        return;
+      }
+
+      const rows = [
+        ["numeroPartido", "ronda", "cruce", "fecha", "hora", "cancha"]
+      ];
+
+      const items = snap.docs
+        .map(d => d.data())
+        .sort((a, b) => (a.numeroPartido || 0) - (b.numeroPartido || 0));
+
+      items.forEach(m => {
+        rows.push([
+          m.numeroPartido || "",
+          m.roundLabel || "",
+          m.cruce || "",
+          m.fecha || "",
+          m.hora || "",
+          m.cancha || ""
+        ]);
+      });
+
+      const csvContent = rows
+        .map(r => r.map(v => String(v)).join(";"))
+        .join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `maindraw_${rama}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      mainDrawStatus.textContent = "✔ Exportación lista.";
+
+    } catch (error) {
+      console.error(error);
+      mainDrawStatus.textContent = "❌ Error exportando el cuadro.";
+    }
+  }
+
+  /* ============================
+   * 5) LEER RANKING GENERAL
+   * ============================ */
+
   async function fetchRankingForRama(rama) {
     const q = query(
       collection(db, "rankingGeneral"),
@@ -550,14 +625,13 @@ if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idx
   }
 
   /* ============================
-   * 5) ASIGNAR EQUIPOS EN 1RA RONDA DESDE RANKING
+   * 6) ASIGNAR EQUIPOS EN 1RA RONDA
    * ============================ */
 
   async function assignTeamsFromRanking(rama) {
     try {
       mainDrawStatus.textContent = "Verificando que existan partidos de cuadro...";
 
-      // 1) Traer todos los partidos de cuadro de esta rama
       const q = query(
         collection(db, "matches"),
         where("phase", "==", "maindraw"),
@@ -566,11 +640,11 @@ if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idx
       const snap = await getDocs(q);
 
       if (snap.empty) {
-        mainDrawStatus.textContent = `❌ No hay partidos de cuadro para ${rama === "F" ? "Femenino" : "Masculino"}.\nPrimero importá el cuadro con el CSV.`;
+        mainDrawStatus.textContent =
+          `❌ No hay partidos de cuadro para ${rama === "F" ? "Femenino" : "Masculino"}.\nPrimero importá el cuadro con el CSV.`;
         return;
       }
 
-      // Mapa nroPartido -> docRef
       const matchByNumber = {};
       snap.forEach(docSnap => {
         const data = docSnap.data();
@@ -579,7 +653,6 @@ if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idx
         matchByNumber[num] = docSnap.ref;
       });
 
-      // Verificar que existan al menos los 16 partidos de 1ra ronda
       const missingFirstRound = FIRST_ROUND_SEED_MAP
         .filter(m => !matchByNumber[m.match])
         .map(m => m.match);
@@ -591,11 +664,11 @@ if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idx
         return;
       }
 
-      // 2) Traer ranking
       mainDrawStatus.textContent = "Leyendo ranking general...";
       const ranking = await fetchRankingForRama(rama);
       if (!ranking || ranking.length < 32) {
-        mainDrawStatus.textContent = `❌ El ranking de ${rama === "F" ? "Femenino" : "Masculino"} tiene menos de 32 equipos (encontrados: ${ranking.length || 0}).`;
+        mainDrawStatus.textContent =
+          `❌ El ranking de ${rama === "F" ? "Femenino" : "Masculino"} tiene menos de 32 equipos (encontrados: ${ranking.length || 0}).`;
         return;
       }
 
@@ -609,7 +682,6 @@ if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idx
         };
       });
 
-      // 3) Actualizar solo 1ra ronda con los equipos
       mainDrawStatus.textContent = "Asignando equipos de la 1ra ronda según el ranking...";
 
       const batch = writeBatch(db);
@@ -631,7 +703,6 @@ if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idx
           updateData.team2Name = s2.teamName;
         }
 
-        // cuando se asignan, el partido sigue pendiente
         updateData.status = "pending";
 
         batch.update(ref, updateData);
@@ -639,99 +710,15 @@ if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idx
 
       await batch.commit();
 
-      mainDrawStatus.textContent = `✅ Equipos asignados en los 16 partidos de 1ra ronda para ${rama === "F" ? "Femenino" : "Masculino"}.\nEl resto del cuadro se irá completando según se vayan cerrando los partidos.`;
+      mainDrawStatus.textContent =
+        `✅ Equipos asignados en los 16 partidos de 1ra ronda para ${rama === "F" ? "Femenino" : "Masculino"}.\n` +
+        "El resto del cuadro se irá completando según se vayan cerrando los partidos.";
 
     } catch (err) {
       console.error(err);
       mainDrawStatus.textContent = "❌ Error al asignar equipos desde el ranking. Revisá la consola para más detalles.";
     }
   }
-  
-async function exportMainDrawToCSV(rama) {
-  try {
-    mainDrawStatus.textContent = "Exportando partidos del cuadro…";
-
-    const q = query(
-      collection(db, "matches"),
-      where("phase", "==", "maindraw"),
-      where("rama", "==", rama)
-    );
-
-    const snap = await getDocs(q);
-
-    if (snap.empty) {
-      mainDrawStatus.textContent =
-        `No hay partidos cargados del cuadro para ${rama === "F" ? "Femenino" : "Masculino"}.`;
-      return;
-    }
-
-    // Encabezado con ronda
-    const rows = [
-      ["numeroPartido", "ronda", "cruce", "fecha", "hora", "cancha"]
-    ];
-
-    const items = snap.docs
-      .map(d => d.data())
-      .sort((a, b) => (a.numeroPartido || 0) - (b.numeroPartido || 0));
-
-    items.forEach(m => {
-      rows.push([
-        m.numeroPartido || "",
-        m.roundLabel || "",         // 👈 acá va la ronda/fase
-        m.cruce || "",
-        m.fecha || "",
-        m.hora || "",
-        m.cancha || ""
-      ]);
-    });
-
-    const csvContent = rows
-      .map(r => r.map(v => String(v)).join(";"))
-      .join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `maindraw_${rama}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    mainDrawStatus.textContent = "✔ Exportación lista.";
-
-  } catch (error) {
-    console.error(error);
-    mainDrawStatus.textContent = "❌ Error exportando el cuadro.";
-  }
-}
-
-
-
-function normalizeHoraImport(h){
-  if(!h) return "";
-  let s = String(h).trim();
-
-  // Si ya viene en formato H:MM / HH:MM lo dejamos
-  if(/^\d{1,2}:\d{2}$/.test(s)) return s;
-
-  // Sacamos todo lo que no sea dígito
-  const dig = s.replace(/\D/g,"");
-
-  if (dig.length === 3) {
-    // 800 -> 8:00
-    return dig[0] + ":" + dig.substring(1).padEnd(2,"0");
-  }
-  if (dig.length === 4) {
-    // 0830 -> 08:30
-    return dig.substring(0,2) + ":" + dig.substring(2);
-  }
-
-  // Si es raro, lo dejamos como vino
-  return s;
-}
-
 </script>
 
 </body>
