@@ -423,14 +423,18 @@ onSnapshot(collection(db,"matches"), snap=>{
   canchas.clear();
 
   snap.forEach(docSnap=>{
-    const d=docSnap.data();
+    const d = docSnap.data();
+
+    // ⚠️ Ignorar TODOS los partidos del cuadro principal
+    const phase = d.phase || "zonas";   // por defecto, las zonas no tienen phase
+    if (phase === "maindraw") return;
 
     const categoria = normalizeCategoria(d.categoria || d.category);
     const zona      = normalizeZona(d.zona || d.zone);
     const cancha    = d.cancha || "";
 
-    if(zona) zonas.add(zona);
-    if(cancha!=="") canchas.add(String(cancha));
+    if (zona) zonas.add(zona);
+    if (cancha !== "") canchas.add(String(cancha));
 
     allMatches.push({
       id: docSnap.id,
@@ -450,6 +454,7 @@ onSnapshot(collection(db,"matches"), snap=>{
   renderFilterOptions();
   renderTable();
 });
+
 
 /* Eventos filtros */
 filterCat.onchange    = renderTable;

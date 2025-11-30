@@ -1,204 +1,462 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Cuadro Principal</title>
+<meta charset="UTF-8">
+<title>Cuadro principal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      margin: 0;
-      padding: 0;
-    }
+<style>
+body {
+  margin: 0;
+  background: #031926;
+  color: white;
+  font-family: system-ui, sans-serif;
+  padding: 20px;
+}
 
-    header {
-      background: #333;
-      color: white;
-      padding: 12px;
-      text-align: center;
-      font-size: 22px;
-    }
+/* Botones superiores */
+.top-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
 
-    .filters {
-      background: white;
-      padding: 10px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      border-bottom: 1px solid #ccc;
-      justify-content: center;
-    }
+.top-btn {
+  background: #ffe36a;
+  color: #000;
+  font-weight: bold;
+  padding: 10px 16px;
+  border-radius: 12px;
+  text-decoration: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+}
 
-    .match-card {
-      background: white;
-      margin: 10px;
-      padding: 12px;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,.15);
-    }
+/* Título */
+h1 {
+  text-align: center;
+  margin-top: 0;
+  text-transform: uppercase;
+}
 
-    .match-header {
-      font-weight: bold;
-      margin-bottom: 6px;
-    }
+/* Filtros */
+.filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
 
-    .team-line {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
-    }
+.filters select,
+.filters input[type="text"] {
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
+  font-size: 14px;
+}
 
-    .winner {
-      color: green;
-      font-weight: bold;
-    }
-  </style>
+.filters input::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
+/* CONTENEDOR TABLA */
+.fixture-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* TABLA */
+.fixture-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.fixture-table th,
+.fixture-table td {
+  padding: 4px 6px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.fixture-table th {
+  font-size: 13px;
+  font-weight: 600;
+  color: #eee;
+  background: rgba(255,255,255,0.1);
+}
+
+/* Columna por columna */
+.col-num    { width: 32px; }
+.col-cat    { width: 32px; }
+.col-zona   { width: 80px; }  /* acá mostramos la fase */
+.col-cancha { width: 45px; }
+.col-hora   { width: 55px; }
+.col-fecha  { width: 60px; }
+.col-eq1    { width: 140px; text-align:left; }
+.col-res    { width: 150px; text-align:left; }
+.col-estado { width: 80px; }
+
+/* Estado */
+.estado-pill {
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.estado-finalizado { background:#7cffc1; color:#000; }
+.estado-enjuego    { background:#ffe36a; color:#000; }
+.estado-pendiente  { background:#aaa; color:#000; }
+
+/* Eq1 + Eq2 en dos líneas */
+.eq2 {
+  display: block;
+  margin-top: 2px;
+}
+
+/* Resultado por equipo: solo números */
+.res-team-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+
+.set-num {
+  display: inline-block;
+  min-width: 18px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.set-num.ganador {
+  color: #7cffc1;
+  font-weight: 700;
+}
+
+/* Celular */
+@media (max-width:480px){
+  .fixture-table { font-size: 12px; }
+  .fixture-table th { font-size: 11px; }
+  .set-num { font-size:10px; min-width:16px; }
+}
+</style>
 </head>
 
 <body>
-<header>Cuadro Principal</header>
 
+<div class="top-buttons">
+  <a class="top-btn" href="index.html">Inicio</a>
+  <a class="top-btn" href="fixture.html">Fixture (Zonas)</a>
+</div>
+
+<h1>CUADRO PRINCIPAL</h1>
+
+<!-- FILTROS -->
 <div class="filters">
-  <select id="filterRama">
+  <select id="filterCat">
+    <option value="all">Rama: Todas</option>
     <option value="F">Femenino</option>
     <option value="M">Masculino</option>
   </select>
 
-  <select id="filterRound">
-    <option value="all">Todas las fases</option>
-  </select>
+  <!-- acá usamos roundLabel como "Fase" -->
+  <select id="filterZone"></select>
+
+  <select id="filterCourt"></select>
 
   <select id="filterStatus">
-    <option value="all">Todos los estados</option>
-    <option value="pending">Pendientes</option>
-    <option value="in_progress">En juego</option>
-    <option value="finished">Finalizados</option>
+    <option value="all">Estado: Todos</option>
+    <option value="Pendiente">Pendiente</option>
+    <option value="En juego">En juego</option>
+    <option value="Finalizado">Finalizado</option>
   </select>
 
-  <input id="filterTeam" placeholder="Buscar equipo..." style="padding:5px;" />
+  <input id="filterSearch" type="text" placeholder="Buscar equipo..." />
 </div>
 
-<div id="matchesContainer"></div>
+<!-- TABLA -->
+<div class="fixture-wrapper">
+  <table class="fixture-table">
+    <thead>
+      <tr>
+        <th class="col-num">#</th>
+        <th class="col-cat">F/M</th>
+        <th class="col-zona">Fase</th>
+        <th class="col-cancha">C</th>
+        <th class="col-hora">Hora</th>
+        <th class="col-fecha">Fecha</th>
+        <th class="col-eq1">Eq1 / Eq2</th>
+        <th class="col-res">Resultado</th>
+        <th class="col-estado">Estado</th>
+      </tr>
+    </thead>
+    <tbody id="fixtureBody"></tbody>
+  </table>
+</div>
 
 
+<!-- FIREBASE + SCRIPT -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-  import {
-    getFirestore,
-    collection,
-    query,
-    where,
-    getDocs
-  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
-    authDomain: "torneo-beach.firebaseapp.com",
-    projectId: "torneo-beach",
-    storageBucket: "torneo-beach.firebasestorage.app",
-    messagingSenderId: "21136645638",
-    appId: "1:21136645638:web:52c3b06affc2ee151eed87"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
+  authDomain: "torneo-beach.firebaseapp.com",
+  projectId: "torneo-beach",
+  storageBucket: "torneo-beach.firebasestorage.app",
+  messagingSenderId: "21136645638",
+  appId: "1:21136645638:web:52c3b06affc2ee151eed87"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-  const matchesContainer = document.getElementById("matchesContainer");
-  const filterRama  = document.getElementById("filterRama");
-  const filterRound = document.getElementById("filterRound");
-  const filterStatus= document.getElementById("filterStatus");
-  const filterTeam  = document.getElementById("filterTeam");
+// proteger acceso
+onAuthStateChanged(auth, u => { if(!u) location.href="login.html"; });
 
-  filterRama.addEventListener("change", loadMatches);
-  filterRound.addEventListener("change", renderFilteredMatches);
-  filterStatus.addEventListener("change", renderFilteredMatches);
-  filterTeam.addEventListener("input", renderFilteredMatches);
+const filterCat    = document.getElementById("filterCat");
+const filterZone   = document.getElementById("filterZone");
+const filterCourt  = document.getElementById("filterCourt");
+const filterStatus = document.getElementById("filterStatus");
+const filterSearch = document.getElementById("filterSearch");
+const fixtureBody  = document.getElementById("fixtureBody");
 
-  let allMatches = [];
-  let availableRounds = new Set();
+let allMatches = [];
+let fases  = new Set();
+let canchas = new Set();
 
-  async function loadMatches() {
-    matchesContainer.innerHTML = "<p>Cargando...</p>";
-    allMatches = [];
-    availableRounds.clear();
+/* ---------- Normalizadores ---------- */
 
-    const rama = filterRama.value;
+function normalizeCategoria(c){
+  if(!c) return "";
+  const up = c.toString().toUpperCase();
+  if(up.startsWith("F")) return "F";
+  if(up.startsWith("M")) return "M";
+  return up;
+}
 
-    const q = query(
-      collection(db, "matches"),
-      where("phase", "==", "maindraw"),
-      where("rama", "==", rama)
-    );
+function normalizeHora(h){
+  if(!h) return "";
+  let s = String(h);
 
-    const snap = await getDocs(q);
-    snap.forEach(d => {
-      let m = d.data();
-      allMatches.push(m);
-      availableRounds.add(m.roundLabel);
+  if(/^\d{1,2}:\d{2}$/.test(s)) return s; 
+  const dig = s.replace(/\D/g,"");
+  if(dig.length===3) return dig[0]+":"+dig.substring(1).padEnd(2,"0");
+  if(dig.length===4) return dig.substring(0,2)+":"+dig.substring(2);
+  return s;
+}
+
+function formatFecha(f){
+  if(!f) return "";
+  const s = String(f);
+
+  if(/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)){
+    const [y,m,d]=s.split("-");
+    return `${d}/${m}/${y.slice(-2)}`;
+  }
+  if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)){
+    const [d,m,y]=s.split("/");
+    return `${d}/${m}/${y.slice(-2)}`;
+  }
+  return s;
+}
+
+/* ---------- Resultado ---------- */
+
+function buildResultadoHTML(match){
+  if(match.estado!=="Finalizado" || !match.setsData || match.setsData.length===0)
+    return "—";
+
+  const sets  = match.setsData;
+  const localNums=[];
+  const visitNums=[];
+
+  sets.forEach(s=>{
+    const pl=s.puntosLocal??0;
+    const pv=s.puntosVisitante??0;
+
+    const lcls = pl>pv ? "ganador":"";
+    const vcls = pv>pl ? "ganador":"";
+
+    localNums.push(`<span class="set-num ${lcls}">${pl}</span>`);
+    visitNums.push(`<span class="set-num ${vcls}">${pv}</span>`);
+  });
+
+  return `
+    <div class="res-team-line">
+      ${localNums.join("")}
+    </div>
+    <div class="res-team-line">
+      ${visitNums.join("")}
+    </div>
+  `;
+}
+
+/* ---------- Estado visual ---------- */
+
+function estClass(e){
+  if(e==="Finalizado") return "estado-finalizado";
+  if(e==="En juego") return "estado-enjuego";
+  return "estado-pendiente";
+}
+
+/* ---------- Filtros dinámicos ---------- */
+
+function renderFilterOptions(){
+  filterZone.innerHTML = `<option value="all">Fase: Todas</option>`;
+  [...fases].sort().forEach(f=>{
+    filterZone.innerHTML += `<option value="${f}">${f}</option>`;
+  });
+
+  filterCourt.innerHTML = `<option value="all">Cancha: Todas</option>`;
+  [...canchas].sort((a,b)=> Number(a)-Number(b))
+    .forEach(c=>{
+      filterCourt.innerHTML += `<option value="${c}">Cancha ${c}</option>`;
     });
+}
 
-    loadRoundFilter();
-    renderFilteredMatches();
+/* ---------- Render tabla ---------- */
+
+function renderTable(){
+  let list=[...allMatches];
+
+  if(filterCat.value!=="all")
+    list=list.filter(m=>m.categoria===filterCat.value);
+
+  if(filterZone.value!=="all")
+    list=list.filter(m=>m.fase===filterZone.value);
+
+  if(filterCourt.value!=="all")
+    list=list.filter(m=>String(m.cancha)===filterCourt.value);
+
+  if(filterStatus.value!=="all")
+    list=list.filter(m=>m.estado===filterStatus.value);
+
+  const search = filterSearch.value.trim().toLowerCase();
+  if (search) {
+    list = list.filter(m => {
+      const l = (m.localName || "").toLowerCase();
+      const v = (m.visitanteName || "").toLowerCase();
+      return l.includes(search) || v.includes(search);
+    });
   }
 
-  function loadRoundFilter() {
-    filterRound.innerHTML = `<option value="all">Todas las fases</option>`;
-    [...availableRounds].sort().forEach(r => {
-      filterRound.innerHTML += `<option value="${r}">${r}</option>`;
-    });
+  // Orden: por número de partido del cuadro
+  list.sort((a,b)=> (a.numeroPartido||9999) - (b.numeroPartido||9999));
+
+  if(list.length===0){
+    fixtureBody.innerHTML =
+      `<tr><td colspan="9">No hay partidos con estos filtros.</td></tr>`;
+    return;
   }
 
-  function renderFilteredMatches() {
-    let rama = filterRama.value;
-    let round = filterRound.value;
-    let status = filterStatus.value;
-    let team = filterTeam.value.toLowerCase();
+  fixtureBody.innerHTML="";
 
-    let list = allMatches.filter(m => {
+  list.forEach(m=>{
+    const tr=document.createElement("tr");
 
-      if (round !== "all" && m.roundLabel !== round) return false;
-      if (status !== "all" && m.status !== status) return false;
+    const horaFmt  = normalizeHora(m.hora);
+    const fechaFmt = formatFecha(m.fecha);
+    const estCls   = estClass(m.estado || "Pendiente");
 
-      if (team.length > 0) {
-        const t1 = (m.team1Name || "").toLowerCase();
-        const t2 = (m.team2Name || "").toLowerCase();
-        if (!t1.includes(team) && !t2.includes(team)) return false;
-      }
+    tr.innerHTML = `
+      <td class="col-num">${m.numeroPartido||""}</td>
+      <td class="col-cat">${m.categoria||""}</td>
+      <td class="col-zona">${m.fase||""}</td>
+      <td class="col-cancha">${m.cancha||""}</td>
+      <td class="col-hora">${horaFmt}</td>
+      <td class="col-fecha">${fechaFmt}</td>
 
-      return true;
+      <td class="col-eq1">
+        ${m.localName||""}
+        <span class="eq2">${m.visitanteName||""}</span>
+      </td>
+
+      <td class="col-res">
+        ${buildResultadoHTML(m)}
+      </td>
+
+      <td class="col-estado">
+        <span class="estado-pill ${estCls}">
+          ${m.estado||"Pendiente"}
+        </span>
+      </td>
+    `;
+
+    fixtureBody.appendChild(tr);
+  });
+}
+
+/* ---------- Cargar solo partidos del cuadro ---------- */
+
+onSnapshot(collection(db,"matches"), snap=>{
+  allMatches=[];
+  fases.clear();
+  canchas.clear();
+
+  snap.forEach(docSnap=>{
+    const d = docSnap.data();
+
+    // Solo MAINDRAW
+    if (d.phase !== "maindraw") return;
+
+    // rama / categoria
+    const categoria = normalizeCategoria(d.categoria || d.category || d.rama);
+    const fase      = (d.roundLabel || "").toString();
+    const cancha    = d.cancha || "";
+
+    if(fase) fases.add(fase);
+    if(cancha!=="") canchas.add(String(cancha));
+
+    // estado: acepta tanto campo "estado" como "status"
+    let estado = d.estado;
+    if (!estado && d.status) {
+      if (d.status === "finished")    estado = "Finalizado";
+      else if (d.status === "in_progress") estado = "En juego";
+      else estado = "Pendiente";
+    }
+    if (!estado) estado = "Pendiente";
+
+    allMatches.push({
+      id: docSnap.id,
+      numeroPartido: d.drawMatchNumber || d.numeroPartido,
+      localName: d.team1Name || d.localName,
+      visitanteName: d.team2Name || d.visitanteName,
+      categoria,
+      fase,
+      cancha,
+      fecha: d.fecha,
+      hora: d.hora,
+      estado,
+      setsData: d.setsData || []
     });
+  });
 
-    // ordenar por número de partido
-    list.sort((a, b) => a.drawMatchNumber - b.drawMatchNumber);
+  renderFilterOptions();
+  renderTable();
+});
 
-    matchesContainer.innerHTML = "";
+/* Eventos filtros */
+filterCat.onchange    = renderTable;
+filterZone.onchange   = renderTable;
+filterCourt.onchange  = renderTable;
+filterStatus.onchange = renderTable;
+filterSearch.addEventListener("input", renderTable);
 
-    list.forEach(m => {
-      const card = document.createElement("div");
-      card.className = "match-card";
-
-      card.innerHTML = `
-        <div class="match-header">#${m.drawMatchNumber} — ${m.roundLabel}</div>
-
-        <div class="team-line ${m.winnerTeamId === m.team1Id ? "winner" : ""}">
-          <span>${m.team1Name || "---"}</span>
-          <span>${m.team1Score ?? ""}</span>
-        </div>
-        <div class="team-line ${m.winnerTeamId === m.team2Id ? "winner" : ""}">
-          <span>${m.team2Name || "---"}</span>
-          <span>${m.team2Score ?? ""}</span>
-        </div>
-
-        ${m.status === "finished" ? `<div><b>Ganador: ${m.winnerTeamName}</b></div>` : ""}
-      `;
-
-      matchesContainer.appendChild(card);
-    });
-  }
-
-  loadMatches();
 </script>
 
 </body>
