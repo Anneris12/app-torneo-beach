@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Admin - Cuadro Principal</title>
+  <title>Admin - Cuadro principal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
@@ -14,7 +14,7 @@
       padding: 20px;
     }
 
-    /* Botones superiores (igual estilo que otras pantallas) */
+    /* Botones superiores */
     .top-buttons {
       display: flex;
       justify-content: space-between;
@@ -33,34 +33,34 @@
       cursor: pointer;
     }
 
+    /* Título */
     h1 {
       text-align: center;
       margin-top: 0;
       text-transform: uppercase;
-      font-size: 20px;
-      margin-bottom: 20px;
     }
 
     /* Panel central */
     .panel {
-      background: #ffffff;
-      color: #000;
-      border-radius: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.4);
-      max-width: 700px;
+      max-width: 800px;
       margin: 0 auto;
-      padding: 16px 18px 18px;
+      background: #052235;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
     }
 
     .panel h2 {
-      margin: 0 0 8px;
+      margin-top: 0;
       font-size: 18px;
+      margin-bottom: 10px;
     }
 
     .panel p {
-      margin: 6px 0 10px;
       font-size: 14px;
-      color: #444;
+      color: #d0d0d0;
+      margin-top: 0;
+      margin-bottom: 10px;
     }
 
     .controls {
@@ -68,52 +68,53 @@
       flex-wrap: wrap;
       gap: 10px;
       align-items: center;
-      margin: 15px 0;
+      margin-bottom: 15px;
     }
 
     .controls label {
-      font-weight: 600;
       font-size: 14px;
+      font-weight: 600;
     }
 
     .controls select {
-      font-size: 14px;
-      padding: 4px 6px;
+      padding: 8px 10px;
       border-radius: 8px;
-      border: 1px solid #ccc;
+      background: rgba(255,255,255,0.08);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      font-size: 14px;
     }
 
     .controls button {
       border-radius: 10px;
-      padding: 7px 12px;
+      padding: 8px 12px;
       border: none;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
     }
 
     .btn-primary {
-      background: #007bff;
-      color: #fff;
+      background: #ffe36a;
+      color: #000;
     }
 
     .btn-secondary {
-      background: #eee;
-      color: #333;
-      border: 1px solid #ccc;
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.3);
     }
 
     #mainDrawStatus {
       margin-top: 10px;
       font-size: 14px;
-      color: #111;
-      min-height: 24px;
+      min-height: 20px;
       white-space: pre-line;
     }
 
     @media (max-width: 480px) {
       .panel {
-        padding: 12px 12px 14px;
+        padding: 15px;
       }
       .controls {
         flex-direction: column;
@@ -122,21 +123,22 @@
     }
   </style>
 </head>
+
 <body>
 
 <div class="top-buttons">
-  <a class="top-btn" href="admin.html">← Volver al panel admin</a>
-  <a class="top-btn" href="index.html">Inicio</a>
+  <a class="top-btn" href="admin.html">Volver</a>
+  <a class="top-btn" href="bracket.html">Ver cuadro</a>
 </div>
 
-<h1>CUADRO PRINCIPAL</h1>
+<h1>ADMIN CUADRO PRINCIPAL</h1>
 
 <main>
   <div class="panel">
-    <h2>Generar Main Draw desde ranking</h2>
+    <h2>Configurar cuadro principal (Main Draw)</h2>
     <p>
-      Desde acá vas a generar el cuadro principal a partir de la tabla general:<br>
-      <b>Masculino</b> toma los primeros <b>32</b> equipos y <b>Femenino</b> los primeros <b>16</b>.
+      Paso 1: Importar los partidos del cuadro (1 al 62) con número de partido, cruce, fecha, hora y cancha.<br>
+      Paso 2: Asignar los equipos de la 1ra ronda según el ranking general.
     </p>
 
     <div class="controls">
@@ -150,17 +152,32 @@
         Ver estado del cuadro
       </button>
 
-      <button id="btnGenerateMainDraw" type="button" class="btn-primary">
-        Generar cuadro desde ranking
+      <button id="btnImportMainDraw" type="button" class="btn-secondary">
+        Importar partidos (CSV)
+      </button>
+
+      <button id="btnAssignFromRanking" type="button" class="btn-primary">
+        Asignar equipos según ranking
       </button>
     </div>
 
+    <p style="font-size:13px; color:#b0b0b0; margin-top:0;">
+      Formato CSV esperado (1ra fila encabezados):<br>
+      <code>numeroPartido;cruce;fecha;hora;cancha</code><br>
+      Ej: <code>1;1 vs 32;2026-02-01;08:00;1</code>
+    </p>
+
     <div id="mainDrawStatus"></div>
+
+    <!-- input de archivo oculto -->
+    <input type="file" id="fileInput" accept=".csv" style="display:none" />
   </div>
 </main>
 
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     getFirestore,
     collection,
@@ -171,9 +188,7 @@
     doc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-  // -----------------------
   // Firebase config
-  // -----------------------
   const firebaseConfig = {
     apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
     authDomain: "torneo-beach.firebaseapp.com",
@@ -184,68 +199,73 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  // proteger acceso (igual que en fixture)
+  onAuthStateChanged(auth, u => {
+    if (!u) location.href = "login.html";
+  });
 
   const mainDrawRamaSelect   = document.getElementById("mainDrawRama");
   const btnCheckMainDraw     = document.getElementById("btnCheckMainDraw");
-  const btnGenerateMainDraw  = document.getElementById("btnGenerateMainDraw");
+  const btnImportMainDraw    = document.getElementById("btnImportMainDraw");
+  const btnAssignFromRanking = document.getElementById("btnAssignFromRanking");
   const mainDrawStatus       = document.getElementById("mainDrawStatus");
+  const fileInput            = document.getElementById("fileInput");
 
   btnCheckMainDraw.addEventListener("click", () => {
     const rama = mainDrawRamaSelect.value;
     checkMainDrawStatus(rama);
   });
 
-  btnGenerateMainDraw.addEventListener("click", () => {
-    const rama = mainDrawRamaSelect.value;
-    generateMainDrawFromRanking(rama);
+  btnImportMainDraw.addEventListener("click", () => {
+    fileInput.click();
   });
 
-  // ============================
-  // 1) SEED MAPS
-  // ============================
+  fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const rama = mainDrawRamaSelect.value;
+    await importMainDrawFromFile(file, rama);
+    fileInput.value = "";
+  });
 
-  // Masculino – 32 equipos
+  btnAssignFromRanking.addEventListener("click", () => {
+    const rama = mainDrawRamaSelect.value;
+    assignTeamsFromRanking(rama);
+  });
+
+  /* ============================
+   * 1) CONFIG ESTRUCTURAL DEL CUADRO (NO HORARIOS)
+   * ============================ */
+
+  // mapping de seeds a partidos de 1ª ronda
   const FIRST_ROUND_SEED_MAP = [
     { match: 1,  seed1: 1,  seed2: 32 },
     { match: 2,  seed1: 17, seed2: 16 },
     { match: 3,  seed1: 9,  seed2: 24 },
-    { match: 4,  seed1: 25, seed2: 8  },
+    { match: 4,  seed1: 25, seed2: 8 },
     { match: 5,  seed1: 5,  seed2: 28 },
     { match: 6,  seed1: 21, seed2: 12 },
     { match: 7,  seed1: 13, seed2: 20 },
-    { match: 8,  seed1: 29, seed2: 4  },
+    { match: 8,  seed1: 29, seed2: 4 },
     { match: 9,  seed1: 3,  seed2: 30 },
     { match: 10, seed1: 19, seed2: 14 },
     { match: 11, seed1: 11, seed2: 22 },
-    { match: 12, seed1: 27, seed2: 6  },
+    { match: 12, seed1: 27, seed2: 6 },
     { match: 13, seed1: 7,  seed2: 26 },
     { match: 14, seed1: 23, seed2: 10 },
     { match: 15, seed1: 15, seed2: 18 },
-    { match: 16, seed1: 31, seed2: 2  }
+    { match: 16, seed1: 31, seed2: 2 }
   ];
 
-  // Femenino – 16 equipos, igual que el Excel
-  const FIRST_ROUND_SEED_MAP_F = [
-    { match: 1, seed1: 1,  seed2: 16 },
-    { match: 2, seed1: 8,  seed2: 9  },
-    { match: 3, seed1: 5,  seed2: 12 },
-    { match: 4, seed1: 13, seed2: 4  },
-    { match: 5, seed1: 3,  seed2: 14 },
-    { match: 6, seed1: 11, seed2: 6  },
-    { match: 7, seed1: 7,  seed2: 10 },
-    { match: 8, seed1: 15, seed2: 2  }
-  ];
-
-  // ============================
-  // 2) CONFIG MASCULINO – 32 EQUIPOS, 62 PARTIDOS
-  // ============================
-
+  // Config del cuadro: para cada partido, de dónde viene cada equipo
   const MAIN_DRAW_CONFIG_32 = {
     // 1ra RONDA
     1:  { roundLabel: "1ra ronda",        slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
     2:  { roundLabel: "1ra ronda",        slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
-    3:  { roundLabel: "1ra ronda",        slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2Source: null },
+    3:  { roundLabel: "1ra ronda",        slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
     4:  { roundLabel: "1ra ronda",        slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
     5:  { roundLabel: "1ra ronda",        slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
     6:  { roundLabel: "1ra ronda",        slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
@@ -280,15 +300,15 @@
     31: { roundLabel: "1er ronda perd.",  slot1SourceFrom: 13, slot1SourceResult: "loser",  slot2SourceFrom: 14, slot2SourceResult: "loser" },
     32: { roundLabel: "1er ronda perd.",  slot1SourceFrom: 15, slot1SourceResult: "loser",  slot2SourceFrom: 16, slot2SourceResult: "loser" },
 
-    // 2da RONDA PERDEDORES (puede ajustarse según tu Excel masculino final)
-    33: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 25, slot1SourceResult: "winner", slot2SourceFrom: 24, slot2SourceResult: "loser"  },
-    34: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 26, slot1SourceResult: "winner", slot2SourceFrom: 23, slot2SourceResult: "loser"  },
-    35: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 27, slot1SourceResult: "winner", slot2SourceFrom: 22, slot2SourceResult: "loser"  },
-    36: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 28, slot1SourceResult: "winner", slot2SourceFrom: 21, slot2SourceResult: "loser"  },
-    37: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 29, slot1SourceResult: "winner", slot2SourceFrom: 20, slot2SourceResult: "loser"  },
-    38: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 30, slot1SourceResult: "winner", slot2SourceFrom: 19, slot2SourceResult: "loser"  },
-    39: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 31, slot1SourceResult: "winner", slot2SourceFrom: 18, slot2SourceResult: "loser"  },
-    40: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 32, slot1SourceResult: "winner", slot2SourceFrom: 17, slot2SourceResult: "loser"  },
+    // 2da RONDA PERDEDORES
+    33: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 25, slot1SourceResult: "winner", slot2SourceFrom: 23, slot2SourceResult: "loser" },
+    34: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 26, slot1SourceResult: "winner", slot2SourceFrom: 24, slot2SourceResult: "loser" },
+    35: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 27, slot1SourceResult: "winner", slot2SourceFrom: 21, slot2SourceResult: "loser" },
+    36: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 28, slot1SourceResult: "winner", slot2SourceFrom: 22, slot2SourceResult: "loser" },
+    37: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 29, slot1SourceResult: "winner", slot2SourceFrom: 17, slot2SourceResult: "loser" },
+    38: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 30, slot1SourceResult: "winner", slot2SourceFrom: 18, slot2SourceResult: "loser" },
+    39: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 31, slot1SourceResult: "winner", slot2SourceFrom: 19, slot2SourceResult: "loser" },
+    40: { roundLabel: "2da ronda perd.",  slot1SourceFrom: 32, slot1SourceResult: "winner", slot2SourceFrom: 20, slot2SourceResult: "loser" },
 
     // 3ra RONDA PERDEDORES
     41: { roundLabel: "3ra ronda perd.",  slot1SourceFrom: 33, slot1SourceResult: "winner", slot2SourceFrom: 34, slot2SourceResult: "winner" },
@@ -308,7 +328,7 @@
     51: { roundLabel: "4ta ronda perd.",  slot1SourceFrom: 43, slot1SourceResult: "winner", slot2SourceFrom: 48, slot2SourceResult: "loser" },
     52: { roundLabel: "4ta ronda perd.",  slot1SourceFrom: 44, slot1SourceResult: "winner", slot2SourceFrom: 47, slot2SourceResult: "loser" },
 
-    // PASE A SEMI (ganadores)
+    // PASE A SEMI
     53: { roundLabel: "Pase a semi",      slot1SourceFrom: 45, slot1SourceResult: "winner", slot2SourceFrom: 46, slot2SourceResult: "winner" },
     54: { roundLabel: "Pase a semi",      slot1SourceFrom: 47, slot1SourceResult: "winner", slot2SourceFrom: 48, slot2SourceResult: "winner" },
 
@@ -316,231 +336,24 @@
     55: { roundLabel: "5ta ronda perd.",  slot1SourceFrom: 49, slot1SourceResult: "winner", slot2SourceFrom: 50, slot2SourceResult: "winner" },
     56: { roundLabel: "5ta ronda perd.",  slot1SourceFrom: 51, slot1SourceResult: "winner", slot2SourceFrom: 52, slot2SourceResult: "winner" },
 
-    // PASE A SEMI (perdedores)
-    57: { roundLabel: "Pase a semi",      slot1SourceFrom: 55, slot1SourceResult: "winner", slot2SourceFrom: 54, slot2SourceResult: "loser"  },
-    58: { roundLabel: "Pase a semi",      slot1SourceFrom: 56, slot1SourceResult: "winner", slot2SourceFrom: 53, slot2SourceResult: "loser"  },
+    // PASE A SEMI (2do bloque)
+    57: { roundLabel: "Pase a semi",      slot1SourceFrom: 55, slot1SourceResult: "winner", slot2SourceFrom: 54, slot2SourceResult: "loser" },
+    58: { roundLabel: "Pase a semi",      slot1SourceFrom: 56, slot1SourceResult: "winner", slot2SourceFrom: 53, slot2SourceResult: "loser" },
 
     // SEMIFINALES
     59: { roundLabel: "Semi 1",           slot1SourceFrom: 53, slot1SourceResult: "winner", slot2SourceFrom: 57, slot2SourceResult: "winner" },
     60: { roundLabel: "Semi 2",           slot1SourceFrom: 54, slot1SourceResult: "winner", slot2SourceFrom: 58, slot2SourceResult: "winner" },
 
     // 3er PUESTO
-    61: { roundLabel: "3er puesto",       slot1SourceFrom: 59, slot1SourceResult: "loser",  slot2SourceFrom: 60, slot2SourceResult: "loser"  },
+    61: { roundLabel: "3er puesto",       slot1SourceFrom: 59, slot1SourceResult: "loser",  slot2SourceFrom: 60, slot2SourceResult: "loser" },
 
     // FINAL
     62: { roundLabel: "Final",            slot1SourceFrom: 59, slot1SourceResult: "winner", slot2SourceFrom: 60, slot2SourceResult: "winner" }
   };
 
-  // ============================
-  // 3) CONFIG FEMENINO – 16 EQUIPOS, 30 PARTIDOS
-  // ============================
-
-  const MAIN_DRAW_CONFIG_F_16 = {
-    1:  { roundLabel: "1ra ronda",   slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
-    2:  { roundLabel: "1ra ronda",   slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
-    3:  { roundLabel: "1ra ronda",   slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
-    4:  { roundLabel: "1ra ronda",   slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
-    5:  { roundLabel: "1ra ronda",   slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
-    6:  { roundLabel: "1ra ronda",   slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
-    7:  { roundLabel: "1ra ronda",   slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
-    8:  { roundLabel: "1ra ronda",   slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
-
-    9:  { roundLabel: "2da ronda",   slot1SourceFrom: 1,  slot1SourceResult: "winner", slot2SourceFrom: 2,  slot2SourceResult: "winner" },
-    10: { roundLabel: "2da ronda",   slot1SourceFrom: 3,  slot1SourceResult: "winner", slot2SourceFrom: 4,  slot2SourceResult: "winner" },
-    11: { roundLabel: "2da ronda",   slot1SourceFrom: 5,  slot1SourceResult: "winner", slot2SourceFrom: 6,  slot2SourceResult: "winner" },
-    12: { roundLabel: "2da ronda",   slot1SourceFrom: 7,  slot1SourceResult: "winner", slot2SourceFrom: 8,  slot2SourceResult: "winner" },
-
-    13: { roundLabel: "1er ronda perd.", slot1SourceFrom: 8, slot1SourceResult: "loser", slot2SourceFrom: 5, slot2SourceResult: "loser" },
-    14: { roundLabel: "1er ronda perd.", slot1SourceFrom: 6, slot1SourceResult: "loser", slot2SourceFrom: 3, slot2SourceResult: "loser" },
-    15: { roundLabel: "1er ronda perd.", slot1SourceFrom: 4, slot1SourceResult: "loser", slot2SourceFrom: 1, slot2SourceResult: "loser" },
-    16: { roundLabel: "1er ronda perd.", slot1SourceFrom: 7, slot1SourceResult: "loser", slot2SourceFrom: 2, slot2SourceResult: "loser" },
-
-    17: { roundLabel: "2da ronda perd.", slot1SourceFrom: 13, slot1SourceResult: "winner", slot2SourceFrom: 10, slot2SourceResult: "loser" },
-    18: { roundLabel: "2da ronda perd.", slot1SourceFrom: 14, slot1SourceResult: "winner", slot2SourceFrom: 9,  slot2SourceResult: "loser" },
-    19: { roundLabel: "2da ronda perd.", slot1SourceFrom: 15, slot1SourceResult: "winner", slot2SourceFrom: 12, slot2SourceResult: "loser" },
-    20: { roundLabel: "2da ronda perd.", slot1SourceFrom: 16, slot1SourceResult: "winner", slot2SourceFrom: 11, slot2SourceResult: "loser" },
-
-    21: { roundLabel: "Pase a semi",      slot1SourceFrom: 9,  slot1SourceResult: "winner", slot2SourceFrom: 10, slot2SourceResult: "winner" },
-    22: { roundLabel: "Pase a semi",      slot1SourceFrom: 11, slot1SourceResult: "winner", slot2SourceFrom: 12, slot2SourceResult: "winner" },
-
-    23: { roundLabel: "3ra ronda perd.",  slot1SourceFrom: 17, slot1SourceResult: "winner", slot2SourceFrom: 18, slot2SourceResult: "winner" },
-    24: { roundLabel: "3ra ronda perd.",  slot1SourceFrom: 19, slot1SourceResult: "winner", slot2SourceFrom: 20, slot2SourceResult: "winner" },
-
-    25: { roundLabel: "Pase a semi",      slot1SourceFrom: 23, slot1SourceResult: "winner", slot2SourceFrom: 21, slot2SourceResult: "loser"  },
-    26: { roundLabel: "Pase a semi",      slot1SourceFrom: 24, slot1SourceResult: "winner", slot2SourceFrom: 22, slot2SourceResult: "loser"  },
-
-    27: { roundLabel: "Semi",             slot1SourceFrom: 25, slot1SourceResult: "winner", slot2SourceFrom: 21, slot2SourceResult: "winner" },
-    28: { roundLabel: "Semi",             slot1SourceFrom: 26, slot1SourceResult: "winner", slot2SourceFrom: 22, slot2SourceResult: "winner" },
-
-    29: { roundLabel: "3er puesto",       slot1SourceFrom: 27, slot1SourceResult: "loser",  slot2SourceFrom: 28, slot2SourceResult: "loser"  },
-
-    30: { roundLabel: "Final",            slot1SourceFrom: 27, slot1SourceResult: "winner", slot2SourceFrom: 28, slot2SourceResult: "winner" }
-  };
-
-  // ============================
-  // 4) RANKING (igual criterio que tabla general)
-  // ============================
-
-  function normalizeCategoria(c){
-    if(!c) return "";
-    const up = c.toString().toUpperCase();
-    if(up.startsWith("F")) return "F";
-    if(up.startsWith("M")) return "M";
-    return up;
-  }
-
-  function normalizeZona(z){
-    return (z || "").toString().trim().toUpperCase();
-  }
-
-  function calcCoef(t){
-    if (t.ptsLost === 0){
-      return t.ptsWon > 0 ? t.ptsWon : 0;
-    }
-    return t.ptsWon / t.ptsLost;
-  }
-
-  function compareTeams(a,b){
-    if(b.tablePts !== a.tablePts) return b.tablePts - a.tablePts;
-    const diffA = a.ptsWon - a.ptsLost;
-    const diffB = b.ptsWon - b.ptsLost;
-    if(diffB !== diffA) return diffB - diffA;
-    const coefA = calcCoef(a);
-    const coefB = calcCoef(b);
-    if(coefB !== coefA) return coefB - coefA;
-    return (a.teamName || "").localeCompare(b.teamName || "");
-  }
-
-  function computeStandingsByZone(matches, categoriaFiltro){
-    const map = new Map();
-
-    matches.forEach(m => {
-      if(m.categoria !== categoriaFiltro) return;
-
-      const zona = m.zona || "SIN ZONA";
-      [m.localName, m.visitanteName].forEach(name => {
-        if(!name) return;
-        const key = `${name}|${categoriaFiltro}|${zona}`;
-        if(!map.has(key)){
-          map.set(key, {
-            teamName: name,
-            categoria: categoriaFiltro,
-            zona,
-            played: 0,
-            wins: 0,
-            losses: 0,
-            ptsWon: 0,
-            ptsLost: 0,
-            tablePts: 0
-          });
-        }
-      });
-    });
-
-    const PTS_WIN  = 2;
-    const PTS_LOSS = 1;
-
-    matches.forEach(m => {
-      if(m.categoria !== categoriaFiltro) return;
-      if(m.estado !== "Finalizado") return;
-
-      const zona = m.zona || "SIN ZONA";
-      const { localName, visitanteName } = m;
-      if(!localName || !visitanteName) return;
-
-      let ptsLocal = 0;
-      let ptsVisit = 0;
-      if(Array.isArray(m.setsData)){
-        m.setsData.forEach(s => {
-          ptsLocal += s.puntosLocal ?? 0;
-          ptsVisit += s.puntosVisitante ?? 0;
-        });
-      }
-      if(ptsLocal === 0 && ptsVisit === 0) return;
-
-      const localKey = `${localName}|${m.categoria}|${zona}`;
-      const visitKey = `${visitanteName}|${m.categoria}|${zona}`;
-
-      const localStat = map.get(localKey);
-      const visitStat = map.get(visitKey);
-
-      localStat.played++;
-      visitStat.played++;
-
-      localStat.ptsWon  += ptsLocal;
-      localStat.ptsLost += ptsVisit;
-      visitStat.ptsWon  += ptsVisit;
-      visitStat.ptsLost += ptsLocal;
-
-      if(ptsLocal > ptsVisit){
-        localStat.wins++;
-        visitStat.losses++;
-        localStat.tablePts += PTS_WIN;
-        visitStat.tablePts += PTS_LOSS;
-      } else {
-        visitStat.wins++;
-        localStat.losses++;
-        visitStat.tablePts += PTS_WIN;
-        localStat.tablePts += PTS_LOSS;
-      }
-    });
-
-    const zonasMap = {};
-    for(const s of map.values()){
-      const z = s.zona;
-      if(!zonasMap[z]) zonasMap[z] = [];
-      zonasMap[z].push(s);
-    }
-
-    Object.keys(zonasMap).forEach(z => zonasMap[z].sort(compareTeams));
-    return zonasMap;
-  }
-
-  function computeGlobalStandings(matches, categoriaFiltro){
-    const zonasMap = computeStandingsByZone(matches, categoriaFiltro);
-    const firsts = [], seconds = [], thirds = [], others = [];
-
-    Object.keys(zonasMap).forEach(z => {
-      const lista = zonasMap[z];
-      lista.forEach((t, idx) => {
-        const withMeta = { ...t, zoneName: z, posZona: idx + 1 };
-        if(idx === 0) firsts.push(withMeta);
-        else if(idx === 1) seconds.push(withMeta);
-        else if(idx === 2) thirds.push(withMeta);
-        else others.push(withMeta);
-      });
-    });
-
-    firsts.sort(compareTeams);
-    seconds.sort(compareTeams);
-    thirds.sort(compareTeams);
-    others.sort(compareTeams);
-
-    return [...firsts, ...seconds, ...thirds, ...others];
-  }
-
-  async function fetchRankingForRama(rama) {
-    const snap = await getDocs(collection(db, "matches"));
-    const all = [];
-
-    snap.forEach(docSnap => {
-      const d = docSnap.data();
-      all.push({
-        localName: d.localName || "",
-        visitanteName: d.visitanteName || "",
-        categoria: normalizeCategoria(d.categoria || d.category),
-        zona: normalizeZona(d.zona || d.zone),
-        estado: d.estado || "Pendiente",
-        setsData: d.setsData || []
-      });
-    });
-
-    return computeGlobalStandings(all, rama);
-  }
-
-  // ============================
-  // 5) ESTADO DEL CUADRO
-  // ============================
+  /* ============================
+   * 2) ESTADO DEL CUADRO
+   * ============================ */
 
   async function checkMainDrawStatus(rama) {
     mainDrawStatus.textContent = "Revisando cuadro...";
@@ -554,20 +367,44 @@
     const snap = await getDocs(q);
 
     if (snap.empty) {
-      mainDrawStatus.textContent = `No hay cuadro generado para ${rama === "F" ? "Femenino" : "Masculino"}.`;
+      mainDrawStatus.textContent = `No hay partidos de cuadro cargados para ${rama === "F" ? "Femenino" : "Masculino"}.\nImportá el CSV primero.`;
     } else {
-      mainDrawStatus.textContent = `Ya hay ${snap.size} partidos de cuadro generados para ${rama === "F" ? "Femenino" : "Masculino"}.`;
+      mainDrawStatus.textContent = `Hay ${snap.size} partidos de cuadro para ${rama === "F" ? "Femenino" : "Masculino"}.\nLuego podés asignar equipos de 1ra ronda según el ranking.`;
     }
   }
 
-  // ============================
-  // 6) GENERAR CUADRO DESDE RANKING
-  // ============================
+  /* ============================
+   * 3) IMPORTAR PARTIDOS DESDE CSV
+   * ============================ */
 
-  async function generateMainDrawFromRanking(rama) {
+  async function importMainDrawFromFile(file, rama) {
     try {
-      mainDrawStatus.textContent = "Verificando que no exista ya un cuadro...";
+      mainDrawStatus.textContent = "Leyendo archivo CSV...";
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+      if (lines.length < 2) {
+        mainDrawStatus.textContent = "El archivo no tiene datos (necesita encabezados y filas).";
+        return;
+      }
 
+      const headerLine = lines[0];
+      const sep = headerLine.includes(";") ? ";" : ",";
+      const headers = headerLine.split(sep).map(h => h.trim().toLowerCase());
+
+      const idxNum   = headers.findIndex(h => ["numero", "numpartido", "numero_partido", "#", "partido", "match", "drawmatchnumber"].includes(h));
+      const idxCruce = headers.findIndex(h => h.includes("cruce"));
+      const idxFecha = headers.findIndex(h => h.startsWith("fecha"));
+      const idxHora  = headers.findIndex(h => h.startsWith("hora"));
+      const idxCancha= headers.findIndex(h => h.startsWith("cancha"));
+
+      if (idxNum === -1 || idxHora === -1 || idxCancha === -1 || idxFecha === -1) {
+        mainDrawStatus.textContent =
+          "No se encontraron las columnas requeridas en el CSV.\nNecesita al menos: numeroPartido, cruce, fecha, hora, cancha.";
+        return;
+      }
+
+      // 1) Borrar partidos previos de este cuadro + rama
+      mainDrawStatus.textContent = "Eliminando partidos anteriores del cuadro para esta rama...";
       const existingQ = query(
         collection(db, "matches"),
         where("phase", "==", "maindraw"),
@@ -576,107 +413,205 @@
       const existingSnap = await getDocs(existingQ);
 
       if (!existingSnap.empty) {
-        mainDrawStatus.textContent = `⚠️ Ya existe un cuadro para ${rama === "F" ? "Femenino" : "Masculino"}. Borrá esos partidos manualmente si querés regenerarlo.`;
-        return;
+        const batchDel = writeBatch(db);
+        existingSnap.forEach(docSnap => {
+          batchDel.delete(docSnap.ref);
+        });
+        await batchDel.commit();
       }
 
-      mainDrawStatus.textContent = "Leyendo ranking general...";
-      const ranking = await fetchRankingForRama(rama);
+      // 2) Crear nuevos partidos según CSV + estructura del cuadro
+      mainDrawStatus.textContent = "Creando partidos del cuadro a partir del CSV...";
 
-      const isMasculino   = (rama === "M");
-      const requiredCount = isMasculino ? 32 : 16;
-      const labelRama     = isMasculino ? "MASCULINO" : "FEMENINO";
-
-      if (!ranking || ranking.length < requiredCount) {
-        mainDrawStatus.textContent = `❌ El ranking de ${labelRama} tiene menos de ${requiredCount} equipos (encontrados: ${ranking ? ranking.length : 0}).`;
-        return;
-      }
-
-      const topN = ranking.slice(0, requiredCount);
-
-      const nombres = topN
-        .map((t, idx) => `${idx+1}. ${t.teamName || t.equipo || "SinNombre"}`)
-        .join("\n");
-
-      const msgConfirm =
-        `Se va a generar el cuadro principal para ${labelRama} con los primeros ${requiredCount} equipos del ranking general:\n\n` +
-        `${nombres}\n\n` +
-        `¿Confirmás que querés generar el cuadro con estos equipos?`;
-
-      const ok = window.confirm(msgConfirm);
-      if (!ok) {
-        mainDrawStatus.textContent = "Operación cancelada. No se generó el cuadro.";
-        return;
-      }
-
-      const seedByNumber = {};
-      topN.forEach((item, idx) => {
-        const seedNum = idx + 1;
-        seedByNumber[seedNum] = {
-          teamId: item.teamId || null,
-          teamName: item.teamName || item.equipo || `Seed ${seedNum}`
-        };
-      });
-
-      const CONFIG       = isMasculino ? MAIN_DRAW_CONFIG_32 : MAIN_DRAW_CONFIG_F_16;
-      const SEED_MAP     = isMasculino ? FIRST_ROUND_SEED_MAP : FIRST_ROUND_SEED_MAP_F;
-      const MAX_MATCHES  = isMasculino ? 62 : 30;
-
-      mainDrawStatus.textContent = "Generando documentos de partidos del cuadro...";
-
-      const batch      = writeBatch(db);
       const matchesCol = collection(db, "matches");
+      const batch = writeBatch(db);
 
-      for (let matchNum = 1; matchNum <= MAX_MATCHES; matchNum++) {
-        const cfg = CONFIG[matchNum];
-        if (!cfg) continue;
+      let totalRows = 0;
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const parts = line.split(sep).map(x => x.trim());
+        const numStr = parts[idxNum] || "";
+        if (!numStr) continue;
+
+        const matchNum = parseInt(numStr, 10);
+        if (isNaN(matchNum)) continue;
+
+        const cfg = MAIN_DRAW_CONFIG_32[matchNum];
+        if (!cfg) {
+          // partido fuera del rango del cuadro
+          continue;
+        }
+
+        const cruceVal = idxCruce >= 0 ? (parts[idxCruce] || "") : "";
+        const fechaVal = parts[idxFecha] || "";
+        const horaVal  = parts[idxHora]  || "";
+        const canchaVal= parts[idxCancha] || "";
+
+        // Si no viene cruce, para 1ra ronda lo calculamos
+        let cruceFinal = cruceVal;
+        if (!cruceFinal) {
+          const seedMap = FIRST_ROUND_SEED_MAP.find(m => m.match === matchNum);
+          if (seedMap) {
+            cruceFinal = `${seedMap.seed1} vs ${seedMap.seed2}`;
+          }
+        }
 
         const docRef = doc(matchesCol);
-
         const baseData = {
           phase: "maindraw",
           rama,
           drawMatchNumber: matchNum,
+          numeroPartido: matchNum,
           roundLabel: cfg.roundLabel,
           status: "pending",
+          // equipos se asignan después con el ranking
           team1Id: null,
           team1Name: null,
           team2Id: null,
           team2Name: null,
+          cruce: cruceFinal || null,
+          cancha: canchaVal || null,
+          fecha: fechaVal || null,
+          hora: horaVal || null,
           slot1SourceFrom: cfg.slot1SourceFrom ?? null,
           slot1SourceResult: cfg.slot1SourceResult ?? null,
           slot2SourceFrom: cfg.slot2SourceFrom ?? null,
-          slot2SourceResult: cfg.slot2SourceResult ?? null
+          slot2SourceResult: cfg.slot2SourceResult ?? null,
+          setsData: []
         };
 
-        const seedMap = SEED_MAP.find(m => m.match === matchNum);
-        if (seedMap) {
-          const s1 = seedByNumber[seedMap.seed1];
-          const s2 = seedByNumber[seedMap.seed2];
-
-          if (s1) {
-            baseData.team1Id   = s1.teamId;
-            baseData.team1Name = s1.teamName;
-          }
-          if (s2) {
-            baseData.team2Id   = s2.teamId;
-            baseData.team2Name = s2.teamName;
-          }
-        }
-
         batch.set(docRef, baseData);
+        totalRows++;
       }
 
       await batch.commit();
 
-      mainDrawStatus.textContent = `✅ Se generó el cuadro principal de ${labelRama} con los primeros ${requiredCount} equipos del ranking. Podés verlo en bracket.html.`;
+      mainDrawStatus.textContent = `✅ Importación completa. Se crearon ${totalRows} partidos de cuadro para ${rama === "F" ? "Femenino" : "Masculino"}.\nAhora podés asignar los equipos de la 1ra ronda según el ranking.`;
 
     } catch (err) {
       console.error(err);
-      mainDrawStatus.textContent = "❌ Error generando el cuadro. Revisá la consola.";
+      mainDrawStatus.textContent = "❌ Error al importar el cuadro. Revisá la consola para más detalles.";
     }
   }
 
+  /* ============================
+   * 4) LEER RANKING GENERAL
+   * ============================ */
+
+  // ⚠️ Ajustá este nombre y campos a tu estructura real de ranking
+  async function fetchRankingForRama(rama) {
+    const q = query(
+      collection(db, "rankingGeneral"),
+      where("rama", "==", rama)
+    );
+
+    const snap = await getDocs(q);
+    const items = snap.docs.map(d => d.data());
+
+    items.sort((a, b) => (a.position || 9999) - (b.position || 9999));
+    return items;
+  }
+
+  /* ============================
+   * 5) ASIGNAR EQUIPOS EN 1RA RONDA DESDE RANKING
+   * ============================ */
+
+  async function assignTeamsFromRanking(rama) {
+    try {
+      mainDrawStatus.textContent = "Verificando que existan partidos de cuadro...";
+
+      // 1) Traer todos los partidos de cuadro de esta rama
+      const q = query(
+        collection(db, "matches"),
+        where("phase", "==", "maindraw"),
+        where("rama", "==", rama)
+      );
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        mainDrawStatus.textContent = `❌ No hay partidos de cuadro para ${rama === "F" ? "Femenino" : "Masculino"}.\nPrimero importá el cuadro con el CSV.`;
+        return;
+      }
+
+      // Mapa nroPartido -> docRef
+      const matchByNumber = {};
+      snap.forEach(docSnap => {
+        const data = docSnap.data();
+        const num = data.drawMatchNumber || data.numeroPartido;
+        if (!num) return;
+        matchByNumber[num] = docSnap.ref;
+      });
+
+      // Verificar que existan al menos los 16 partidos de 1ra ronda
+      const missingFirstRound = FIRST_ROUND_SEED_MAP
+        .filter(m => !matchByNumber[m.match])
+        .map(m => m.match);
+
+      if (missingFirstRound.length > 0) {
+        mainDrawStatus.textContent =
+          "❌ Faltan algunos partidos de 1ra ronda en el cuadro importado.\n" +
+          "No se encontraron estos números de partido: " + missingFirstRound.join(", ");
+        return;
+      }
+
+      // 2) Traer ranking
+      mainDrawStatus.textContent = "Leyendo ranking general...";
+      const ranking = await fetchRankingForRama(rama);
+      if (!ranking || ranking.length < 32) {
+        mainDrawStatus.textContent = `❌ El ranking de ${rama === "F" ? "Femenino" : "Masculino"} tiene menos de 32 equipos (encontrados: ${ranking.length || 0}).`;
+        return;
+      }
+
+      const top32 = ranking.slice(0, 32);
+      const seedByNumber = {};
+      top32.forEach((item, idx) => {
+        const seedNum = idx + 1;
+        seedByNumber[seedNum] = {
+          teamId: item.teamId || null,
+          teamName: item.teamName || `Seed ${seedNum}`
+        };
+      });
+
+      // 3) Actualizar solo 1ra ronda con los equipos
+      mainDrawStatus.textContent = "Asignando equipos de la 1ra ronda según el ranking...";
+
+      const batch = writeBatch(db);
+
+      FIRST_ROUND_SEED_MAP.forEach(map => {
+        const ref = matchByNumber[map.match];
+        if (!ref) return;
+
+        const s1 = seedByNumber[map.seed1];
+        const s2 = seedByNumber[map.seed2];
+
+        const updateData = {};
+        if (s1) {
+          updateData.team1Id = s1.teamId;
+          updateData.team1Name = s1.teamName;
+        }
+        if (s2) {
+          updateData.team2Id = s2.teamId;
+          updateData.team2Name = s2.teamName;
+        }
+
+        // cuando se asignan, el partido sigue pendiente
+        updateData.status = "pending";
+
+        batch.update(ref, updateData);
+      });
+
+      await batch.commit();
+
+      mainDrawStatus.textContent = `✅ Equipos asignados en los 16 partidos de 1ra ronda para ${rama === "F" ? "Femenino" : "Masculino"}.\nEl resto del cuadro se irá completando según se vayan cerrando los partidos.`;
+
+    } catch (err) {
+      console.error(err);
+      mainDrawStatus.textContent = "❌ Error al asignar equipos desde el ranking. Revisá la consola para más detalles.";
+    }
+  }
 </script>
 
 </body>
