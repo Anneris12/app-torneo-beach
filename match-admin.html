@@ -987,88 +987,97 @@
     setsChips.innerHTML = html;
   }
 
-  function renderPanel() {
-    if (!currentMatchData) return;
+ function renderPanel() {
+  if (!currentMatchData) return;
 
-    document.getElementById("localPoints").textContent = currentMatchData.puntosLocal ?? 0;
-    document.getElementById("visitPoints").textContent = currentMatchData.puntosVisitante ?? 0;
+  // Tomar nombres compatibles con ambos formatos:
+  // - Zonas: localName / visitanteName
+  // - Cuadro: team1Name / team2Name
+  const localFullName  = currentMatchData.localName     || currentMatchData.team1Name     || "";
+  const visitFullName  = currentMatchData.visitanteName || currentMatchData.team2Name     || "";
 
-    const [localP1, localP2] = splitPlayers(currentMatchData.localName);
-    const [visitP1, visitP2] = splitPlayers(currentMatchData.visitanteName);
+  document.getElementById("localPoints").textContent = currentMatchData.puntosLocal ?? 0;
+  document.getElementById("visitPoints").textContent = currentMatchData.puntosVisitante ?? 0;
 
-    document.getElementById("localPlayer1Name").textContent = localP1;
-    document.getElementById("localPlayer2Name").textContent = localP2;
-    document.getElementById("visitPlayer1Name").textContent = visitP1;
-    document.getElementById("visitPlayer2Name").textContent = visitP2;
+  const [localP1, localP2]   = splitPlayers(localFullName);
+  const [visitP1, visitP2]   = splitPlayers(visitFullName);
 
-    document.getElementById("localStarterName1").textContent = localP1;
-    document.getElementById("localStarterName2").textContent = localP2;
-    document.getElementById("visitStarterName1").textContent = visitP1;
-    document.getElementById("visitStarterName2").textContent = visitP2;
+  // Nombres en el panel grande
+  document.getElementById("localPlayer1Name").textContent  = localP1 || "Jugador 1";
+  document.getElementById("localPlayer2Name").textContent  = localP2 || "Jugador 2";
+  document.getElementById("visitPlayer1Name").textContent  = visitP1 || "Jugador 1";
+  document.getElementById("visitPlayer2Name").textContent  = visitP2 || "Jugador 2";
 
-    if (typeof currentMatchData.numeroPartido === "number") {
-      matchNumberLabel.textContent = `Partido #${currentMatchData.numeroPartido}`;
-    } else {
-      matchNumberLabel.textContent = "Partido: —";
-    }
+  // Nombres en los radios de 1er saque
+  document.getElementById("localStarterName1").textContent = localP1 || "Jugador 1";
+  document.getElementById("localStarterName2").textContent = localP2 || "Jugador 2";
+  document.getElementById("visitStarterName1").textContent = visitP1 || "Jugador 1";
+  document.getElementById("visitStarterName2").textContent = visitP2 || "Jugador 2";
 
-    const cancha = currentMatchData.cancha || "—";
-    const rawHora = currentMatchData.hora || "";
-    const horaFormateada = normalizeHora(rawHora);
-    infoExtraLabel.textContent = `Cancha: ${cancha} · Hora: ${horaFormateada || "—"}`;
-
-    const estado = currentMatchData.estado || "Pendiente";
-    estadoLabel.textContent = `Estado: ${estado}`;
-
-    btnSetPlaying.disabled = false;
-    btnSetPlaying.style.background = "#ffe36a";
-    btnSetPlaying.style.color = "black";
-    btnSetPlaying.textContent = "🔥 Marcar en juego";
-
-    if (estado === "En juego") {
-      btnSetPlaying.disabled = true;
-      btnSetPlaying.style.background = "#7cffc1";
-      btnSetPlaying.style.color = "black";
-      btnSetPlaying.textContent = "✅ En juego";
-    } else if (estado === "Finalizado") {
-      btnSetPlaying.disabled = true;
-      btnSetPlaying.style.background = "#7cffc1";
-      btnSetPlaying.style.color = "black";
-      btnSetPlaying.textContent = "🏁 Partido finalizado";
-    }
-
-    const setsMode = currentMatchData.setsMode || getSetsModeFromInputs();
-    setSetsModeInputs(setsMode);
-
-    if (estado === "Pendiente") {
-      setSetsModeDisabled(false);
-    } else {
-      setSetsModeDisabled(true);
-    }
-
-    const localFS = currentMatchData.localFirstServer || 1;
-    const visitFS = currentMatchData.visitFirstServer || 1;
-    setRadioValue("localStarter", localFS);
-    setRadioValue("visitStarter", visitFS);
-
-    if (estado === "En juego" || estado === "Finalizado") {
-      if (!isEditingFirstServe) {
-        setFirstServeInputsDisabled(true);
-      }
-      btnEditFirstServe.disabled = (estado === "Finalizado");
-      btnEditFirstServe.textContent = isEditingFirstServe
-        ? "Bloquear 1er saque"
-        : "Editar 1er saque";
-    } else {
-      isEditingFirstServe = false;
-      setFirstServeInputsDisabled(false);
-      btnEditFirstServe.disabled = false;
-      btnEditFirstServe.textContent = "Editar 1er saque";
-    }
-
-    renderServeIcons();
-    renderSetsInfo();
+  if (typeof currentMatchData.numeroPartido === "number") {
+    matchNumberLabel.textContent = `Partido #${currentMatchData.numeroPartido}`;
+  } else {
+    matchNumberLabel.textContent = "Partido: —";
   }
+
+  const cancha = currentMatchData.cancha || "—";
+  const rawHora = currentMatchData.hora || "";
+  const horaFormateada = normalizeHora(rawHora);
+  infoExtraLabel.textContent = `Cancha: ${cancha} · Hora: ${horaFormateada || "—"}`;
+
+  const estado = currentMatchData.estado || "Pendiente";
+  estadoLabel.textContent = `Estado: ${estado}`;
+
+  btnSetPlaying.disabled = false;
+  btnSetPlaying.style.background = "#ffe36a";
+  btnSetPlaying.style.color = "black";
+  btnSetPlaying.textContent = "🔥 Marcar en juego";
+
+  if (estado === "En juego") {
+    btnSetPlaying.disabled = true;
+    btnSetPlaying.style.background = "#7cffc1";
+    btnSetPlaying.style.color = "black";
+    btnSetPlaying.textContent = "✅ En juego";
+  } else if (estado === "Finalizado") {
+    btnSetPlaying.disabled = true;
+    btnSetPlaying.style.background = "#7cffc1";
+    btnSetPlaying.style.color = "black";
+    btnSetPlaying.textContent = "🏁 Partido finalizado";
+  }
+
+  const setsMode = currentMatchData.setsMode || getSetsModeFromInputs();
+  setSetsModeInputs(setsMode);
+
+  if (estado === "Pendiente") {
+    setSetsModeDisabled(false);
+  } else {
+    setSetsModeDisabled(true);
+  }
+
+  const localFS = currentMatchData.localFirstServer || 1;
+  const visitFS = currentMatchData.visitFirstServer || 1;
+  setRadioValue("localStarter", localFS);
+  setRadioValue("visitStarter", visitFS);
+
+  if (estado === "En juego" || estado === "Finalizado") {
+    if (!isEditingFirstServe) {
+      setFirstServeInputsDisabled(true);
+    }
+    btnEditFirstServe.disabled = (estado === "Finalizado");
+    btnEditFirstServe.textContent = isEditingFirstServe
+      ? "Bloquear 1er saque"
+      : "Editar 1er saque";
+  } else {
+    isEditingFirstServe = false;
+    setFirstServeInputsDisabled(false);
+    btnEditFirstServe.disabled = false;
+    btnEditFirstServe.textContent = "Editar 1er saque";
+  }
+
+  renderServeIcons();
+  renderSetsInfo();
+}
+
 
   btnEditFirstServe.addEventListener("click", () => {
     if (!currentMatchData) return;

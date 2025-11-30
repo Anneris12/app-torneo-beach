@@ -824,97 +824,119 @@ async function fetchRankingForRama(rama) {
    * 6) ASIGNAR EQUIPOS EN 1RA RONDA
    * ============================ */
 
-  async function assignTeamsFromRanking(rama) {
-    try {
-      mainDrawStatus.textContent = "Verificando que existan partidos de cuadro...";
+ async function assignTeamsFromRanking(rama) {
+  try {
+    mainDrawStatus.textContent = "Verificando que existan partidos de cuadro...";
 
-      const q = query(
-        collection(db, "matches"),
-        where("phase", "==", "maindraw"),
-        where("rama", "==", rama)
-      );
-      const snap = await getDocs(q);
+    const q = query(
+      collection(db, "matches"),
+      where("phase", "==", "maindraw"),
+      where("rama", "==", rama)
+    );
+    const snap = await getDocs(q);
 
-      if (snap.empty) {
-        mainDrawStatus.textContent =
-          `❌ No hay partidos de cuadro para ${rama === "F" ? "Femenino" : "Masculino"}.\nPrimero importá el cuadro con el CSV.`;
-        return;
-      }
-
-      const matchByNumber = {};
-      snap.forEach(docSnap => {
-        const data = docSnap.data();
-        const num = data.drawMatchNumber || data.numeroPartido;
-        if (!num) return;
-        matchByNumber[num] = docSnap.ref;
-      });
-
-      const missingFirstRound = FIRST_ROUND_SEED_MAP
-        .filter(m => !matchByNumber[m.match])
-        .map(m => m.match);
-
-      if (missingFirstRound.length > 0) {
-        mainDrawStatus.textContent =
-          "❌ Faltan algunos partidos de 1ra ronda en el cuadro importado.\n" +
-          "No se encontraron estos números de partido: " + missingFirstRound.join(", ");
-        return;
-      }
-
-      mainDrawStatus.textContent = "Leyendo ranking general...";
-      const ranking = await fetchRankingForRama(rama);
-      if (!ranking || ranking.length < 32) {
-        mainDrawStatus.textContent =
-          `❌ El ranking de ${rama === "F" ? "Femenino" : "Masculino"} tiene menos de 32 equipos (encontrados: ${ranking.length || 0}).`;
-        return;
-      }
-
-      const top32 = ranking.slice(0, 32);
-      const seedByNumber = {};
-      top32.forEach((item, idx) => {
-        const seedNum = idx + 1;
-        seedByNumber[seedNum] = {
-          teamId: item.teamId || null,
-          teamName: item.teamName || `Seed ${seedNum}`
-        };
-      });
-
-      mainDrawStatus.textContent = "Asignando equipos de la 1ra ronda según el ranking...";
-
-      const batch = writeBatch(db);
-
-      FIRST_ROUND_SEED_MAP.forEach(map => {
-        const ref = matchByNumber[map.match];
-        if (!ref) return;
-
-        const s1 = seedByNumber[map.seed1];
-        const s2 = seedByNumber[map.seed2];
-
-        const updateData = {};
-        if (s1) {
-          updateData.team1Id = s1.teamId;
-          updateData.team1Name = s1.teamName;
-        }
-        if (s2) {
-          updateData.team2Id = s2.teamId;
-          updateData.team2Name = s2.teamName;
-        }
-
-        updateData.status = "pending";
-
-        batch.update(ref, updateData);
-      });
-
-      await batch.commit();
-
+    if (snap.empty) {
       mainDrawStatus.textContent =
-        `✅ Equipos asignados en los 16 partidos de 1ra ronda para ${rama === "F" ? "Femenino" : "Masculino"}.\n` +
-        "El resto del cuadro se irá completando según se vayan cerrando los partidos.";
-
-    } catch (err) {
-      console.error(err);
-      mainDrawStatus.textContent = "❌ Error al asignar equipos desde el ranking. Revisá la consola para más detalles.";
+        `❌ No hay partidos de cuadro para ${rama === "F" ? "Femenino" : "Masculino"}.\nPrimero importá el cuadro con el CSV.`;
+      return;
     }
+
+    const matchByNumber = {};
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      const num = data.drawMatchNumber || data.numeroPartido;
+      if (!num) return;
+      matchByNumber[num] = docSnap.ref;
+    });
+
+    const missingFirstRound = FIRST_ROUND_SEED_MAP
+      .filter(m => !matchByNumber[m.match])
+      .map(m => m.match);
+
+    if (missingFirstRound.length > 0) {
+      mainDrawStatus.textContent =
+        "❌ Faltan algunos partidos de 1ra ronda en el cuadro importado.\n" +
+        "No se encontraron estos números de partido: " + missingFirstRound.join(", ");
+      return;
+    }
+
+    mainDrawStatus.textContent = "Calculando ranking...";
+
+    const ranking = await fetchRankingForRama(rama);
+
+    if (!ranking || ranking.length === 0) {
+      mainDrawStatus.textContent =
+        `❌ El ranking de ${rama === "F" ? "Femenino" : "Masculino"} no tiene equipos cargados.`;
+      return;
+    }
+
+    // Antes exigíamos 32, ahora usamos hasta 32, pero puede haber 16, 20, etc.
+    const maxSeeds = Math.min(ranking.length, 32);
+    const seedByNumber = {};
+
+    for (let idx = 0; idx < maxSeeds; idx++) {
+      const seedNum = idx + 1;
+      const item = ranking[idx];
+      seedByNumber[seedNum] = {
+        teamId: item.teamId || null,
+        teamName: item.teamName || `Seed ${seedNum}`
+      };
+    }
+
+    mainDrawStatus.textContent =
+      `Asignando equipos de la 1ra ronda según el ranking (${maxSeeds} equipos disponibles)...`;
+
+    const batch = writeBatch(db);
+    let partidosActualizados = 0;
+
+    FIRST_ROUND_SEED_MAP.forEach(map => {
+      const ref = matchByNumber[map.match];
+      if (!ref) return;
+
+      const s1 = seedByNumber[map.seed1];
+      const s2 = seedByNumber[map.seed2];
+
+      // Si para este cruce no tenemos ningún seed, lo salteamos
+      if (!s1 && !s2) return;
+
+      const updateData = {};
+
+      if (s1) {
+        updateData.team1Id = s1.teamId;
+        updateData.team1Name = s1.teamName;
+      } else {
+        updateData.team1Id = null;
+        updateData.team1Name = null;
+      }
+
+      if (s2) {
+        updateData.team2Id = s2.teamId;
+        updateData.team2Name = s2.teamName;
+      } else {
+        updateData.team2Id = null;
+        updateData.team2Name = null;
+      }
+
+      updateData.status = "pending";
+
+      batch.update(ref, updateData);
+      partidosActualizados++;
+    });
+
+    await batch.commit();
+
+    mainDrawStatus.textContent =
+      `✅ Equipos asignados en la 1ra ronda para ${rama === "F" ? "Femenino" : "Masculino"}.\n` +
+      `Ranking disponible: ${ranking.length} equipos, usados: ${maxSeeds}.\n` +
+      `Partidos de 1ra ronda actualizados: ${partidosActualizados}.`;
+
+  } catch (err) {
+    console.error(err);
+    mainDrawStatus.textContent =
+      "❌ Error al asignar equipos desde el ranking. Revisá la consola para más detalles.";
   }
+}
+
 </script>
 
 </body>
