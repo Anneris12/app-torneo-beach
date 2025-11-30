@@ -765,26 +765,38 @@
     updatePhaseUI(); // esto también llama a renderMatchList
   }
 
-  function buildRoundOptions() {
-    selRound.innerHTML = `<option value="all">Todas</option>`;
+function buildRoundOptions() {
+  selRound.innerHTML = `<option value="all">Todas</option>`;
 
-    const roundsSet = new Set();
+  const roundsSet = new Set();
 
-    allMatches.forEach(m => {
-      const phase = (m.phase || "").toString().trim().toLowerCase();
-      if (phase === "maindraw") {
-        const r = m.roundLabel || m.ronda || m.round || "";
-        if (r) roundsSet.add(r);
-      }
-    });
+  allMatches.forEach(m => {
+    if (isMainDraw(m)) {
+      const r =
+        m.roundLabel ||
+        m.ronda ||
+        m.round ||
+        m.roundLabelCSV ||
+        "";
+      if (r) roundsSet.add(r);
+    }
+  });
 
-    Array.from(roundsSet).sort().forEach(r => {
-      const opt = document.createElement("option");
-      opt.value = r;
-      opt.textContent = r;
-      selRound.appendChild(opt);
-    });
-  }
+  Array.from(roundsSet).sort().forEach(r => {
+    const opt = document.createElement("option");
+    opt.value = r;
+    opt.textContent = r;
+    selRound.appendChild(opt);
+  });
+
+  // Para debug visual en consola (te va a ayudar si algo sigue raro)
+  console.log(
+    "Partidos totales:", allMatches.length,
+    "| Cuadro:", allMatches.filter(isMainDraw).length,
+    "| Grupos:", allMatches.filter(m => !isMainDraw(m)).length
+  );
+}
+
 
   function updatePhaseUI() {
     const phase = selPhase.value; // groups | maindraw
@@ -825,15 +837,17 @@
     }
 
     // Fase según campo phase
-    list = list.filter(m => {
-      const phase = (m.phase || "").toString().trim().toLowerCase();
-      if (phaseFilter === "maindraw") {
-        return phase === "maindraw";
-      } else {
-        // groups: todo lo que NO sea maindraw
-        return phase !== "maindraw";
-      }
-    });
+// Fase: usar helper isMainDraw
+list = list.filter(m => {
+  const md = isMainDraw(m);
+  if (phaseFilter === "maindraw") {
+    return md;
+  } else {
+    // groups: todo lo que NO sea del cuadro
+    return !md;
+  }
+});
+
 
     // Ronda solo en maindraw
     if (phaseFilter === "maindraw" && selRound.value !== "all") {
@@ -1217,6 +1231,21 @@
   };
 
   loadMatches();
+  
+  // Detectar si un partido es del cuadro principal (maindraw)
+function isMainDraw(m) {
+  if (!m) return false;
+
+  const phase = (m.phase ?? "").toString().trim().toLowerCase();
+  if (phase === "maindraw") return true;
+
+  // Por las dudas, si viene con campos propios del cuadro,
+  // también lo consideramos maindraw:
+  if (m.roundLabel || m.roundLabelCSV || m.drawMatchNumber) return true;
+
+  return false;
+}
+
 </script>
 
 </body>
