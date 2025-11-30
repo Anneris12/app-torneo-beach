@@ -624,7 +624,7 @@
     }
   }
   
-  async function exportMainDrawToCSV(rama) {
+async function exportMainDrawToCSV(rama) {
   try {
     mainDrawStatus.textContent = "Exportando partidos del cuadro…";
 
@@ -642,9 +642,9 @@
       return;
     }
 
-    // Construimos matriz de datos
+    // Encabezado con ronda
     const rows = [
-      ["numeroPartido", "cruce", "fecha", "hora", "cancha"]
+      ["numeroPartido", "ronda", "cruce", "fecha", "hora", "cancha"]
     ];
 
     const items = snap.docs
@@ -654,6 +654,7 @@
     items.forEach(m => {
       rows.push([
         m.numeroPartido || "",
+        m.roundLabel || "",         // 👈 acá va la ronda/fase
         m.cruce || "",
         m.fecha || "",
         m.hora || "",
@@ -661,12 +662,10 @@
       ]);
     });
 
-    // Convertir a CSV
     const csvContent = rows
       .map(r => r.map(v => String(v)).join(";"))
       .join("\n");
 
-    // Descargar archivo
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
 
@@ -684,6 +683,7 @@
     mainDrawStatus.textContent = "❌ Error exportando el cuadro.";
   }
 }
+
 
 </script>
 
