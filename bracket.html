@@ -2,397 +2,187 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Cuadro Doble Eliminación</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    :root {
-      --bg1: #051937;
-      --bg2: #004d7a;
-      --bg3: #00bf72;
-      --bg4: #a8eb12;
-      --card-bg: rgba(255,255,255,0.15);
-      --card-blur: blur(18px);
-      --radius: 16px;
-      --text-main: #fff;
-      --text-dark: #1f2933;
-      --text-soft: #6b7280;
-    }
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cuadro Principal - Torneo</title>
 
-    * {
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
       margin: 0;
       padding: 0;
-      box-sizing: border-box;
-      font-family: system-ui, sans-serif;
     }
 
-    body {
-      min-height: 100vh;
-      background: linear-gradient(135deg, var(--bg1), var(--bg2), var(--bg3), var(--bg4));
-      background-size: 200% 200%;
-      animation: bgMove 16s ease infinite;
-      padding: 20px;
-      color: var(--text-main);
-    }
-
-    @keyframes bgMove {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-
-    h1 {
+    header {
+      background: #333;
+      color: white;
       text-align: center;
-      margin-bottom: 16px;
-      font-size: 26px;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
+      padding: 10px;
+      font-size: 22px;
     }
 
-    .subtitle {
-      text-align: center;
-      font-size: 13px;
-      opacity: 0.9;
-      margin-bottom: 14px;
-    }
-
-    .bracket-card {
-      background: var(--card-bg);
-      backdrop-filter: var(--card-blur);
-      border-radius: var(--radius);
-      padding: 20px;
-      margin-bottom: 26px;
-      border: 1px solid rgba(255,255,255,0.25);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-    }
-
-    .bracket-title {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 14px;
-      text-align: center;
+    .selector {
+      background: white;
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
       display: flex;
-      align-items: center;
       justify-content: center;
-      gap: 8px;
-    }
-
-    .rounds-wrapper {
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: minmax(220px, 1fr);
-      gap: 12px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-    }
-
-    .round-column {
-      min-width: 220px;
-    }
-
-    .round-name {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: rgba(255,255,255,0.9);
-      margin-bottom: 8px;
-      text-align: center;
-    }
-
-    .matches-column {
-      display: flex;
-      flex-direction: column;
       gap: 10px;
     }
 
+    .round-block {
+      margin: 20px;
+      background: white;
+      padding: 10px 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.15);
+    }
+
+    .round-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
     .match {
-      background: rgba(255,255,255,0.9);
-      border-radius: 12px;
-      padding: 8px 9px;
-      color: var(--text-dark);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      font-size: 13px;
+      background: #fafafa;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 8px;
     }
 
-    .match-meta {
-      font-size: 11px;
-      color: var(--text-soft);
-      margin-bottom: 4px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .team {
-      padding: 4px 6px;
-      border-radius: 6px;
-      background: #f3f4f6;
-      margin-bottom: 4px;
-      font-size: 13px;
-      font-weight: 600;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .team:last-child {
-      margin-bottom: 0;
-    }
-
-    .team span.score {
-      font-weight: 700;
-      margin-left: 6px;
-      min-width: 18px;
-      text-align: right;
-    }
-
-    .team.empty {
-      opacity: 0.6;
-      font-weight: 500;
-    }
-
-    .status-pill {
-      padding: 1px 6px;
-      border-radius: 999px;
-      background: #e5e7eb;
-      color: #374151;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
-    .status-live {
-      background: #fee2e2;
-      color: #b91c1c;
-    }
-
-    .status-final {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .status-pending {
-      background: #e0f2fe;
-      color: #0369a1;
-    }
-
-    .loading {
-      text-align: center;
-      font-size: 13px;
-      opacity: 0.85;
-      padding: 10px 0;
-    }
-
-    a.back {
-      display: inline-block;
-      margin-top: 6px;
-      font-size: 13px;
-      color: #fef3c7;
-      text-decoration: none;
-      border-bottom: 1px dotted rgba(254,243,199,0.7);
-    }
-
-    a.back:hover {
-      border-bottom-style: solid;
-    }
-
-    @media (max-width: 700px) {
-      h1 {
-        font-size: 22px;
-      }
-      .bracket-card {
-        padding: 16px;
-      }
+    .match p {
+      margin: 4px 0;
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <h1>Cuadro de Doble Eliminación</h1>
-    <p class="subtitle">Se actualiza automáticamente según los resultados cargados en el panel de admin.</p>
+<header>
+  Cuadro Principal
+</header>
 
-    <!-- WINNER BRACKET -->
-    <section class="bracket-card">
-      <div class="bracket-title">🏆 Winner Bracket</div>
-      <div id="winnerBracket" class="rounds-wrapper">
-        <div class="loading">Cargando partidos del cuadro principal...</div>
-      </div>
-    </section>
+<div class="selector">
+  <select id="ramaSelector">
+    <option value="F">Femenino</option>
+    <option value="M">Masculino</option>
+  </select>
+</div>
 
-    <!-- LOSER BRACKET -->
-    <section class="bracket-card">
-      <div class="bracket-title">💥 Loser Bracket</div>
-      <div id="loserBracket" class="rounds-wrapper">
-        <div class="loading">Cargando partidos del cuadro de perdedores...</div>
-      </div>
-    </section>
+<div id="cuadroContainer"></div>
 
-    <!-- GRAN FINAL -->
-    <section class="bracket-card">
-      <div class="bracket-title">🥇 Gran Final</div>
-      <div id="finalBracket" class="rounds-wrapper">
-        <div class="loading">Cargando partidos de la final...</div>
-      </div>
-      <a href="index.html" class="back">← Volver al inicio</a>
-    </section>
-  </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-  <script>
-    // 👉 Copiá el MISMO config que ya usás en live / results / admin
-    const firebaseConfig = {
-      // TU CONFIG AQUÍ
-    };
+<!-- FIREBASE + LÓGICA DEL CUADRO -->
+<script type="module">
 
-    // Evitar inicializar dos veces si ya existe
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
+  // ============================
+  // Firebase INIT
+  // ============================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { 
+    getFirestore, 
+    collection, 
+    query, 
+    where, 
+    getDocs 
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
+    authDomain: "torneo-beach.firebaseapp.com",
+    projectId: "torneo-beach",
+    storageBucket: "torneo-beach.firebasestorage.app",
+    messagingSenderId: "21136645638",
+    appId: "1:21136645638:web:52c3b06affc2ee151eed87"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+
+
+  // ============================
+  // ELEMENTOS DEL DOM
+  // ============================
+  const cuadroContainer = document.getElementById("cuadroContainer");
+  const ramaSelector    = document.getElementById("ramaSelector");
+
+
+  ramaSelector.addEventListener("change", loadCuadro);
+  window.addEventListener("DOMContentLoaded", loadCuadro);
+
+
+
+  // ============================
+  // CARGAR CUADRO DESDE FIRESTORE
+  // ============================
+  async function loadCuadro() {
+
+    const rama = ramaSelector.value;
+
+    cuadroContainer.innerHTML = `
+      <p style="padding:20px; text-align:center;">Cargando cuadro...</p>
+    `;
+
+    // Traer solo partidos del MAIN DRAW
+    const q = query(
+      collection(db, "matches"),
+      where("phase", "==", "maindraw"),
+      where("rama", "==", rama)
+    );
+
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      cuadroContainer.innerHTML = `
+        <p style="padding:20px; text-align:center;">
+          🟡 Todavía no se generó el cuadro principal para <b>${rama === "F" ? "Femenino" : "Masculino"}</b>.
+        </p>`;
+      return;
     }
 
-    const db = firebase.firestore();
+    // Convertir docs a array ordenado
+    const matches = snap.docs.map(d => d.data());
 
-    /**
-     * Dibuja un bracket en un contenedor según los partidos recibidos
-     * bracketMatches: array de partidos de 1 tipo de cuadro (winner/loser/final)
-     * containerId: id del div donde se va a renderizar
-     */
-    function renderBracket(bracketMatches, containerId) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = "";
-
-      if (!bracketMatches.length) {
-        container.innerHTML = '<div class="loading">No hay partidos cargados todavía para este cuadro.</div>';
-        return;
-      }
-
-      // Agrupar por rondaNombre
-      const roundsMap = {};
-      bracketMatches.forEach(m => {
-        const rn = m.rondaNombre || "Ronda";
-        if (!roundsMap[rn]) {
-          roundsMap[rn] = {
-            rondaNombre: rn,
-            rondaOrden: m.rondaOrden ?? 99,
-            matches: []
-          };
-        }
-        roundsMap[rn].matches.push(m);
-      });
-
-      // Ordenar rondas por rondaOrden
-      const rounds = Object.values(roundsMap).sort((a, b) => (a.rondaOrden ?? 99) - (b.rondaOrden ?? 99));
-
-      rounds.forEach(round => {
-        const col = document.createElement("div");
-        col.className = "round-column";
-
-        const title = document.createElement("div");
-        title.className = "round-name";
-        title.textContent = round.rondaNombre;
-        col.appendChild(title);
-
-        const matchesWrapper = document.createElement("div");
-        matchesWrapper.className = "matches-column";
-
-        // Ordenar partidos por partidoOrden
-        const sortedMatches = round.matches.sort((a, b) => (a.partidoOrden ?? 99) - (b.partidoOrden ?? 99));
-
-        sortedMatches.forEach(match => {
-          const card = document.createElement("div");
-          card.className = "match";
-
-          // Meta: id corto + estado
-          const meta = document.createElement("div");
-          meta.className = "match-meta";
-
-          const leftMeta = document.createElement("span");
-          leftMeta.textContent = match.codigo || match.id?.slice(0,6) || "Partido";
-
-          const rightMeta = document.createElement("span");
-          const pill = document.createElement("span");
-          pill.classList.add("status-pill");
-
-          const estado = (match.estado || "").toLowerCase();
-          if (estado === "finalizado" || estado === "terminado") {
-            pill.classList.add("status-final");
-            pill.textContent = "Finalizado";
-          } else if (estado === "en juego" || estado === "vivo" || estado === "live") {
-            pill.classList.add("status-live");
-            pill.textContent = "En juego";
-          } else {
-            pill.classList.add("status-pending");
-            pill.textContent = "Pendiente";
-          }
-
-          rightMeta.appendChild(pill);
-          meta.appendChild(leftMeta);
-          meta.appendChild(rightMeta);
-          card.appendChild(meta);
-
-          // Equipos
-          const local = match.localNombre || "Por definir";
-          const visitante = match.visitanteNombre || "Por definir";
-
-          const localScore = (match.localScore ?? "") === "" ? "-" : match.localScore;
-          const visitanteScore = (match.visitanteScore ?? "") === "" ? "-" : match.visitanteScore;
-
-          const team1 = document.createElement("div");
-          team1.className = "team" + (local === "Por definir" ? " empty" : "");
-          team1.innerHTML = `<span>${local}</span><span class="score">${localScore}</span>`;
-
-          const team2 = document.createElement("div");
-          team2.className = "team" + (visitante === "Por definir" ? " empty" : "");
-          team2.innerHTML = `<span>${visitante}</span><span class="score">${visitanteScore}</span>`;
-
-          card.appendChild(team1);
-          card.appendChild(team2);
-
-          matchesWrapper.appendChild(card);
-        });
-
-        col.appendChild(matchesWrapper);
-        container.appendChild(col);
-      });
+    // Agrupar por roundLabel
+    const porRonda = {};
+    for (const m of matches) {
+      if (!porRonda[m.roundLabel]) porRonda[m.roundLabel] = [];
+      porRonda[m.roundLabel].push(m);
     }
 
-    // Escuchar en tiempo real los partidos de fase "cuadro"
-    db.collection("matches")
-      .where("fase", "==", "cuadro")   // 👈 asegurate de guardar así los partidos de eliminación
-      .onSnapshot((snapshot) => {
-        const winnerMatches = [];
-        const loserMatches  = [];
-        const finalMatches  = [];
+    // Ordenar cada ronda por drawMatchNumber
+    for (const r in porRonda) {
+      porRonda[r].sort((a, b) => a.drawMatchNumber - b.drawMatchNumber);
+    }
 
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const match = { id: doc.id, ...data };
-          const cuadro = (data.cuadro || "winner").toLowerCase();
+    cuadroContainer.innerHTML = "";
 
-          if (cuadro === "winner") {
-            winnerMatches.push(match);
-          } else if (cuadro === "loser" || cuadro === "perdedores") {
-            loserMatches.push(match);
-          } else if (cuadro === "final" || cuadro === "grand_final") {
-            finalMatches.push(match);
-          }
-        });
+    // Renderizar rondas
+    for (const [ronda, lista] of Object.entries(porRonda)) {
 
-        renderBracket(winnerMatches, "winnerBracket");
-        renderBracket(loserMatches, "loserBracket");
-        renderBracket(finalMatches, "finalBracket");
-      }, (error) => {
-        console.error("Error al obtener partidos del cuadro:", error);
-        document.getElementById("winnerBracket").innerHTML = '<div class="loading">Error al cargar los partidos.</div>';
-        document.getElementById("loserBracket").innerHTML  = '<div class="loading">Error al cargar los partidos.</div>';
-        document.getElementById("finalBracket").innerHTML  = '<div class="loading">Error al cargar los partidos.</div>';
+      const block = document.createElement("div");
+      block.className = "round-block";
+
+      block.innerHTML += `<div class="round-title">${ronda}</div>`;
+
+      lista.forEach(m => {
+        block.innerHTML += `
+          <div class="match">
+            <p><b>Partido #${m.drawMatchNumber}</b></p>
+            <p>${m.team1Name || "----"} vs ${m.team2Name || "----"}</p>
+            ${m.status === "finished" ? `<p><b>Ganó:</b> ${m.winnerTeamName}</p>` : ""}
+          </div>
+        `;
       });
-  </script>
+
+      cuadroContainer.appendChild(block);
+    }
+  }
+
+</script>
+
 </body>
 </html>
