@@ -612,46 +612,19 @@
    * ============================ */
 
 async function fetchRankingForRama(rama) {
-  // Leemos toda la colección positions_general
-  const snap = await getDocs(collection(db, "positions_general"));
-  if (snap.empty) return [];
+  const q = query(
+    collection(db, "rankingGeneral"),
+    where("rama", "==", rama)      // "F" o "M"
+  );
 
-  const all = snap.docs.map(d => d.data());
+  const snap = await getDocs(q);
+  const items = snap.docs.map(d => d.data());
 
-  // Filtramos por rama probando varios nombres de campo
-  const filtered = all.filter(item => {
-    const rawCat =
-      (item.category ??
-       item.categoria ??
-       item.rama ??
-       item.FM ??
-       item.f_m ??
-       "").toString().toUpperCase().trim();
+  // Ordenamos por posición (1,2,3…)
+  items.sort((a, b) => (a.position || 9999) - (b.position || 9999));
 
-    if (rama === "F") {
-      return rawCat === "F" || rawCat === "FEMENINO" || rawCat === "FEM";
-    }
-    if (rama === "M") {
-      return rawCat === "M" || rawCat === "MASCULINO" || rawCat === "MASC";
-    }
-    return true;
-  });
-
-  // Ordenamos por posición probando varios nombres de campo
-  filtered.sort((a, b) => {
-    const posA = a.position ?? a.pos ?? a.puesto ?? 9999;
-    const posB = b.position ?? b.pos ?? b.puesto ?? 9999;
-    return posA - posB;
-  });
-
-  // Adaptamos al formato que usa assignTeamsFromRanking
-  return filtered.map((i, idx) => ({
-    teamId: i.teamId || null,
-    teamName: i.teamName || i.equipo || i.name || "",
-    position: i.position ?? i.pos ?? i.puesto ?? (idx + 1)
-  }));
+  return items;  // { rama, position, teamName, teamId, ... }
 }
-
 
 
   /* ============================
