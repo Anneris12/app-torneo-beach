@@ -115,7 +115,6 @@ h1 {
 /* Columna por columna */
 .col-num     { width: 32px; }
 .col-cruce   { width: 70px; }
-.col-cat     { width: 32px; }
 .col-fase    { width: 90px; }
 .col-cancha  { width: 45px; }
 .col-hora    { width: 55px; }
@@ -207,7 +206,6 @@ h1 {
       <tr>
         <th class="col-num">#</th>
         <th class="col-cruce">Cruce</th>
-        <th class="col-cat">F/M</th>
         <th class="col-fase">Fase</th>
         <th class="col-cancha">C</th>
         <th class="col-hora">Hora</th>
@@ -261,7 +259,7 @@ let allMatches  = [];
 let fases   = new Set();
 let canchas = new Set();
 
-/* ---------- Seeds para cruce 1 vs 32, 17 vs 16, etc. ---------- */
+/* ---------- Seeds ---------- */
 
 const FIRST_ROUND_SEED_MAP = [
   { match: 1,  seed1: 1,  seed2: 32 },
@@ -360,15 +358,13 @@ function estClass(e){
 /* ---------- Cruce (1 vs 32, etc.) ---------- */
 
 function getCruceForMatch(m){
-  // Si viene desde Firestore (campo cruce), usarlo
   if (m.cruce) return m.cruce;
 
   const num = m.numeroPartido || m.drawMatchNumber;
   const found = FIRST_ROUND_SEED_MAP.find(x => x.match === num);
-  if (found) {
-    return `${found.seed1} vs ${found.seed2}`;
-  }
-  return ""; // para rondas posteriores puede quedar vacío o se puede completar luego
+  if (found) return `${found.seed1} vs ${found.seed2}`;
+
+  return "";
 }
 
 /* ---------- Filtros dinámicos ---------- */
@@ -391,7 +387,6 @@ function renderFilterOptions(){
 function renderTable(){
   let list=[...allMatches];
 
-  // Rama por pestaña
   list = list.filter(m => m.categoria === currentRama);
 
   if(filterPhase.value!=="all")
@@ -412,12 +407,11 @@ function renderTable(){
     });
   }
 
-  // Orden por número de partido del cuadro
   list.sort((a,b)=> (a.numeroPartido||9999) - (b.numeroPartido||9999));
 
   if(list.length===0){
     fixtureBody.innerHTML =
-      `<tr><td colspan="10">No hay partidos con estos filtros.</td></tr>`;
+      `<tr><td colspan="9">No hay partidos con estos filtros.</td></tr>`;
     return;
   }
 
@@ -434,7 +428,6 @@ function renderTable(){
     tr.innerHTML = `
       <td class="col-num">${m.numeroPartido||""}</td>
       <td class="col-cruce">${cruceStr||""}</td>
-      <td class="col-cat">${m.categoria||""}</td>
       <td class="col-fase">${m.fase||""}</td>
       <td class="col-cancha">${m.cancha||""}</td>
       <td class="col-hora">${horaFmt}</td>
@@ -460,7 +453,7 @@ function renderTable(){
   });
 }
 
-/* ---------- Cargar solo partidos del cuadro ---------- */
+/* ---------- Cargar MAINDRAW ---------- */
 
 onSnapshot(collection(db,"matches"), snap=>{
   allMatches=[];
@@ -470,10 +463,8 @@ onSnapshot(collection(db,"matches"), snap=>{
   snap.forEach(docSnap=>{
     const d = docSnap.data();
 
-    // Solo MAINDRAW
     if (d.phase !== "maindraw") return;
 
-    // rama / categoria
     const categoria = normalizeCategoria(d.categoria || d.category || d.rama);
     const fase      = (d.roundLabel || "").toString();
     const cancha    = d.cancha || "";
@@ -481,7 +472,6 @@ onSnapshot(collection(db,"matches"), snap=>{
     if(fase) fases.add(fase);
     if(cancha!=="") canchas.add(String(cancha));
 
-    // estado: acepta tanto campo "estado" como "status"
     let estado = d.estado;
     if (!estado && d.status) {
       if (d.status === "finished")    estado = "Finalizado";
