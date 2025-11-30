@@ -612,17 +612,28 @@
    * ============================ */
 
   async function fetchRankingForRama(rama) {
-    const q = query(
-      collection(db, "rankingGeneral"),
-      where("rama", "==", rama)
-    );
+  // Leemos posiciones_general
+  const q = query(
+    collection(db, "positions_general"),
+    where("category", "==", rama)
+  );
 
-    const snap = await getDocs(q);
-    const items = snap.docs.map(d => d.data());
+  const snap = await getDocs(q);
+  if (snap.empty) return [];
 
-    items.sort((a, b) => (a.position || 9999) - (b.position || 9999));
-    return items;
-  }
+  const items = snap.docs.map(d => d.data());
+
+  // ordenar por puesto (#)
+  items.sort((a, b) => (a.position || 9999) - (b.position || 9999));
+
+  // convertirlo al formato que usa assignTeamsFromRanking
+  return items.map(i => ({
+    teamId: i.teamId || null,
+    teamName: i.teamName || i.equipo || "",
+    position: i.position
+  }));
+}
+
 
   /* ============================
    * 6) ASIGNAR EQUIPOS EN 1RA RONDA
