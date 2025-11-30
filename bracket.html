@@ -46,6 +46,28 @@ h1 {
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 15px;
+  align-items: center;
+}
+
+/* Tabs F / M */
+.tab-btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.tab-active {
+  background: #ffe36a;
+  color: #000;
+  border-color: #ffe36a;
+}
+
+.tab-inactive {
+  background: #052235;
+  color: #fff;
 }
 
 .filters select,
@@ -91,15 +113,16 @@ h1 {
 }
 
 /* Columna por columna */
-.col-num    { width: 32px; }
-.col-cat    { width: 32px; }
-.col-zona   { width: 80px; }  /* acá mostramos la fase */
-.col-cancha { width: 45px; }
-.col-hora   { width: 55px; }
-.col-fecha  { width: 60px; }
-.col-eq1    { width: 140px; text-align:left; }
-.col-res    { width: 150px; text-align:left; }
-.col-estado { width: 80px; }
+.col-num     { width: 32px; }
+.col-cruce   { width: 70px; }
+.col-cat     { width: 32px; }
+.col-fase    { width: 90px; }
+.col-cancha  { width: 45px; }
+.col-hora    { width: 55px; }
+.col-fecha   { width: 60px; }
+.col-eq1     { width: 140px; text-align:left; }
+.col-res     { width: 150px; text-align:left; }
+.col-estado  { width: 80px; }
 
 /* Estado */
 .estado-pill {
@@ -111,7 +134,7 @@ h1 {
 
 .estado-finalizado { background:#7cffc1; color:#000; }
 .estado-enjuego    { background:#ffe36a; color:#000; }
-.estado-pendiente  { background:#aaa; color:#000; }
+.estado-pendiente  { background:#aaa;   color:#000; }
 
 /* Eq1 + Eq2 en dos líneas */
 .eq2 {
@@ -160,14 +183,10 @@ h1 {
 
 <!-- FILTROS -->
 <div class="filters">
-  <select id="filterCat">
-    <option value="all">Rama: Todas</option>
-    <option value="F">Femenino</option>
-    <option value="M">Masculino</option>
-  </select>
+  <div id="tabF" class="tab-btn tab-active">Femenino</div>
+  <div id="tabM" class="tab-btn tab-inactive">Masculino</div>
 
-  <!-- acá usamos roundLabel como "Fase" -->
-  <select id="filterZone"></select>
+  <select id="filterPhase"></select>
 
   <select id="filterCourt"></select>
 
@@ -187,8 +206,9 @@ h1 {
     <thead>
       <tr>
         <th class="col-num">#</th>
+        <th class="col-cruce">Cruce</th>
         <th class="col-cat">F/M</th>
-        <th class="col-zona">Fase</th>
+        <th class="col-fase">Fase</th>
         <th class="col-cancha">C</th>
         <th class="col-hora">Hora</th>
         <th class="col-fecha">Fecha</th>
@@ -228,16 +248,39 @@ const db = getFirestore(app);
 // proteger acceso
 onAuthStateChanged(auth, u => { if(!u) location.href="login.html"; });
 
-const filterCat    = document.getElementById("filterCat");
-const filterZone   = document.getElementById("filterZone");
+const tabF         = document.getElementById("tabF");
+const tabM         = document.getElementById("tabM");
+const filterPhase  = document.getElementById("filterPhase");
 const filterCourt  = document.getElementById("filterCourt");
 const filterStatus = document.getElementById("filterStatus");
 const filterSearch = document.getElementById("filterSearch");
 const fixtureBody  = document.getElementById("fixtureBody");
 
-let allMatches = [];
-let fases  = new Set();
+let currentRama = "F";
+let allMatches  = [];
+let fases   = new Set();
 let canchas = new Set();
+
+/* ---------- Seeds para cruce 1 vs 32, 17 vs 16, etc. ---------- */
+
+const FIRST_ROUND_SEED_MAP = [
+  { match: 1,  seed1: 1,  seed2: 32 },
+  { match: 2,  seed1: 17, seed2: 16 },
+  { match: 3,  seed1: 9,  seed2: 24 },
+  { match: 4,  seed1: 25, seed2: 8 },
+  { match: 5,  seed1: 5,  seed2: 28 },
+  { match: 6,  seed1: 21, seed2: 12 },
+  { match: 7,  seed1: 13, seed2: 20 },
+  { match: 8,  seed1: 29, seed2: 4 },
+  { match: 9,  seed1: 3,  seed2: 30 },
+  { match: 10, seed1: 19, seed2: 14 },
+  { match: 11, seed1: 11, seed2: 22 },
+  { match: 12, seed1: 27, seed2: 6 },
+  { match: 13, seed1: 7,  seed2: 26 },
+  { match: 14, seed1: 23, seed2: 10 },
+  { match: 15, seed1: 15, seed2: 18 },
+  { match: 16, seed1: 31, seed2: 2 }
+];
 
 /* ---------- Normalizadores ---------- */
 
@@ -314,12 +357,26 @@ function estClass(e){
   return "estado-pendiente";
 }
 
+/* ---------- Cruce (1 vs 32, etc.) ---------- */
+
+function getCruceForMatch(m){
+  // Si viene desde Firestore (campo cruce), usarlo
+  if (m.cruce) return m.cruce;
+
+  const num = m.numeroPartido || m.drawMatchNumber;
+  const found = FIRST_ROUND_SEED_MAP.find(x => x.match === num);
+  if (found) {
+    return `${found.seed1} vs ${found.seed2}`;
+  }
+  return ""; // para rondas posteriores puede quedar vacío o se puede completar luego
+}
+
 /* ---------- Filtros dinámicos ---------- */
 
 function renderFilterOptions(){
-  filterZone.innerHTML = `<option value="all">Fase: Todas</option>`;
+  filterPhase.innerHTML = `<option value="all">Fase: Todas</option>`;
   [...fases].sort().forEach(f=>{
-    filterZone.innerHTML += `<option value="${f}">${f}</option>`;
+    filterPhase.innerHTML += `<option value="${f}">${f}</option>`;
   });
 
   filterCourt.innerHTML = `<option value="all">Cancha: Todas</option>`;
@@ -334,11 +391,11 @@ function renderFilterOptions(){
 function renderTable(){
   let list=[...allMatches];
 
-  if(filterCat.value!=="all")
-    list=list.filter(m=>m.categoria===filterCat.value);
+  // Rama por pestaña
+  list = list.filter(m => m.categoria === currentRama);
 
-  if(filterZone.value!=="all")
-    list=list.filter(m=>m.fase===filterZone.value);
+  if(filterPhase.value!=="all")
+    list=list.filter(m=>m.fase===filterPhase.value);
 
   if(filterCourt.value!=="all")
     list=list.filter(m=>String(m.cancha)===filterCourt.value);
@@ -355,12 +412,12 @@ function renderTable(){
     });
   }
 
-  // Orden: por número de partido del cuadro
+  // Orden por número de partido del cuadro
   list.sort((a,b)=> (a.numeroPartido||9999) - (b.numeroPartido||9999));
 
   if(list.length===0){
     fixtureBody.innerHTML =
-      `<tr><td colspan="9">No hay partidos con estos filtros.</td></tr>`;
+      `<tr><td colspan="10">No hay partidos con estos filtros.</td></tr>`;
     return;
   }
 
@@ -372,11 +429,13 @@ function renderTable(){
     const horaFmt  = normalizeHora(m.hora);
     const fechaFmt = formatFecha(m.fecha);
     const estCls   = estClass(m.estado || "Pendiente");
+    const cruceStr = getCruceForMatch(m);
 
     tr.innerHTML = `
       <td class="col-num">${m.numeroPartido||""}</td>
+      <td class="col-cruce">${cruceStr||""}</td>
       <td class="col-cat">${m.categoria||""}</td>
-      <td class="col-zona">${m.fase||""}</td>
+      <td class="col-fase">${m.fase||""}</td>
       <td class="col-cancha">${m.cancha||""}</td>
       <td class="col-hora">${horaFmt}</td>
       <td class="col-fecha">${fechaFmt}</td>
@@ -434,6 +493,7 @@ onSnapshot(collection(db,"matches"), snap=>{
     allMatches.push({
       id: docSnap.id,
       numeroPartido: d.drawMatchNumber || d.numeroPartido,
+      drawMatchNumber: d.drawMatchNumber || null,
       localName: d.team1Name || d.localName,
       visitanteName: d.team2Name || d.visitanteName,
       categoria,
@@ -442,7 +502,8 @@ onSnapshot(collection(db,"matches"), snap=>{
       fecha: d.fecha,
       hora: d.hora,
       estado,
-      setsData: d.setsData || []
+      setsData: d.setsData || [],
+      cruce: d.cruce || null
     });
   });
 
@@ -451,11 +512,29 @@ onSnapshot(collection(db,"matches"), snap=>{
 });
 
 /* Eventos filtros */
-filterCat.onchange    = renderTable;
-filterZone.onchange   = renderTable;
+filterPhase.onchange  = renderTable;
 filterCourt.onchange  = renderTable;
 filterStatus.onchange = renderTable;
 filterSearch.addEventListener("input", renderTable);
+
+/* Tabs F / M */
+tabF.addEventListener("click", ()=>{
+  currentRama = "F";
+  tabF.classList.add("tab-active");
+  tabF.classList.remove("tab-inactive");
+  tabM.classList.add("tab-inactive");
+  tabM.classList.remove("tab-active");
+  renderTable();
+});
+
+tabM.addEventListener("click", ()=>{
+  currentRama = "M";
+  tabM.classList.add("tab-active");
+  tabM.classList.remove("tab-inactive");
+  tabF.classList.add("tab-inactive");
+  tabF.classList.remove("tab-active");
+  renderTable();
+});
 
 </script>
 
