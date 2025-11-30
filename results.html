@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resultados del torneo</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase COMPAT (funciona con initializeApp) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0c1222;
+      font-family: 'Inter', sans-serif;
+      color: #e4e9f7;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      padding: 20px 0;
+      color: #d6e4ff;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      margin-bottom: 25px;
+    }
+
+    #btnBack {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.15);
+      cursor: pointer;
+      margin-bottom: 18px;
+      transition: 0.2s;
+    }
+    #btnBack:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      cursor: pointer;
+      color: #c5d4ff;
+      font-weight: 600;
+      transition: 0.25s;
+    }
+
+    .tab.active {
+      background: #006cff;
+      color: #fff;
+      box-shadow: 0 0 10px #006cff;
+    }
+
+    .filter-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 18px;
+      margin-top: 10px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #b9c5e6;
+      font-size: 14px;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #1f2942;
+      background: #141b2e;
+      color: #fff;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+
+    #btnClear {
+      background: #ff6b45;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: none;
+      margin-top: auto;
+      cursor: pointer;
+      font-weight: 600;
+      transition: 0.2s;
+    }
+
+    #btnClear:hover {
+      opacity: 0.85;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    th {
+      color: #9bb7ff;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .no-results {
+      padding: 20px;
+      text-align: center;
+      opacity: 0.6;
+      font-size: 15px;
+    }
+
+    @media (max-width: 760px) {
+      th, td {
+        padding: 10px 4px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <button id="btnBack" onclick="history.back()">← Volver</button>
+
+  <div class="tabs">
+    <div class="tab active">RESULTADOS</div>
+    <div class="tab" onclick="location.href='positions.html'">POSICIONES</div>
+  </div>
+
+  <h1>📊 Resultados del torneo</h1>
+
+  <!-- FILTROS -->
+  <div class="card">
+    <h2 style="margin-top:0; font-size:20px;">🎯 Filtros</h2>
+
+    <div class="filter-row">
+      <div>
+        <label>Categoría</label>
+        <select id="filterCategory">
+          <option value="all">Todas</option>
+          <option value="M">Masculino</option>
+          <option value="F">Femenino</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Zona</label>
+        <select id="filterZone">
+          <option value="all">Todas</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+          <option value="D">D</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Estado</label>
+        <select id="filterStatus">
+          <option value="all">Todos</option>
+          <option value="programado">Programado</option>
+          <option value="finalizado">Finalizado</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Buscar equipo</label>
+        <input type="text" id="filterTeam" placeholder="Nombre o parte del nombre" />
+      </div>
+
+      <div>
+        <button id="btnClear" onclick="clearFilters()">🔄 Limpiar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="card">
+    <h2 style="margin-top:0; font-size:20px;">📝 Resultados</h2>
+    <p id="countMatches" style="opacity:0.7; margin-top:-10px;">0 partidos</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Hora</th>
+          <th>Zona</th>
+          <th>Cat</th>
+          <th>Cancha</th>
+          <th>Partido</th>
+          <th>Estado</th>
+          <th>Set 1</th>
+          <th>Set 2</th>
+          <th>Set 3</th>
+          <th>Final</th>
+        </tr>
+      </thead>
+      <tbody id="resultsTable"></tbody>
+    </table>
+
+    <p id="noResults" class="no-results" style="display:none;">
+      No hay partidos que coincidan con los filtros seleccionados.
+    </p>
+  </div>
+
+</div>
+
+<!-- =================== JS =================== -->
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAyvfgSFL7bZqhksnClNk5hMf6_HNVk8YE",
+    authDomain: "torneo-beach.firebaseapp.com",
+    projectId: "torneo-beach",
+    storageBucket: "torneo-beach.appspot.com",
+    messagingSenderId: "558481461235",
+    appId: "1:558481461235:web:fc857daaadc1fef288d104"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  let allMatches = [];
+
+  const filterCategory = document.getElementById("filterCategory");
+  const filterZone     = document.getElementById("filterZone");
+  const filterStatus   = document.getElementById("filterStatus");
+  const filterTeam     = document.getElementById("filterTeam");
+  const resultsTable   = document.getElementById("resultsTable");
+  const countMatches   = document.getElementById("countMatches");
+  const noResultsText  = document.getElementById("noResults");
+
+  filterCategory.addEventListener("change", renderTable);
+  filterZone.addEventListener("change", renderTable);
+  filterStatus.addEventListener("change", renderTable);
+  filterTeam.addEventListener("input", renderTable);
+
+
+  function categoryMatches(match, catValue) {
+    if (catValue === "all") return true;
+
+    const raw = (
+      match.category ??
+      match.cat ??
+      match.gender ??
+      ""
+    ).toString().toLowerCase();
+
+    if (!raw) return false;
+
+    if (catValue === "M") {
+      return raw === "m" || raw.startsWith("masc");
+    }
+    if (catValue === "F") {
+      return raw === "f" || raw.startsWith("fem");
+    }
+
+    return true;
+  }
+
+  function applyFilters() {
+    const c = filterCategory.value;
+    const z = filterZone.value;
+    const s = filterStatus.value;
+    const t = filterTeam.value.trim().toLowerCase();
+
+    return allMatches.filter(m => {
+      if (!categoryMatches(m, c)) return false;
+      if (z !== "all" && m.zone !== z) return false;
+      if (s !== "all" && m.status !== s) return false;
+
+      if (t) {
+        const a = (m.teamAName || "").toLowerCase();
+        const b = (m.teamBName || "").toLowerCase();
+        if (!a.includes(t) && !b.includes(t)) return false;
+      }
+
+      return true;
+    });
+  }
+
+  function renderTable() {
+    const filtered = applyFilters();
+
+    resultsTable.innerHTML = "";
+    countMatches.textContent = `${filtered.length} partido(s)`;
+    noResultsText.style.display = filtered.length === 0 ? "block" : "none";
+
+    filtered.forEach(m => {
+      const row = document.createElement("tr");
+
+      const set1 = m.setsData?.[0] ? `${m.setsData[0].pointsA}-${m.setsData[0].pointsB}` : "-";
+      const set2 = m.setsData?.[1] ? `${m.setsData[1].pointsA}-${m.setsData[1].pointsB}` : "-";
+      const set3 = m.setsData?.[2] ? `${m.setsData[2].pointsA}-${m.setsData[2].pointsB}` : "-";
+
+      row.innerHTML = `
+        <td>${m.date}</td>
+        <td>${m.time}</td>
+        <td>${m.zone}</td>
+        <td>${m.category}</td>
+        <td>${m.court}</td>
+        <td>${m.teamAName} vs ${m.teamBName}</td>
+        <td>${m.status}</td>
+        <td>${set1}</td>
+        <td>${set2}</td>
+        <td>${set3}</td>
+        <td>${m.resultText || "-"}</td>
+      `;
+
+      resultsTable.appendChild(row);
+    });
+  }
+
+  function clearFilters() {
+    filterCategory.value = "all";
+    filterZone.value = "all";
+    filterStatus.value = "all";
+    filterTeam.value = "";
+    renderTable();
+  }
+
+  function loadMatches() {
+    db.collection("matches")
+      .orderBy("date")
+      .orderBy("time")
+      .onSnapshot(snap => {
+        allMatches = snap.docs.map(doc => doc.data());
+        renderTable();
+      });
+  }
+
+  loadMatches();
+</script>
+
+</body>
+</html>

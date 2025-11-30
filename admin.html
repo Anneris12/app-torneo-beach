@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Panel Administrativo – Torneo Beach Volley</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+  
+
+	.top-buttons {
+		display: flex;
+		justify-content: flex-start;
+		gap: 8px;
+		margin-bottom: 16px;
+		flex-wrap: wrap;
+	}
+
+	.top-btn {
+		background: #ffe36a;
+		color: #000;
+		font-weight: bold;
+		padding: 10px 16px;
+		border-radius: 12px;
+		text-decoration: none;
+		border: none;
+		font-size: 14px;
+		cursor: pointer;
+	}
+
+
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #031926;
+      color: white;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      margin-top: 20px;
+      font-size: 26px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      width: 100%;
+      max-width: 650px;
+      margin-top: 30px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(14px);
+      border-radius: 18px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+      transition: transform 0.15s ease, background 0.15s ease;
+      cursor: pointer;
+      text-decoration: none;
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      background: rgba(255,255,255,0.18);
+    }
+
+    .icon {
+      font-size: 42px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: bold;
+      letter-spacing: 0.03em;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .card-sub {
+      font-size: 12px;
+      opacity: 0.85;
+    }
+
+    #logoutBtn {
+      margin-top: 30px;
+      padding: 12px 20px;
+      background: #ff7f7f;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      cursor: pointer;
+      color: black;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    #logoutBtn:hover {
+      background: #ff5f5f;
+    }
+  </style>
+</head>
+<body>
+	
+	<div class="top-buttons">
+		<a href="index.html" class="top-btn">🏠 Volver al inicio</a>
+	</div>
+
+  <h1>Panel Administrativo</h1>
+
+  <div class="dashboard">
+
+    <a class="card" href="teams.html">
+      <div class="icon">🧩</div>
+      <div class="card-title">Zonas & Equipos</div>
+      <div class="card-sub">Administración de grupos y equipos.</div>
+    </a>
+
+    <a class="card" href="fixture-admin.html">
+      <div class="icon">🗓️</div>
+      <div class="card-title">Fixture</div>
+      <div class="card-sub">Cargar y editar partidos.</div>
+    </a>
+
+    <a class="card" href="match-admin.html">
+      <div class="icon">🎮</div>
+      <div class="card-title">Panel de Partido</div>
+      <div class="card-sub">Actualizar sets y puntos en vivo.</div>
+    </a>
+
+  </div>
+
+  <button id="logoutBtn">Cerrar sesión</button>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import {
+      getAuth,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
+      authDomain: "torneo-beach.firebaseapp.com",
+      projectId: "torneo-beach",
+      storageBucket: "torneo-beach.firebasestorage.app",
+      messagingSenderId: "21136645638",
+      appId: "1:21136645638:web:52c3b06affc2ee151eed87"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // PROTECCIÓN: si no está logueado → volver al login
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+      }
+    });
+
+    // LOGOUT
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      signOut(auth).then(() => {
+        window.location.href = "login.html";
+      });
+    });
+
+  </script>
+
+</body>
+</html>

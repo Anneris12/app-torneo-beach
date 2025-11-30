@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+	<link rel="manifest" href="manifest.json">
+	<meta name="theme-color" content="#ffffff">
+	<link rel="apple-touch-icon" href="img/icon-192.png">
+  <title>Torneo Beach Volley - Inicio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-gray: #f5f5f7;
+      --text-main: #1f2933;
+      --text-soft: #6b7280;
+      --card-border: #e5e7eb;
+      --accent: #ffb300;
+      --accent-strong: #f59e0b;
+      --highlight: #ffe08a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* --- HEADER STYLE --- */
+    .header {
+      width: 100%;
+      padding: 16px;
+      text-align: center;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-main);
+      letter-spacing: 0.3px;
+    }
+
+    .hero {
+      padding: 16px 18px 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .hero-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .hero-title {
+      font-size: 17px;
+      font-weight: 600;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .hero-sub {
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .hero-img {
+      width: 70px;
+      height: 70px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #f2f2f2;
+      border: 1px solid #e5e7eb;
+    }
+
+    .hero-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* --- GRID CARDS --- */
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-soft);
+      padding: 0 18px;
+      margin-top: 12px;
+    }
+
+    .menu-grid {
+      padding: 12px 18px 80px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--bg-gray);
+      border-radius: 14px;
+      padding: 12px;
+      border: 1px solid var(--card-border);
+      text-decoration: none;
+      color: var(--text-main);
+      min-height: 95px;
+      transition: 0.12s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .card:hover {
+      background: #ffffff;
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+    }
+
+    .card.active {
+      background: var(--highlight);
+      border-color: var(--accent-strong);
+    }
+
+    .card-header {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .card-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 19px;
+    }
+
+    .card-title span.name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .card-title span.meta {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .card-footer {
+      font-size: 11px;
+      color: var(--text-soft);
+      margin-top: 6px;
+      line-height: 1.2;
+    }
+
+    /* --- BOTTOM NAV --- */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: #ffffff;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-around;
+      padding: 6px 0 8px;
+    }
+
+    .nav-item {
+      text-decoration: none;
+      color: var(--text-soft);
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .nav-item.active {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .nav-icon {
+      font-size: 17px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="header">Copa Bicentenario Ciudad de Villa Nueva</div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-text">
+      <div class="hero-title">🏐 Torneo Beach Volley</div>
+      <div class="hero-sub">Seguí todo en vivo desde tu celular.</div>
+    </div>
+    <div class="hero-img">
+      <img src="img/beach-villa-nueva-2026.jpeg">
+    </div>
+  </div>
+
+  <!-- Secciones -->
+  <div class="section-title">Secciones</div>
+
+  <div class="menu-grid">
+
+    <!-- VIVO destacados -->
+    <a class="card active" href="live.html">
+      <div class="card-header">
+        <div class="card-icon">🔴</div>
+        <div class="card-title">
+          <span class="name">En vivo</span>
+          <span class="meta">Tiempo real</span>
+        </div>
+      </div>
+      <div class="card-footer">Ver los partidos que se están jugando.</div>
+    </a>
+
+    <a class="card" href="fixture.html">
+      <div class="card-header">
+        <div class="card-icon">🗓️</div>
+        <div class="card-title">
+          <span class="name">Fixture</span>
+          <span class="meta">Cronograma</span>
+        </div>
+      </div>
+      <div class="card-footer">Días, horarios y canchas del torneo.</div>
+    </a>
+
+    <a class="card" href="positions.html">
+      <div class="card-header">
+        <div class="card-icon">📊</div>
+        <div class="card-title">
+          <span class="name">Posiciones</span>
+          <span class="meta">Por zona</span>
+        </div>
+      </div>
+      <div class="card-footer">Tabla por grupos, rama y zona.</div>
+    </a>
+
+    <a class="card" href="positions_general.html">
+      <div class="card-header">
+        <div class="card-icon">🏅</div>
+        <div class="card-title">
+          <span class="name">General</span>
+          <span class="meta">Todos los equipos</span>
+        </div>
+      </div>
+      <div class="card-footer">Orden general por rendimiento.</div>
+    </a>
+
+    <a class="card" href="bracket.html">
+      <div class="card-header">
+        <div class="card-icon">🏆</div>
+        <div class="card-title">
+          <span class="name">Doble elim.</span>
+          <span class="meta">Cuadro</span>
+        </div>
+      </div>
+      <div class="card-footer">Llaves eliminatorias del torneo.</div>
+    </a>
+
+    <a class="card" href="login.html">
+      <div class="card-header">
+        <div class="card-icon">🛠️</div>
+        <div class="card-title">
+          <span class="name">Admin</span>
+          <span class="meta">Staff</span>
+        </div>
+      </div>
+      <div class="card-footer">Acceso privado para organización.</div>
+    </a>
+
+  </div>
+
+  <!-- NAV INFERIOR -->
+  <nav class="bottom-nav">
+    <a class="nav-item active" href="index.html">
+      <div class="nav-icon">🏠</div>
+      Inicio
+    </a>
+    <a class="nav-item" href="fixture.html">
+      <div class="nav-icon">🗓️</div>
+      Fixture
+    </a>
+    <a class="nav-item" href="positions.html">
+      <div class="nav-icon">📊</div>
+      Posiciones
+    </a>
+    <a class="nav-item" href="positions_general.html">
+      <div class="nav-icon">🏅</div>
+      General
+    </a>
+    <a class="nav-item" href="login.html">
+      <div class="nav-icon">🛠️</div>
+      Admin
+    </a>
+  </nav>
+
+</body>
+</html>

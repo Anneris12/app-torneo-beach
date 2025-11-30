@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fixture – Admin</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #031926;
+      color: white;
+      font-family: system-ui, sans-serif;
+    }
+
+    h1 {
+      text-align: center;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .top-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .top-btn {
+      background: #ffe36a;
+      color: #000;
+      font-weight: bold;
+      padding: 10px 16px;
+      border-radius: 12px;
+      text-decoration: none;
+      border: none;
+      font-size: 14px;
+    }
+
+    .content {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      flex: 1 1 350px;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 20px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      backdrop-filter: blur(10px);
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    input,
+    select {
+      width: 100%;
+      margin-top: 6px;
+      padding: 14px;
+      font-size: 16px;
+      border-radius: 12px;
+      border: none;
+      background: rgba(0, 0, 0, 0.28);
+      color: white;
+    }
+
+    button {
+      margin-top: 12px;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: #ffe36a;
+      color: #000;
+      width: 100%;
+    }
+
+    .btn-secondary {
+      background: #6be0ff;
+      color: #000;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .btn-danger {
+      background: #ff6b6b;
+      color: #000;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid #ffe36a;
+      color: #ffe36a;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .partidos-lista {
+      margin-top: 20px;
+    }
+
+    .item-partido {
+      background: rgba(255, 255, 255, 0.12);
+      padding: 12px;
+      border-radius: 14px;
+      margin-bottom: 10px;
+      font-size: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .item-info {
+      flex: 1 1 auto;
+    }
+
+    .acciones {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-edit {
+      background: #6be0ff;
+      color: #000;
+      font-size: 12px;
+      border-radius: 10px;
+      padding: 6px 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .btn-delete {
+      background: #ff6b6b;
+      color: #000;
+      font-size: 12px;
+      border-radius: 10px;
+      padding: 6px 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filters select {
+      flex: 1 1 150px;
+      padding: 10px;
+      font-size: 15px;
+    }
+
+    .bulk-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .bulk-actions button {
+      flex: 1 1 150px;
+      margin-top: 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Fixture – Admin</h1>
+
+  <div class="top-buttons">
+    <a href="admin.html" class="top-btn">← Volver</a>
+    <a href="index.html" class="top-btn">🏠 Home</a>
+    <a href="teams.html" class="top-btn">Equipos</a>
+  </div>
+
+  <div class="content">
+    <!-- ================= FORMULARIO NUEVO PARTIDO ================= -->
+    <div class="card">
+      <h3>Nuevo Partido</h3>
+
+      <label>Rama</label>
+      <select id="newCat">
+        <option value="">-- Elegí rama --</option>
+        <option value="F">Femenino</option>
+        <option value="M">Masculino</option>
+      </select>
+
+      <label>Zona</label>
+      <select id="newZona">
+        <option value="">-- Elegí zona --</option>
+      </select>
+
+      <label>Equipo local</label>
+      <select id="newLocal">
+        <option value="">-- Elegí equipo local --</option>
+      </select>
+
+      <label>Equipo visitante</label>
+      <select id="newVisitante">
+        <option value="">-- Elegí equipo visitante --</option>
+      </select>
+
+      <label>Fecha</label>
+      <input type="date" id="newFecha" />
+
+      <label>Hora</label>
+      <input type="time" id="newHora" />
+
+      <label>Cancha</label>
+      <select id="newCancha">
+        <option value="">-- Elegí cancha --</option>
+        <option value="1">Cancha 1</option>
+        <option value="2">Cancha 2</option>
+        <option value="3">Cancha 3</option>
+      </select>
+
+      <button class="btn-primary" id="btnCrear">Crear partido</button>
+    </div>
+
+    <!-- ================= LISTADO DE PARTIDOS ================= -->
+    <div class="card">
+      <h3>Partidos cargados</h3>
+
+      <button class="btn-outline" id="btnModoSeleccion">
+        Modo selección
+      </button>
+
+      <div class="filters">
+        <select id="filtroCat">
+          <option value="all">Rama: Todas</option>
+          <option value="F">Femenino</option>
+          <option value="M">Masculino</option>
+        </select>
+
+        <select id="filtroZona">
+          <option value="all">Zona: Todas</option>
+        </select>
+      </div>
+
+      <div class="bulk-actions">
+        <button class="btn-outline" id="btnToggleSelectAll" style="display:none;">
+          Seleccionar todo
+        </button>
+        <button class="btn-danger" id="btnDeleteSelected" style="display:none;">
+          Eliminar seleccionados
+        </button>
+      </div>
+
+      <button class="btn-secondary" id="btnExport">Exportar partidos (CSV)</button>
+      <button class="btn-secondary" id="btnImport">Importar partidos (CSV)</button>
+      <input type="file" id="fileCsv" accept=".csv" style="display:none" />
+
+      <div id="listaPartidos" class="partidos-lista">Cargando...</div>
+    </div>
+  </div>
+
+  <!-- ================= SCRIPTS ================= -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      onSnapshot,
+      query,
+      orderBy,
+      getDocs,
+      doc,
+      updateDoc,
+      deleteDoc
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+    // ================= FIREBASE =================
+    const firebaseConfig = {
+      apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
+      authDomain: "torneo-beach.firebaseapp.com",
+      projectId: "torneo-beach",
+      storageBucket: "torneo-beach.firebasestorage.app",
+      messagingSenderId: "21136645638",
+      appId: "1:21136645638:web:52c3b06affc2ee151eed87"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Protección
+    onAuthStateChanged(auth, (user) => {
+      if (!user) window.location.href = "login.html";
+    });
+
+    // ================= DOM =================
+    const selNewCat       = document.getElementById("newCat");
+    const selNewZona      = document.getElementById("newZona");
+    const selNewLocal     = document.getElementById("newLocal");
+    const selNewVisitante = document.getElementById("newVisitante");
+    const inpNewFecha     = document.getElementById("newFecha");
+    const inpNewHora      = document.getElementById("newHora");
+    const selNewCancha    = document.getElementById("newCancha");
+    const btnCrear        = document.getElementById("btnCrear");
+
+    const filtroCat      = document.getElementById("filtroCat");
+    const filtroZona     = document.getElementById("filtroZona");
+    const listaPartidos  = document.getElementById("listaPartidos");
+
+    const btnExport      = document.getElementById("btnExport");
+    const btnImport      = document.getElementById("btnImport");
+    const fileCsv        = document.getElementById("fileCsv");
+
+    const btnToggleSelectAll = document.getElementById("btnToggleSelectAll");
+    const btnDeleteSelected  = document.getElementById("btnDeleteSelected");
+    const btnModoSeleccion   = document.getElementById("btnModoSeleccion");
+
+    // ================= STATE =================
+    let allMatches = [];
+    let zonasDisponibles = [];
+    let teams = [];
+    let editingMatchId = null;
+
+    let selectedMatches = new Set();
+    let modoSeleccion = false;
+
+    // ================= HELPERS =================
+    function normalizarCategoria(catRaw) {
+      const c = (catRaw || "").toString().trim().toUpperCase();
+      if (c.startsWith("M")) return "M";
+      if (c.startsWith("F")) return "F";
+      return "F";
+    }
+
+    function normalizarZona(zRaw) {
+      return (zRaw || "").toString().trim().toUpperCase();
+    }
+
+    function formatFecha(fechaStr) {
+      if (!fechaStr) return "";
+      const [y, m, d] = fechaStr.split("-");
+      if (!y || !m || !d) return fechaStr;
+      return `${d}/${m}/${y}`;
+    }
+
+    function formatHora(horaStr) {
+      if (!horaStr) return "";
+      if (horaStr.includes(":")) return horaStr;
+      let txt = horaStr.toString().padStart(4, "0");
+      return txt.slice(0, 2) + ":" + txt.slice(2);
+    }
+
+    // ================= CARGA DE ZONAS =================
+    async function loadZonesFromMatchesAndTeams() {
+      const zonasSet = new Set();
+
+      const snapMatches = await getDocs(collection(db, "matches"));
+      snapMatches.forEach(d => {
+        const z = normalizarZona(d.data().zona || d.data().zone);
+        if (z) zonasSet.add(z);
+      });
+
+      const snapTeams = await getDocs(collection(db, "teams"));
+      snapTeams.forEach(d => {
+        const z = normalizarZona(d.data().zona || d.data().zone);
+        if (z) zonasSet.add(z);
+      });
+
+      if (zonasSet.size === 0) {
+        ["A","B","C","D","E","F","G","H"].forEach(z => zonasSet.add(z));
+      }
+
+      zonasDisponibles = [...zonasSet].sort((a, b) =>
+        a.localeCompare(b, undefined, { numeric: true })
+      );
+
+      selNewZona.innerHTML = `<option value="">-- Elegí zona --</option>`;
+      zonasDisponibles.forEach(z => {
+        const opt = document.createElement("option");
+        opt.value = z;
+        opt.textContent = "Zona " + z;
+        selNewZona.appendChild(opt);
+      });
+
+      filtroZona.innerHTML = `<option value="all">Zona: Todas</option>`;
+      zonasDisponibles.forEach(z => {
+        const opt = document.createElement("option");
+        opt.value = z;
+        opt.textContent = "Zona " + z;
+        filtroZona.appendChild(opt);
+      });
+    }
+
+    // ================= CARGA DE EQUIPOS =================
+    async function loadTeams() {
+      const snap = await getDocs(collection(db, "teams"));
+      teams = [];
+
+      snap.forEach(d => {
+        teams.push({
+          id: d.id,
+          name: d.data().name || "",
+          category: normalizarCategoria(d.data().category || d.data().categoria),
+          zone: normalizarZona(d.data().zone || d.data().zona)
+        });
+      });
+
+      refreshTeamSelects();
+    }
+
+    function refreshTeamSelects() {
+      const cat = selNewCat.value;
+      const zona = selNewZona.value;
+
+      selNewLocal.innerHTML = `<option value="">-- Elegí equipo local --</option>`;
+      selNewVisitante.innerHTML = `<option value="">-- Elegí equipo visitante --</option>`;
+
+      if (!cat || !zona) return;
+
+      const filtered = teams.filter(t => t.category === cat && t.zone === zona);
+
+      filtered.forEach(t => {
+        const o1 = document.createElement("option");
+        o1.value = t.name;
+        o1.textContent = t.name;
+        selNewLocal.appendChild(o1);
+
+        const o2 = document.createElement("option");
+        o2.value = t.name;
+        o2.textContent = t.name;
+        selNewVisitante.appendChild(o2);
+      });
+    }
+
+    selNewCat.addEventListener("change", refreshTeamSelects);
+    selNewZona.addEventListener("change", refreshTeamSelects);
+
+    // ================= SNAPSHOT DE PARTIDOS =================
+    const qMatches = query(
+      collection(db, "matches"),
+      orderBy("fecha"),
+      orderBy("hora")
+    );
+
+    onSnapshot(qMatches, (snap) => {
+      allMatches = [];
+
+      snap.forEach(docSnap => {
+        const d = docSnap.data();
+        allMatches.push({
+          id: docSnap.id,
+          numeroPartido: d.numeroPartido || "",
+          categoria: normalizarCategoria(d.categoria || d.category),
+          zona: normalizarZona(d.zona || d.zone),
+          localName: d.localName || "",
+          visitanteName: d.visitanteName || "",
+          fecha: d.fecha || "",
+          hora: d.hora || "",
+          cancha: d.cancha || "",
+          estado: d.estado || "Pendiente"
+        });
+      });
+
+      renderMatches();
+    });
+
+    filtroCat.addEventListener("change", renderMatches);
+    filtroZona.addEventListener("change", renderMatches);
+
+    // ================= RENDER =================
+    function renderMatches() {
+      let lista = [...allMatches];
+
+      if (filtroCat.value !== "all")
+        lista = lista.filter(p => p.categoria === filtroCat.value);
+
+      if (filtroZona.value !== "all")
+        lista = lista.filter(p => p.zona === filtroZona.value);
+
+      listaPartidos.innerHTML = "";
+
+      if (lista.length === 0) {
+        listaPartidos.innerHTML = "No hay partidos en este filtro.";
+        toggleBulkButtons();
+        return;
+      }
+
+      lista.forEach((p) => {
+        const div = document.createElement("div");
+        div.className = "item-partido";
+
+        // Checkbox solo en modo selección
+        if (modoSeleccion) {
+          const chk = document.createElement("input");
+          chk.type = "checkbox";
+          chk.style.transform = "scale(1.3)";
+          chk.checked = selectedMatches.has(p.id);
+
+          chk.onchange = () => {
+            if (chk.checked) selectedMatches.add(p.id);
+            else selectedMatches.delete(p.id);
+            toggleBulkButtons();
+          };
+
+          div.appendChild(chk);
+        }
+
+        const info = document.createElement("div");
+        info.className = "item-info";
+
+        info.innerHTML = `
+          <strong>#${p.numeroPartido} – ${p.localName} vs ${p.visitanteName}</strong><br>
+          Zona: ${p.zona} · Rama: ${p.categoria}<br>
+          Fecha: ${formatFecha(p.fecha)} · Hora: ${formatHora(p.hora)} · Cancha: ${p.cancha} · Estado: ${p.estado}
+        `;
+
+        const acciones = document.createElement("div");
+        acciones.className = "acciones";
+
+        const btnE = document.createElement("button");
+        btnE.className = "btn-edit";
+        btnE.textContent = "Editar";
+        btnE.onclick = () => startEditMatch(p);
+
+        const btnB = document.createElement("button");
+        btnB.className = "btn-delete";
+        btnB.textContent = "Borrar";
+        btnB.onclick = async () => {
+          if (!confirm("¿Seguro que querés borrar este partido?")) return;
+          await deleteDoc(doc(db, "matches", p.id));
+        };
+
+        acciones.appendChild(btnE);
+        acciones.appendChild(btnB);
+
+        div.appendChild(info);
+        div.appendChild(acciones);
+        listaPartidos.appendChild(div);
+      });
+
+      toggleBulkButtons();
+    }
+
+    // ================= MODO SELECCIÓN =================
+    btnModoSeleccion.addEventListener("click", () => {
+      modoSeleccion = !modoSeleccion;
+
+      if (!modoSeleccion) {
+        selectedMatches.clear();
+      }
+
+      btnModoSeleccion.textContent = modoSeleccion
+        ? "Salir del modo selección"
+        : "Modo selección";
+
+      renderMatches();
+    });
+
+    function getVisibleMatchIds() {
+      let lista = [...allMatches];
+
+      if (filtroCat.value !== "all")
+        lista = lista.filter(p => p.categoria === filtroCat.value);
+
+      if (filtroZona.value !== "all")
+        lista = lista.filter(p => p.zona === filtroZona.value);
+
+      return lista.map(p => p.id);
+    }
+
+    function toggleBulkButtons() {
+      if (!modoSeleccion) {
+        btnToggleSelectAll.style.display = "none";
+        btnDeleteSelected.style.display = "none";
+        return;
+      }
+
+      const visible = getVisibleMatchIds();
+
+      btnToggleSelectAll.style.display = visible.length > 0 ? "block" : "none";
+
+      if (selectedMatches.size > 0)
+        btnDeleteSelected.style.display = "block";
+      else
+        btnDeleteSelected.style.display = "none";
+
+      if (selectedMatches.size === visible.length && visible.length > 0)
+        btnToggleSelectAll.textContent = "Deseleccionar todo";
+      else
+        btnToggleSelectAll.textContent = "Seleccionar todo";
+    }
+
+    // ================= SELECCIONAR TODO / ELIMINAR MASIVO =================
+    btnToggleSelectAll.addEventListener("click", () => {
+      const visibleMatches = getVisibleMatchIds();
+
+      if (selectedMatches.size === visibleMatches.length) {
+        selectedMatches.clear();
+      } else {
+        visibleMatches.forEach(id => selectedMatches.add(id));
+      }
+
+      renderMatches();
+    });
+
+    btnDeleteSelected.addEventListener("click", async () => {
+      if (selectedMatches.size === 0) return;
+
+      if (!confirm(`¿Eliminar ${selectedMatches.size} partido(s) seleccionados?`)) return;
+
+      const promises = [];
+      selectedMatches.forEach(id =>
+        promises.push(deleteDoc(doc(db, "matches", id)))
+      );
+
+      await Promise.all(promises);
+
+      selectedMatches.clear();
+      toggleBulkButtons();
+      alert("Partidos eliminados.");
+    });
+
+    // ================= CREAR / EDITAR =================
+    btnCrear.addEventListener("click", async () => {
+      const categoria = selNewCat.value;
+      const zona = selNewZona.value;
+      const localName = selNewLocal.value;
+      const visitanteName = selNewVisitante.value;
+      const fecha = inpNewFecha.value;
+      const hora = inpNewHora.value;
+      const cancha = selNewCancha.value;
+
+      if (!categoria || !zona || !localName || !visitanteName || !fecha || !hora || !cancha) {
+        alert("Completá todos los datos.");
+        return;
+      }
+
+      const data = {
+        categoria,
+        zona,
+        zone: zona,
+        localName,
+        visitanteName,
+        fecha,
+        hora,
+        cancha,
+        estado: "Pendiente"
+      };
+
+      if (editingMatchId) {
+        await updateDoc(doc(db, "matches", editingMatchId), data);
+        alert("Partido actualizado.");
+      } else {
+        const nro = allMatches.length + 1;
+        data.numeroPartido = nro;
+        await addDoc(collection(db, "matches"), data);
+        alert("Partido creado.");
+      }
+
+      resetForm();
+    });
+
+    function resetForm() {
+      editingMatchId = null;
+      selNewCat.value = "";
+      selNewZona.value = "";
+      selNewLocal.innerHTML = `<option value="">-- Elegí equipo local --</option>`;
+      selNewVisitante.innerHTML = `<option value="">-- Elegí equipo visitante --</option>`;
+      inpNewFecha.value = "";
+      inpNewHora.value = "";
+      selNewCancha.value = "";
+      btnCrear.textContent = "Crear partido";
+    }
+
+    function startEditMatch(p) {
+      editingMatchId = p.id;
+      selNewCat.value = p.categoria;
+      selNewZona.value = p.zona;
+      refreshTeamSelects();
+      selNewLocal.value = p.localName;
+      selNewVisitante.value = p.visitanteName;
+      inpNewFecha.value = p.fecha;
+      inpNewHora.value = p.hora;
+      selNewCancha.value = p.cancha;
+      btnCrear.textContent = "Guardar cambios";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // ================= EXPORTAR CSV =================
+    btnExport.addEventListener("click", () => {
+      if (allMatches.length === 0) {
+        alert("No hay partidos.");
+        return;
+      }
+
+      const header = [
+        "numeroPartido",
+        "categoria",
+        "zona",
+        "localName",
+        "visitanteName",
+        "fecha",
+        "hora",
+        "cancha"
+      ];
+
+      const lines = [];
+      lines.push(header.join(";"));
+
+      allMatches.forEach(p => {
+        lines.push([
+          p.numeroPartido,
+          p.categoria,
+          p.zona,
+          p.localName,
+          p.visitanteName,
+          p.fecha,
+          p.hora,
+          p.cancha
+        ].join(";"));
+      });
+
+      const csv = lines.join("\r\n");
+      const blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "partidos.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // ================= IMPORTAR CSV =================
+    btnImport.addEventListener("click", () => fileCsv.click());
+
+    fileCsv.addEventListener("change", async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async ev => {
+        const text = ev.target.result;
+
+        const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+        if (lines.length === 0) {
+          alert("CSV vacío.");
+          return;
+        }
+
+        let firstLine = lines[0].replace(/^\uFEFF/, "");
+        let delimiter = ",";
+        const countSemi = (firstLine.match(/;/g) || []).length;
+        const countComma = (firstLine.match(/,/g) || []).length;
+        if (countSemi > countComma) delimiter = ";";
+
+        const headersRaw = firstLine.split(delimiter).map(h => h.trim());
+        const headers = headersRaw.map(h => h.toLowerCase());
+
+        const required = ["numeropartido","categoria","zona","localname","visitantename"];
+        const missing = required.filter(c => !headers.includes(c));
+        if (missing.length > 0) {
+          alert("CSV incorrecto. Faltan columnas obligatorias.");
+          return;
+        }
+
+        const idx = {};
+        headers.forEach((h,i) => idx[h] = i);
+
+        await importMatchesCSV(lines, delimiter, idx);
+        alert("Partidos importados.");
+        fileCsv.value = "";
+      };
+
+      reader.readAsText(file);
+    });
+
+    async function importMatchesCSV(lines, delimiter, idx) {
+      const snap = await getDocs(collection(db, "matches"));
+      const existing = new Map();
+      snap.forEach(docSnap => {
+        const d = docSnap.data();
+        const num = d.numeroPartido?.toString().trim();
+        if (num) existing.set(num, docSnap.id);
+      });
+
+      const promises = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].trim();
+        if (!row) continue;
+
+        const cols = row.split(delimiter);
+
+        const col = c => {
+          const ix = idx[c];
+          return ix == null ? "" : (cols[ix] || "").toString().trim();
+        };
+
+        let numeroPartido = col("numeropartido");
+        if (!numeroPartido) numeroPartido = i.toString();
+
+        const categoriaRaw   = col("categoria");
+        const zonaRaw        = col("zona");
+        const localName      = col("localname");
+        const visitanteName  = col("visitantename");
+        const fecha          = col("fecha");
+        const horaRaw        = col("hora");
+        const cancha         = col("cancha");
+
+        if (!localName && !visitanteName) continue;
+
+        const categoria = normalizarCategoria(categoriaRaw);
+        const zona      = normalizarZona(zonaRaw);
+
+        let hora = horaRaw;
+        if (hora && !hora.includes(":")) {
+          const txt = hora.replace(/\D/g,"").padStart(4,"0");
+          hora = txt.slice(0,2) + ":" + txt.slice(2);
+        }
+
+        const data = {
+          numeroPartido: Number(numeroPartido),
+          categoria,
+          zona,
+          zone: zona,
+          localName,
+          visitanteName,
+          fecha,
+          hora,
+          cancha,
+          estado: "Pendiente"
+        };
+
+        if (existing.has(numeroPartido)) {
+          const id = existing.get(numeroPartido);
+          promises.push(updateDoc(doc(db, "matches", id), data));
+        } else {
+          promises.push(addDoc(collection(db, "matches"), data));
+        }
+      }
+
+      await Promise.all(promises);
+      await loadZonesFromMatchesAndTeams();
+    }
+
+    // ================= INIT =================
+    (async () => {
+      await loadZonesFromMatchesAndTeams();
+      await loadTeams();
+    })();
+
+  </script>
+</body>
+</html>

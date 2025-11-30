@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Posiciones</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  margin: 0;
+  background: #031926;
+  color: white;
+  font-family: system-ui, sans-serif;
+  padding: 20px;
+}
+
+/* Botones superiores */
+.top-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.top-btn {
+  background: #ffe36a;
+  color: #000;
+  font-weight: bold;
+  padding: 10px 16px;
+  border-radius: 12px;
+  text-decoration: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Título */
+h1 {
+  text-align: center;
+  margin-top: 0;
+  text-transform: uppercase;
+}
+
+/* Tabs de rama */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: transparent;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.tab-btn.active {
+  background: #ffe36a;
+  color: #000;
+  border-color: #ffe36a;
+}
+
+/* Bloques por zona */
+.zone-block {
+  margin-bottom: 24px;
+}
+
+.zone-title {
+  margin: 10px 0 6px;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* TABLA */
+.positions-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.positions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.positions-table th,
+.positions-table td {
+  padding: 4px 6px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.positions-table th {
+  font-size: 13px;
+  font-weight: 600;
+  color: #eee;
+  background: rgba(255,255,255,0.1);
+}
+
+.col-pos   { width: 30px; }
+.col-team  { text-align:left; min-width: 130px; }
+.col-pj    { width: 32px; }
+.col-pg    { width: 32px; }
+.col-pp    { width: 32px; }
+.col-pts   { width: 40px; }
+.col-pf    { width: 60px; }
+.col-pc    { width: 60px; }
+.col-dif   { width: 60px; }
+.col-coef  { width: 70px; }
+
+/* Celular */
+@media (max-width:480px){
+  .positions-table { font-size: 12px; }
+  .positions-table th { font-size: 11px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="top-buttons">
+  <a class="top-btn" href="fixture.html">← Fixture</a>
+  <a class="top-btn" href="index.html">Inicio</a>
+</div>
+
+<h1>TABLA DE POSICIONES</h1>
+
+<!-- TABS RAMA -->
+<div class="tabs">
+  <button class="tab-btn active" data-cat="F">Femenino</button>
+  <button class="tab-btn" data-cat="M">Masculino</button>
+</div>
+
+<!-- CONTENEDOR DE TODAS LAS ZONAS DE LA RAMA -->
+<div id="positionsContainer"></div>
+
+<!-- FIREBASE + SCRIPT -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
+  authDomain: "torneo-beach.firebaseapp.com",
+  projectId: "torneo-beach",
+  storageBucket: "torneo-beach.firebasestorage.app",
+  messagingSenderId: "21136645638",
+  appId: "1:21136645638:web:52c3b06affc2ee151eed87"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+const positionsContainer = document.getElementById("positionsContainer");
+const tabButtons = document.querySelectorAll(".tab-btn");
+
+let allMatches = []; // todo viene de matches
+let currentCategory = "F"; // pestaña por defecto
+
+/* -------- Normalizadores -------- */
+
+function normalizeCategoria(c){
+  if(!c) return "";
+  const up = c.toString().toUpperCase();
+  if(up.startsWith("F")) return "F";
+  if(up.startsWith("M")) return "M";
+  return up;
+}
+
+function normalizeZona(z){
+  return (z || "").toString().trim().toUpperCase();
+}
+
+/* -------- Carga de datos -------- */
+
+onSnapshot(collection(db, "matches"), snap => {
+  allMatches = [];
+
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+    allMatches.push({
+      id: docSnap.id,
+      localName: d.localName || "",
+      visitanteName: d.visitanteName || "",
+      categoria: normalizeCategoria(d.categoria || d.category),
+      zona: normalizeZona(d.zona || d.zone),
+      estado: d.estado || "Pendiente",
+      setsData: d.setsData || [],
+      setsLocal: d.setsLocal,
+      setsVisitante: d.setsVisitante
+    });
+  });
+
+  renderAllZonesTables();
+});
+
+/* -------- Cálculo de posiciones por rama y zona -------- */
+
+function computeStandingsByZone(categoriaFiltro){
+  const map = new Map();
+
+  // 1) Inicializar equipos según TODOS los partidos de esa rama
+  allMatches.forEach(m => {
+    if(m.categoria !== categoriaFiltro) return;
+
+    const zona = m.zona || "SIN ZONA";
+
+    const equipos = [
+      { name: m.localName },
+      { name: m.visitanteName }
+    ];
+
+    equipos.forEach(e => {
+      if(!e.name) return;
+      const key = `${e.name}|${categoriaFiltro}|${zona}`;
+      if(!map.has(key)){
+        map.set(key, {
+          teamName: e.name,
+          categoria: categoriaFiltro,
+          zona: zona,
+          played: 0,
+          wins: 0,
+          losses: 0,
+          setsWon: 0,
+          setsLost: 0,
+          ptsWon: 0,
+          ptsLost: 0,
+          tablePts: 0
+        });
+      }
+    });
+  });
+
+  // Parámetros de puntos de tabla
+  const PTS_WIN  = 2;
+  const PTS_LOSS = 1;
+
+  // 2) Procesar SOLO partidos finalizados de esa rama para sumar stats
+  allMatches.forEach(m => {
+    if(m.categoria !== categoriaFiltro) return;
+    if(m.estado !== "Finalizado") return;
+
+    const categoria = m.categoria;
+    const zona      = m.zona || "SIN ZONA";
+    const { localName, visitanteName } = m;
+    if(!localName || !visitanteName) return;
+
+    // sets ganados: usamos setsLocal/setsVisitante si existen,
+    // si no, los calculamos desde setsData
+    let setsLocal = typeof m.setsLocal === "number" ? m.setsLocal : 0;
+    let setsVisit = typeof m.setsVisitante === "number" ? m.setsVisitante : 0;
+
+    if(setsLocal === 0 && setsVisit === 0 && Array.isArray(m.setsData)){
+      m.setsData.forEach(s => {
+        const pl = s.puntosLocal ?? 0;
+        const pv = s.puntosVisitante ?? 0;
+        if(pl > pv) setsLocal++;
+        else if(pv > pl) setsVisit++;
+      });
+    }
+
+    // puntos por sets
+    let ptsLocal = 0;
+    let ptsVisit = 0;
+    if(Array.isArray(m.setsData)){
+      m.setsData.forEach(s => {
+        ptsLocal += s.puntosLocal ?? 0;
+        ptsVisit += s.puntosVisitante ?? 0;
+      });
+    }
+
+    if(setsLocal === 0 && setsVisit === 0) return; // partido raro, lo saltamos
+
+    const localKey = `${localName}|${categoria}|${zona}`;
+    const visitKey = `${visitanteName}|${categoria}|${zona}`;
+
+    if(!map.has(localKey)){
+      map.set(localKey, {
+        teamName: localName,
+        categoria,
+        zona,
+        played: 0,wins:0,losses:0,setsWon:0,setsLost:0,ptsWon:0,ptsLost:0,tablePts:0
+      });
+    }
+    if(!map.has(visitKey)){
+      map.set(visitKey, {
+        teamName: visitanteName,
+        categoria,
+        zona,
+        played: 0,wins:0,losses:0,setsWon:0,setsLost:0,ptsWon:0,ptsLost:0,tablePts:0
+      });
+    }
+
+    const localStat = map.get(localKey);
+    const visitStat = map.get(visitKey);
+
+    localStat.played++;
+    visitStat.played++;
+
+    localStat.setsWon  += setsLocal;
+    localStat.setsLost += setsVisit;
+    visitStat.setsWon  += setsVisit;
+    visitStat.setsLost += setsLocal;
+
+    localStat.ptsWon   += ptsLocal;
+    localStat.ptsLost  += ptsVisit;
+    visitStat.ptsWon   += ptsVisit;
+    visitStat.ptsLost  += ptsLocal;
+
+    if(setsLocal > setsVisit){
+      localStat.wins++;
+      visitStat.losses++;
+      localStat.tablePts += PTS_WIN;
+      visitStat.tablePts += PTS_LOSS;
+    } else {
+      visitStat.wins++;
+      localStat.losses++;
+      visitStat.tablePts += PTS_WIN;
+      localStat.tablePts += PTS_LOSS;
+    }
+  });
+
+  // Agrupamos por zona
+  const zonasMap = {};
+  for(const s of map.values()){
+    const z = s.zona || "SIN ZONA";
+    if(!zonasMap[z]) zonasMap[z] = [];
+    zonasMap[z].push(s);
+  }
+
+  // Ordenamos cada zona
+  Object.keys(zonasMap).forEach(z => {
+    zonasMap[z].sort((a,b) => {
+      // Puntos de tabla
+      if(b.tablePts !== a.tablePts) return b.tablePts - a.tablePts;
+
+      // Diferencia de puntos (PF - PC)
+      const diffPtsA = a.ptsWon - a.ptsLost;
+      const diffPtsB = b.ptsWon - b.ptsLost;
+      if(diffPtsB !== diffPtsA) return diffPtsB - diffPtsA;
+
+      // Coeficiente PF/PC
+      const coefA = a.ptsLost === 0 ? (a.ptsWon > 0 ? a.ptsWon : 0) : (a.ptsWon / a.ptsLost);
+      const coefB = b.ptsLost === 0 ? (b.ptsWon > 0 ? b.ptsWon : 0) : (b.ptsWon / b.ptsLost);
+      if(coefB !== coefA) return coefB - coefA;
+
+      // Nombre
+      return (a.teamName || "").localeCompare(b.teamName || "");
+    });
+  });
+
+  return zonasMap;
+}
+
+/* -------- Render de todas las zonas de la rama seleccionada -------- */
+
+function renderAllZonesTables(){
+  const zonasMap = computeStandingsByZone(currentCategory);
+  const zoneNames = Object.keys(zonasMap).sort();
+
+  positionsContainer.innerHTML = "";
+
+  if(zoneNames.length === 0){
+    positionsContainer.innerHTML = `<p>No hay equipos para esta rama.</p>`;
+    return;
+  }
+
+  zoneNames.forEach(zoneName => {
+    const block = document.createElement("div");
+    block.className = "zone-block";
+
+    const tituloZona = zoneName === "SIN ZONA" ? "Sin zona" : `Zona ${zoneName}`;
+
+    let html = `
+      <h2 class="zone-title">${tituloZona}</h2>
+      <div class="positions-wrapper">
+        <table class="positions-table">
+          <thead>
+            <tr>
+              <th class="col-pos">#</th>
+              <th class="col-team">Equipo</th>
+              <th class="col-pj">PJ</th>
+              <th class="col-pg">PG</th>
+              <th class="col-pp">PP</th>
+              <th class="col-pts">PTS</th>
+              <th class="col-pf">PF</th>
+              <th class="col-pc">PC</th>
+              <th class="col-dif">Dif</th>
+              <th class="col-coef">Coef</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    const lista = zonasMap[zoneName];
+
+    lista.forEach((s, index) => {
+      const diff = s.ptsWon - s.ptsLost;
+      const coef = s.ptsLost === 0
+        ? (s.ptsWon > 0 ? s.ptsWon.toFixed(2) : "0.00")
+        : (s.ptsWon / s.ptsLost).toFixed(2);
+
+      html += `
+        <tr>
+          <td class="col-pos">${index+1}</td>
+          <td class="col-team">${s.teamName || ""}</td>
+          <td class="col-pj">${s.played}</td>
+          <td class="col-pg">${s.wins}</td>
+          <td class="col-pp">${s.losses}</td>
+          <td class="col-pts">${s.tablePts}</td>
+          <td class="col-pf">${s.ptsWon}</td>
+          <td class="col-pc">${s.ptsLost}</td>
+          <td class="col-dif">${diff}</td>
+          <td class="col-coef">${coef}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    block.innerHTML = html;
+    positionsContainer.appendChild(block);
+  });
+}
+
+/* -------- Eventos de pestañas -------- */
+
+tabButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const cat = btn.dataset.cat;
+    if(cat === currentCategory) return;
+
+    currentCategory = cat;
+
+    tabButtons.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    renderAllZonesTables();
+  });
+});
+
+</script>
+
+</body>
+</html>

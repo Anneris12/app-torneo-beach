@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Tabla General</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  margin: 0;
+  background: #031926;
+  color: white;
+  font-family: system-ui, sans-serif;
+  padding: 20px;
+}
+
+/* Botones superiores */
+.top-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.top-btn {
+  background: #ffe36a;
+  color: #000;
+  font-weight: bold;
+  padding: 10px 16px;
+  border-radius: 12px;
+  text-decoration: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Título */
+h1 {
+  text-align: center;
+  margin-top: 0;
+  text-transform: uppercase;
+}
+
+/* Tabs de rama */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: transparent;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.tab-btn.active {
+  background: #ffe36a;
+  color: #000;
+  border-color: #ffe36a;
+}
+
+/* Bloque general */
+.zone-block {
+  margin-bottom: 24px;
+}
+
+.zone-title {
+  margin: 10px 0 6px;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* TABLA */
+.positions-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.positions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.positions-table th,
+.positions-table td {
+  padding: 4px 6px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.positions-table th {
+  font-size: 13px;
+  font-weight: 600;
+  color: #eee;
+  background: rgba(255,255,255,0.1);
+}
+
+.col-pos   { width: 30px; }
+.col-team  { text-align:left; min-width: 130px; }
+.col-zona  { width: 60px; }
+.col-pj    { width: 32px; }
+.col-pg    { width: 32px; }
+.col-pp    { width: 32px; }
+.col-pts   { width: 40px; }
+.col-pf    { width: 60px; }
+.col-pc    { width: 60px; }
+.col-dif   { width: 60px; }
+.col-coef  { width: 70px; }
+
+/* Celular */
+@media (max-width:480px){
+  .positions-table { font-size: 12px; }
+  .positions-table th { font-size: 11px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="top-buttons">
+  <!-- si querés, acá podés linkear al archivo de posiciones por zona -->
+  <a class="top-btn" href="positions.html">← Posiciones por zona</a>
+  <a class="top-btn" href="index.html">Inicio</a>
+</div>
+
+<h1>TABLA GENERAL</h1>
+
+<!-- TABS RAMA -->
+<div class="tabs">
+  <button class="tab-btn active" data-cat="F">Femenino</button>
+  <button class="tab-btn" data-cat="M">Masculino</button>
+</div>
+
+<!-- CONTENEDOR TABLA GENERAL -->
+<div id="globalContainer"></div>
+
+<!-- FIREBASE + SCRIPT -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
+  authDomain: "torneo-beach.firebaseapp.com",
+  projectId: "torneo-beach",
+  storageBucket: "torneo-beach.firebasestorage.app",
+  messagingSenderId: "21136645638",
+  appId: "1:21136645638:web:52c3b06affc2ee151eed87"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+const globalContainer = document.getElementById("globalContainer");
+const tabButtons      = document.querySelectorAll(".tab-btn");
+
+let allMatches = [];          // todo viene de matches
+let currentCategory = "F";    // pestaña por defecto
+
+/* -------- Normalizadores -------- */
+
+function normalizeCategoria(c){
+  if(!c) return "";
+  const up = c.toString().toUpperCase();
+  if(up.startsWith("F")) return "F";
+  if(up.startsWith("M")) return "M";
+  return up;
+}
+
+function normalizeZona(z){
+  return (z || "").toString().trim().toUpperCase();
+}
+
+/* -------- Carga de datos -------- */
+
+onSnapshot(collection(db, "matches"), snap => {
+  allMatches = [];
+
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+    allMatches.push({
+      id: docSnap.id,
+      localName: d.localName || "",
+      visitanteName: d.visitanteName || "",
+      categoria: normalizeCategoria(d.categoria || d.category),
+      zona: normalizeZona(d.zona || d.zone),
+      estado: d.estado || "Pendiente",
+      setsData: d.setsData || [],
+      setsLocal: d.setsLocal,
+      setsVisitante: d.setsVisitante
+    });
+  });
+
+  renderGlobal();
+});
+
+/* -------- Utilidades de ranking -------- */
+
+function calcCoef(t){
+  if (t.ptsLost === 0){
+    return t.ptsWon > 0 ? t.ptsWon : 0;
+  }
+  return t.ptsWon / t.ptsLost;
+}
+
+function compareTeams(a,b){
+  // Puntos de tabla
+  if(b.tablePts !== a.tablePts) return b.tablePts - a.tablePts;
+
+  // Diferencia de puntos (PF - PC)
+  const diffA = a.ptsWon - a.ptsLost;
+  const diffB = b.ptsWon - b.ptsLost;
+  if(diffB !== diffA) return diffB - diffA;
+
+  // Coeficiente PF/PC
+  const coefA = calcCoef(a);
+  const coefB = calcCoef(b);
+  if(coefB !== coefA) return coefB - coefA;
+
+  // Nombre
+  return (a.teamName || "").localeCompare(b.teamName || "");
+}
+
+/* -------- Cálculo de posiciones por rama y zona -------- */
+
+function computeStandingsByZone(categoriaFiltro){
+  const map = new Map();
+
+  // 1) Inicializar equipos según TODOS los partidos de esa rama
+  allMatches.forEach(m => {
+    if(m.categoria !== categoriaFiltro) return;
+
+    const zona = m.zona || "SIN ZONA";
+
+    const equipos = [
+      { name: m.localName },
+      { name: m.visitanteName }
+    ];
+
+    equipos.forEach(e => {
+      if(!e.name) return;
+      const key = `${e.name}|${categoriaFiltro}|${zona}`;
+      if(!map.has(key)){
+        map.set(key, {
+          teamName: e.name,
+          categoria: categoriaFiltro,
+          zona: zona,
+          played: 0,
+          wins: 0,
+          losses: 0,
+          ptsWon: 0,
+          ptsLost: 0,
+          tablePts: 0
+        });
+      }
+    });
+  });
+
+  // Parámetros de puntos de tabla
+  const PTS_WIN  = 2;
+  const PTS_LOSS = 1;
+
+  // 2) Procesar SOLO partidos finalizados de esa rama para sumar stats
+  allMatches.forEach(m => {
+    if(m.categoria !== categoriaFiltro) return;
+    if(m.estado !== "Finalizado") return;
+
+    const categoria = m.categoria;
+    const zona      = m.zona || "SIN ZONA";
+    const { localName, visitanteName } = m;
+    if(!localName || !visitanteName) return;
+
+    // puntos por set (1 set, pero usamos setsData igual)
+    let ptsLocal = 0;
+    let ptsVisit = 0;
+    if(Array.isArray(m.setsData)){
+      m.setsData.forEach(s => {
+        ptsLocal += s.puntosLocal ?? 0;
+        ptsVisit += s.puntosVisitante ?? 0;
+      });
+    }
+
+    if(ptsLocal === 0 && ptsVisit === 0) return; // partido raro, lo saltamos
+
+    const localKey = `${localName}|${categoria}|${zona}`;
+    const visitKey = `${visitanteName}|${categoria}|${zona}`;
+
+    if(!map.has(localKey)){
+      map.set(localKey, {
+        teamName: localName,
+        categoria,
+        zona,
+        played: 0,wins:0,losses:0,ptsWon:0,ptsLost:0,tablePts:0
+      });
+    }
+    if(!map.has(visitKey)){
+      map.set(visitKey, {
+        teamName: visitanteName,
+        categoria,
+        zona,
+        played: 0,wins:0,losses:0,ptsWon:0,ptsLost:0,tablePts:0
+      });
+    }
+
+    const localStat = map.get(localKey);
+    const visitStat = map.get(visitKey);
+
+    localStat.played++;
+    visitStat.played++;
+
+    localStat.ptsWon   += ptsLocal;
+    localStat.ptsLost  += ptsVisit;
+    visitStat.ptsWon   += ptsVisit;
+    visitStat.ptsLost  += ptsLocal;
+
+    if(ptsLocal > ptsVisit){
+      localStat.wins++;
+      visitStat.losses++;
+      localStat.tablePts += PTS_WIN;
+      visitStat.tablePts += PTS_LOSS;
+    } else {
+      visitStat.wins++;
+      localStat.losses++;
+      visitStat.tablePts += PTS_WIN;
+      localStat.tablePts += PTS_LOSS;
+    }
+  });
+
+  // Agrupamos por zona
+  const zonasMap = {};
+  for(const s of map.values()){
+    const z = s.zona || "SIN ZONA";
+    if(!zonasMap[z]) zonasMap[z] = [];
+    zonasMap[z].push(s);
+  }
+
+  // Ordenamos cada zona
+  Object.keys(zonasMap).forEach(z => {
+    zonasMap[z].sort(compareTeams);
+  });
+
+  return zonasMap;
+}
+
+/* -------- Cálculo de tabla general -------- */
+
+function computeGlobalStandings(categoriaFiltro){
+  const zonasMap  = computeStandingsByZone(categoriaFiltro);
+  const zoneNames = Object.keys(zonasMap);
+
+  const firsts  = [];
+  const seconds = [];
+  const thirds  = [];
+  const others  = [];
+
+  zoneNames.forEach(z => {
+    const lista = zonasMap[z];
+    lista.forEach((t, idx) => {
+      const enriched = {
+        ...t,
+        zoneName: z,
+        posZona: idx + 1
+      };
+      if(idx === 0) firsts.push(enriched);
+      else if(idx === 1) seconds.push(enriched);
+      else if(idx === 2) thirds.push(enriched);
+      else others.push(enriched);
+    });
+  });
+
+  firsts.sort(compareTeams);
+  seconds.sort(compareTeams);
+  thirds.sort(compareTeams);
+  others.sort(compareTeams);
+
+  return [...firsts, ...seconds, ...thirds, ...others];
+}
+
+/* -------- Render tabla general -------- */
+
+function renderGlobal(){
+  const globalList = computeGlobalStandings(currentCategory);
+  globalContainer.innerHTML = "";
+
+  if(globalList.length === 0){
+    globalContainer.innerHTML = `<p>No hay equipos para esta rama.</p>`;
+    return;
+  }
+
+  let html = `
+    <div class="zone-block">
+      <h2 class="zone-title">Tabla general ${currentCategory === "F" ? "Femenino" : "Masculino"}</h2>
+      <div class="positions-wrapper">
+        <table class="positions-table">
+          <thead>
+            <tr>
+              <th class="col-pos">#</th>
+              <th class="col-team">Equipo</th>
+              <th class="col-zona">Zona</th>
+              <th class="col-pj">PJ</th>
+              <th class="col-pg">PG</th>
+              <th class="col-pp">PP</th>
+              <th class="col-pts">PTS</th>
+              <th class="col-pf">PF</th>
+              <th class="col-pc">PC</th>
+              <th class="col-dif">Dif</th>
+              <th class="col-coef">Coef</th>
+            </tr>
+          </thead>
+          <tbody>
+  `;
+
+  globalList.forEach((s, index) => {
+    const diff = s.ptsWon - s.ptsLost;
+    const coef = s.ptsLost === 0
+      ? (s.ptsWon > 0 ? s.ptsWon.toFixed(2) : "0.00")
+      : (s.ptsWon / s.ptsLost).toFixed(2);
+
+    html += `
+      <tr>
+        <td class="col-pos">${index+1}</td>
+        <td class="col-team">${s.teamName || ""}</td>
+        <td class="col-zona">${s.zoneName === "SIN ZONA" ? "-" : s.zoneName}</td>
+        <td class="col-pj">${s.played}</td>
+        <td class="col-pg">${s.wins}</td>
+        <td class="col-pp">${s.losses}</td>
+        <td class="col-pts">${s.tablePts}</td>
+        <td class="col-pf">${s.ptsWon}</td>
+        <td class="col-pc">${s.ptsLost}</td>
+        <td class="col-dif">${diff}</td>
+        <td class="col-coef">${coef}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  globalContainer.innerHTML = html;
+}
+
+/* -------- Eventos de pestañas F / M -------- */
+
+tabButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const cat = btn.dataset.cat;
+    if(cat === currentCategory) return;
+
+    currentCategory = cat;
+
+    tabButtons.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    renderGlobal();
+  });
+});
+
+</script>
+
+</body>
+</html>

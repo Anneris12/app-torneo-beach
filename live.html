@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Partidos en Vivo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    body {
+      background: #031926;
+      margin: 0;
+      padding: 20px;
+      color: white;
+      font-family: system-ui, sans-serif;
+    }
+
+    .btn {
+      display: inline-block;
+      margin: 0 auto 18px;
+      padding: 10px 16px;
+      background: #ffe36a;
+      color: #000;
+      border-radius: 10px;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 22px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+
+    .match-card {
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.20);
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 420px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .header-line {
+      text-align: center;
+      font-size: 13px;
+      opacity: 0.8;
+      margin-bottom: 4px;
+    }
+
+    .set-status {
+      text-align: center;
+      font-size: 13px;
+      opacity: 0.9;
+      margin-bottom: 6px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 3px 0;
+    }
+
+    .team {
+      font-size: 28px;
+      font-weight: 600;
+      flex-shrink: 1;
+      padding-right: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .serve-ball {
+      font-size: 20px;
+    }
+
+    .score-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+
+    .score {
+      font-size: 28px;
+      font-weight: 700;
+      min-width: 40px;
+      text-align: right;
+    }
+
+    .sets-mini {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 4px;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .set-mini {
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.35);
+      font-weight: 600;
+    }
+
+    .set-mini.winner {
+      color: #7cffc1;
+      font-weight: 700;
+    }
+
+    .no-match {
+      text-align: center;
+      margin-top: 40px;
+      opacity: 0.8;
+      font-size: 17px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div style="text-align:center;">
+    <a class="btn" href="index.html">🏠 Volver</a>
+  </div>
+
+  <h1>Partidos en Juego</h1>
+
+  <div id="liveContainer"></div>
+
+  <!-- FIREBASE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      query,
+      where,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
+      authDomain: "torneo-beach.firebaseapp.com",
+      projectId: "torneo-beach",
+      storageBucket: "torneo-beach.firebasestorage.app",
+      messagingSenderId: "21136645638",
+      appId: "1:21136645638:web:52c3b06affc2ee151eed87"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const box = document.getElementById("liveContainer");
+
+    function getSetChipsHtmlForSide(m, side) {
+      const setsData = m.setsData || [];
+      let html = "";
+
+      setsData.forEach(s => {
+        const pl = s.puntosLocal ?? 0;
+        const pv = s.puntosVisitante ?? 0;
+
+        const myPoints = side === "local" ? pl : pv;
+        const oppPoints = side === "local" ? pv : pl;
+        const isWinner = myPoints > oppPoints;
+
+        html += `
+          <span class="set-mini ${isWinner ? "winner" : ""}">
+            ${myPoints}
+          </span>
+        `;
+      });
+
+      return html;
+    }
+
+    const q = query(
+      collection(db, "matches"),
+      where("estado", "==", "En juego")
+    );
+
+    onSnapshot(q, snap => {
+      box.innerHTML = "";
+
+      if (snap.empty) {
+        box.innerHTML = `<div class="no-match">No hay partidos en juego.</div>`;
+        return;
+      }
+
+      snap.forEach(docSnap => {
+        const m = docSnap.data();
+
+        const setsMode = m.setsMode || "ONE";
+        const setsMax = (setsMode === "BEST_OF_3") ? 3 : 1;
+        const setsData = m.setsData || [];
+        const setActualStored = m.setActual || (setsData.length + 1);
+        const setActual = Math.min(setActualStored, setsMax);
+
+        const puntosLocal = m.puntosLocal ?? 0;
+        const puntosVisitante = m.puntosVisitante ?? 0;
+
+        const localServeIcon = (m.currentServerTeam === "local") ? "🏐" : "";
+        const visitServeIcon = (m.currentServerTeam === "visit") ? "🏐" : "";
+
+        const localSetChips = getSetChipsHtmlForSide(m, "local");
+        const visitSetChips = getSetChipsHtmlForSide(m, "visit");
+
+        box.innerHTML += `
+          <div class="match-card">
+
+            <div class="header-line">
+              Cancha <strong>${m.cancha || "-"}</strong> • Zona ${m.zona || "-"} • ${m.categoria || "-"}
+            </div>
+            <div class="set-status">
+              Set actual: ${setActual} / ${setsMax}
+            </div>
+
+            <div class="row">
+              <div class="team">
+                ${localServeIcon ? `<span class="serve-ball">${localServeIcon}</span>` : ""}
+                <span>${m.localName}</span>
+              </div>
+              <div class="score-block">
+                <div class="score">${puntosLocal}</div>
+                <div class="sets-mini">
+                  ${localSetChips}
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="team">
+                ${visitServeIcon ? `<span class="serve-ball">${visitServeIcon}</span>` : ""}
+                <span>${m.visitanteName}</span>
+              </div>
+              <div class="score-block">
+                <div class="score">${puntosVisitante}</div>
+                <div class="sets-mini">
+                  ${visitSetChips}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        `;
+      });
+    });
+  </script>
+
+</body>
+</html>

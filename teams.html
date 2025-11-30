@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Equipos & Zonas – Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #031926;
+      margin: 0;
+      padding: 20px;
+      color: white;
+      font-family: system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 18px;
+      text-transform: uppercase;
+    }
+
+    .top-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .top-btn {
+      background: #ffe36a;
+      color: #000;
+      font-weight: bold;
+      padding: 10px 16px;
+      border-radius: 12px;
+      text-decoration: none;
+      border: none;
+      font-size: 14px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.15);
+      padding: 20px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.28);
+      margin-bottom: 22px;
+      backdrop-filter: blur(10px);
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    input, select {
+      width: 100%;
+      margin-top: 6px;
+      padding: 14px;
+      font-size: 16px;
+      border-radius: 12px;
+      border: none;
+      background: rgba(0,0,0,0.28);
+      color: white;
+    }
+
+    button {
+      padding: 12px 16px;
+      margin-top: 12px;
+      font-size: 15px;
+      font-weight: bold;
+      border-radius: 12px;
+      background: #ffe36a;
+      border: none;
+      cursor: pointer;
+      color: black;
+    }
+
+    #btnAddOrSave {
+      width: 100%;
+    }
+
+    #btnCancelEdit {
+      width: 100%;
+      background: #b3b3b3;
+      color: #000;
+      display: none;
+    }
+
+    #btnReloadZones {
+      width: 100%;
+      background: #6be0ff;
+      color: #000;
+      margin-top: 8px;
+    }
+
+    .team-list {
+      margin-top: 16px;
+    }
+
+    .team-item {
+      background: rgba(255,255,255,0.12);
+      padding: 12px;
+      border-radius: 14px;
+      margin-bottom: 10px;
+      font-size: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .team-info {
+      flex: 1 1 auto;
+    }
+
+    .team-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .team-btn {
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .team-edit {
+      background: #6be0ff;
+      color: #000;
+    }
+
+    .team-delete {
+      background: #ff6b6b;
+      color: #000;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filters select {
+      padding: 10px;
+      font-size: 15px;
+      flex: 1 1 150px;
+    }
+
+    @media (max-width: 480px) {
+      .filters {
+        flex-direction: column;
+      }
+    }
+
+    .logout {
+      margin-top: 18px;
+      text-align: center;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Equipos & Zonas</h1>
+
+  <div class="top-buttons">
+    <a href="admin.html" class="top-btn">← Volver</a>
+    <a href="index.html" class="top-btn">🏠 Home</a>
+    <a href="fixture-admin.html" class="top-btn">Fixture</a>
+  </div>
+
+  <!-- FORMULARIO DE ALTA / EDICIÓN -->
+  <div class="card">
+    <label>Nombre del equipo</label>
+    <input id="teamName" placeholder="Ej: Pérez – Gómez" />
+
+    <label>Rama</label>
+    <select id="teamCat">
+      <option value="F">Femenino</option>
+      <option value="M">Masculino</option>
+    </select>
+
+    <label>Zona</label>
+    <select id="teamZone">
+      <!-- zonas se cargan dinámicamente -->
+    </select>
+
+    <button id="btnAddOrSave">Agregar equipo</button>
+    <button id="btnCancelEdit">Cancelar edición</button>
+    <button id="btnReloadZones">🔄 Actualizar zonas y equipos desde partidos</button>
+  </div>
+
+  <!-- FILTROS + LISTADO -->
+  <div class="card">
+    <h3>Filtrar equipos</h3>
+
+    <div class="filters">
+      <select id="filterCat">
+        <option value="all">Rama: Todas</option>
+        <option value="F">Femenino</option>
+        <option value="M">Masculino</option>
+      </select>
+
+      <select id="filterZone">
+        <!-- se llenan dinámicamente también -->
+      </select>
+    </div>
+
+    <h3>Equipos cargados</h3>
+    <div id="teamList" class="team-list">Cargando...</div>
+  </div>
+
+  <div class="logout">
+    Para volver al panel: <a href="admin.html" style="color:#ffe36a;">Volver</a>
+  </div>
+
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      onSnapshot,
+      query,
+      orderBy,
+      getDocs,
+      doc,
+      updateDoc,
+      deleteDoc
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
+      authDomain: "torneo-beach.firebaseapp.com",
+      projectId: "torneo-beach",
+      storageBucket: "torneo-beach.firebasestorage.app",
+      messagingSenderId: "21136645638",
+      appId: "1:21136645638:web:52c3b06affc2ee151eed87"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // 🔐 protección
+    onAuthStateChanged(auth, (user) => {
+      if (!user) window.location.href = "login.html";
+    });
+
+    const nameInput      = document.getElementById("teamName");
+    const catInput       = document.getElementById("teamCat");
+    const zoneInput      = document.getElementById("teamZone");
+
+    const filterCat      = document.getElementById("filterCat");
+    const filterZone     = document.getElementById("filterZone");
+    const teamList       = document.getElementById("teamList");
+
+    const btnAddOrSave   = document.getElementById("btnAddOrSave");
+    const btnCancelEdit  = document.getElementById("btnCancelEdit");
+    const btnReloadZones = document.getElementById("btnReloadZones");
+
+    let allTeams = [];
+    let editingTeamId = null;
+    let zonasDisponibles = [];
+
+    /* --------- CARGAR ZONAS DESDE Firestore (matches + teams) --------- */
+    async function loadZones() {
+      const baseZonas = ["A","B","C","D","E","F","G","H"];
+      const zonasSet = new Set(baseZonas);
+
+      try {
+        // Zonas desde matches (fixture / importador)
+        const snapMatches = await getDocs(collection(db, "matches"));
+        snapMatches.forEach(d => {
+          const data = d.data();
+          const z = (data.zone || data.zona || "").toString().trim();
+          if (z) zonasSet.add(z.toUpperCase());
+        });
+
+        // Zonas desde teams (por si hay alguna zona sin partidos todavía)
+        const snapTeams = await getDocs(collection(db, "teams"));
+        snapTeams.forEach(d => {
+          const data = d.data();
+          const z = (data.zone || data.zona || "").toString().trim();
+          if (z) zonasSet.add(z.toUpperCase());
+        });
+      } catch (err) {
+        console.error("Error cargando zonas:", err);
+      }
+
+      let zonas = Array.from(zonasSet);
+      zonas.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+      zonasDisponibles = zonas;
+      renderZoneSelects();
+    }
+
+    function renderZoneSelects() {
+      // Rellenar select de alta/edición
+      zoneInput.innerHTML = "";
+      zonasDisponibles.forEach(z => {
+        const opt = document.createElement("option");
+        opt.value = z;
+        opt.textContent = "Zona " + z;
+        zoneInput.appendChild(opt);
+      });
+
+      // Rellenar filtro de zona
+      filterZone.innerHTML = "";
+      const optAll = document.createElement("option");
+      optAll.value = "all";
+      optAll.textContent = "Zona: Todas";
+      filterZone.appendChild(optAll);
+
+      zonasDisponibles.forEach(z => {
+        const opt = document.createElement("option");
+        opt.value = z;
+        opt.textContent = "Zona " + z;
+        filterZone.appendChild(opt);
+      });
+    }
+
+    /* --------- CREAR EQUIPOS DESDE LOS PARTIDOS --------- */
+    async function syncTeamsFromMatches() {
+      // Mapa de equipos ya existentes para no duplicar
+      const existing = new Set();
+      const snapTeams = await getDocs(collection(db, "teams"));
+      snapTeams.forEach(docSnap => {
+        const d = docSnap.data();
+        const name = (d.name || "").toString().trim().toUpperCase();
+        const cat  = (d.category || d.categoria || "").toString().trim().toUpperCase();
+        const zone = (d.zone || d.zona || "").toString().trim().toUpperCase();
+        if (name) {
+          existing.add(`${name}||${cat}||${zone}`);
+        }
+      });
+
+      const snapMatches = await getDocs(collection(db, "matches"));
+      const promises = [];
+
+      snapMatches.forEach(docSnap => {
+        const data = docSnap.data();
+
+        const rawZone = (data.zone || data.zona || "").toString().trim().toUpperCase();
+        if (!rawZone) return;
+
+        let rawCat = (data.category || data.categoria || "").toString().trim().toUpperCase();
+        // normalizamos categoría a M / F
+        if (rawCat.startsWith("M")) rawCat = "M";
+        else if (rawCat.startsWith("F")) rawCat = "F";
+        else rawCat = "F";
+
+        // posibles nombres de equipo en el doc de partido
+        const possibleNames = [
+          data.teamAName, data.teamBName,
+          data.teamA, data.teamB,
+          data.equipoA, data.equipoB,
+          data.equipo1, data.equipo2
+        ];
+
+        const namesSet = new Set();
+        possibleNames.forEach(n => {
+          const nn = (n || "").toString().trim();
+          if (nn) namesSet.add(nn);
+        });
+
+        namesSet.forEach(name => {
+          const key = `${name.toUpperCase()}||${rawCat}||${rawZone}`;
+          if (!existing.has(key)) {
+            existing.add(key);
+            promises.push(
+              addDoc(collection(db, "teams"), {
+                name,
+                category: rawCat,
+                zone: rawZone
+              })
+            );
+          }
+        });
+      });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+      }
+    }
+
+    /* --------- ALTA / EDICIÓN MANUAL --------- */
+    btnAddOrSave.addEventListener("click", async () => {
+      const name = nameInput.value.trim();
+      const category = catInput.value;
+      const zone = zoneInput.value;
+
+      if (!name) {
+        alert("El equipo necesita un nombre.");
+        return;
+      }
+
+      if (!category || !zone) {
+        alert("Completá rama y zona.");
+        return;
+      }
+
+      if (editingTeamId) {
+        await updateDoc(doc(db, "teams", editingTeamId), {
+          name,
+          category,
+          zone
+        });
+
+        alert("Equipo actualizado.");
+        resetForm();
+      } else {
+        await addDoc(collection(db, "teams"), {
+          name,
+          category,
+          zone
+        });
+        alert("Equipo agregado.");
+        nameInput.value = "";
+      }
+    });
+
+    btnCancelEdit.addEventListener("click", () => {
+      resetForm();
+    });
+
+    function resetForm() {
+      editingTeamId = null;
+      nameInput.value = "";
+      catInput.value = "F";
+      if (zonasDisponibles.length > 0) {
+        zoneInput.value = zonasDisponibles[0];
+      }
+      btnAddOrSave.textContent = "Agregar equipo";
+      btnCancelEdit.style.display = "none";
+    }
+
+    function startEditTeam(team) {
+      editingTeamId = team.id;
+      nameInput.value = team.name || "";
+      catInput.value = team.category || "F";
+
+      const zTeam = (team.zone || team.zona || "").toString().toUpperCase();
+      if (zTeam && zonasDisponibles.includes(zTeam)) {
+        zoneInput.value = zTeam;
+      } else if (zonasDisponibles.length > 0) {
+        zoneInput.value = zonasDisponibles[0];
+      }
+
+      btnAddOrSave.textContent = "Guardar cambios";
+      btnCancelEdit.style.display = "block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    /* --------- LISTADO EN VIVO --------- */
+    const qTeams = query(
+      collection(db, "teams"),
+      orderBy("zone"),
+      orderBy("name")
+    );
+
+    onSnapshot(qTeams, (snap) => {
+      allTeams = [];
+      snap.forEach(docSnap => {
+        const data = docSnap.data();
+        const category = data.category || data.categoria || "F";
+        const zone = (data.zone || data.zona || "").toString().toUpperCase();
+
+        allTeams.push({
+          id: docSnap.id,
+          name: data.name || "",
+          category,
+          zone
+        });
+      });
+      renderTeams();
+    });
+
+    // 🔍 FILTROS
+    filterCat.addEventListener("change", renderTeams);
+    filterZone.addEventListener("change", renderTeams);
+
+    function renderTeams() {
+      let list = allTeams;
+
+      if (filterCat.value !== "all")
+        list = list.filter(t => t.category === filterCat.value);
+
+      if (filterZone.value !== "all")
+        list = list.filter(t => (t.zone || "").toUpperCase() === filterZone.value.toUpperCase());
+
+      if (list.length === 0) {
+        teamList.innerHTML = "No hay equipos en este filtro.";
+        return;
+      }
+
+      teamList.innerHTML = "";
+
+      list.forEach(t => {
+        const item = document.createElement("div");
+        item.className = "team-item";
+
+        const info = document.createElement("div");
+        info.className = "team-info";
+        info.innerHTML = `
+          <strong>${t.name}</strong><br>
+          Rama: ${t.category} · Zona: ${(t.zone || "").toUpperCase()}
+        `;
+
+        const actions = document.createElement("div");
+        actions.className = "team-actions";
+
+        const btnEdit = document.createElement("button");
+        btnEdit.className = "team-btn team-edit";
+        btnEdit.textContent = "Editar";
+        btnEdit.onclick = () => startEditTeam(t);
+
+        const btnDelete = document.createElement("button");
+        btnDelete.className = "team-btn team-delete";
+        btnDelete.textContent = "Borrar";
+        btnDelete.onclick = async () => {
+          if (!confirm("¿Seguro que querés borrar este equipo?")) return;
+          await deleteDoc(doc(db, "teams", t.id));
+        };
+
+        actions.appendChild(btnEdit);
+        actions.appendChild(btnDelete);
+
+        item.appendChild(info);
+        item.appendChild(actions);
+        teamList.appendChild(item);
+      });
+    }
+
+    // 🔄 Botón para refrescar zonas y crear equipos desde partidos
+    btnReloadZones.addEventListener("click", async () => {
+      await loadZones();
+      await syncTeamsFromMatches();
+      renderTeams();
+      alert("Zonas y equipos actualizados desde los partidos.");
+    });
+
+    // Cargar zonas dinámicas al inicio
+    (async () => {
+      await loadZones();
+      await syncTeamsFromMatches();
+      resetForm();
+      renderTeams();
+    })();
+
+  </script>
+
+</body>
+</html>
