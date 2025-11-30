@@ -308,6 +308,14 @@
       <option value="H">Zona H</option>
     </select>
 
+    <!-- NUEVO: filtro de fase -->
+    <label style="margin-top:10px;">Fase</label>
+    <select id="filterPhase">
+      <option value="all">Todas</option>
+      <option value="groups">Fase de grupos</option>
+      <option value="maindraw">Cuadro principal</option>
+    </select>
+
     <label style="margin-top:16px;">Partido</label>
     <select id="selectMatch"></select>
   </div>
@@ -481,6 +489,7 @@
 
   const selCat = document.getElementById("filterCat");
   const selZone = document.getElementById("filterZone");
+  const selPhase = document.getElementById("filterPhase");   // NUEVO
   const selMatch = document.getElementById("selectMatch");
   const panel = document.getElementById("matchPanel");
 
@@ -772,6 +781,16 @@
     if (selZone.value !== "all")
       list = list.filter(m => m.zona === selZone.value);
 
+    // NUEVO: filtro por fase usando campo "phase"
+if (selPhase.value === "groups") {
+  // Fase de grupos: todo lo que NO tenga phase = "maindraw"
+  list = list.filter(m => m.phase !== "maindraw");
+} else if (selPhase.value === "maindraw") {
+  // Cuadro principal: solo los de phase = "maindraw"
+  list = list.filter(m => m.phase === "maindraw");
+}
+
+
     // excluir finalizados
     list = list.filter(m => m.estado !== "Finalizado");
 
@@ -796,6 +815,7 @@
 
   selCat.onchange = renderMatchList;
   selZone.onchange = renderMatchList;
+  selPhase.onchange = renderMatchList; // NUEVO
 
   selMatch.onchange = () => {
     currentMatchId = selMatch.value;
