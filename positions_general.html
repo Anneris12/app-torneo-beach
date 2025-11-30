@@ -126,7 +126,6 @@ h1 {
 <body>
 
 <div class="top-buttons">
-  <!-- si querés, acá podés linkear al archivo de posiciones por zona -->
   <a class="top-btn" href="positions.html">← Posiciones por zona</a>
   <a class="top-btn" href="index.html">Inicio</a>
 </div>
@@ -147,7 +146,6 @@ h1 {
 </div>
 <div id="rankingStatus" style="text-align:center; font-size:13px; color:#cccccc; margin-bottom:10px;"></div>
 
-
 <!-- CONTENEDOR TABLA GENERAL -->
 <div id="globalContainer"></div>
 
@@ -165,7 +163,6 @@ import {
   doc
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-
 const firebaseConfig = {
   apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
   authDomain: "torneo-beach.firebaseapp.com",
@@ -180,10 +177,8 @@ const db  = getFirestore(app);
 
 const globalContainer = document.getElementById("globalContainer");
 const tabButtons      = document.querySelectorAll(".tab-btn");
-
 const btnSaveRanking  = document.getElementById("btnSaveRanking");
 const rankingStatus   = document.getElementById("rankingStatus");
-
 
 let allMatches = [];          // todo viene de matches
 let currentCategory = "F";    // pestaña por defecto
@@ -301,7 +296,7 @@ function computeStandingsByZone(categoriaFiltro){
     const { localName, visitanteName } = m;
     if(!localName || !visitanteName) return;
 
-    // puntos por set (1 set, pero usamos setsData igual)
+    // puntos por set
     let ptsLocal = 0;
     let ptsVisit = 0;
     if(Array.isArray(m.setsData)){
@@ -311,7 +306,7 @@ function computeStandingsByZone(categoriaFiltro){
       });
     }
 
-    if(ptsLocal === 0 && ptsVisit === 0) return; // partido raro, lo saltamos
+    if(ptsLocal === 0 && ptsVisit === 0) return; // partido raro
 
     const localKey = `${localName}|${categoria}|${zona}`;
     const visitKey = `${visitanteName}|${categoria}|${zona}`;
@@ -407,13 +402,14 @@ function computeGlobalStandings(categoriaFiltro){
   return [...firsts, ...seconds, ...thirds, ...others];
 }
 
+/* -------- Guardar ranking para cuadro (collection rankingGeneral) -------- */
+
 async function saveRankingForCurrentCategory() {
   try {
     const rama = currentCategory; // "F" o "M"
     rankingStatus.textContent =
       `Guardando ranking de ${rama === "F" ? "Femenino" : "Masculino"}...`;
 
-    // Usamos la misma lógica que la tabla general
     const globalList = computeGlobalStandings(rama);
     if (globalList.length === 0) {
       rankingStatus.textContent = "No hay equipos para esta rama.";
@@ -429,14 +425,14 @@ async function saveRankingForCurrentCategory() {
     const batch = writeBatch(db);
     existingSnap.forEach(docSnap => batch.delete(docSnap.ref));
 
-    // Guardar ranking nuevo
+    // Guardar ranking nuevo (32, o todos los que haya)
     globalList.forEach((t, idx) => {
       const ref = doc(rankingCol);
       batch.set(ref, {
         rama,                         // "F" o "M"
         position: idx + 1,            // 1, 2, 3...
         teamName: t.teamName || "",
-        teamId: t.teamId || null,     // ahora será null, podemos mejorar luego
+        teamId: t.teamId || null,
         zona: t.zoneName || null,
         tablePts: t.tablePts,
         ptsWon: t.ptsWon,
@@ -454,10 +450,6 @@ async function saveRankingForCurrentCategory() {
       "❌ Error al guardar el ranking. Revisá la consola.";
   }
 }
-btnSaveRanking.addEventListener("click", () => {
-  saveRankingForCurrentCategory();
-});
-
 
 /* -------- Render tabla general -------- */
 
@@ -540,6 +532,12 @@ tabButtons.forEach(btn => {
 
     renderGlobal();
   });
+});
+
+/* -------- Evento del botón Guardar ranking -------- */
+
+btnSaveRanking.addEventListener("click", () => {
+  saveRankingForCurrentCategory();
 });
 
 </script>
