@@ -611,20 +611,213 @@
    * 5) LEER RANKING GENERAL
    * ============================ */
 
+/* ============================
+ * 5) RANKING DIRECTO DESDE PARTIDOS (como tabla general)
+ * ============================ */
+
 async function fetchRankingForRama(rama) {
-  const q = query(
-    collection(db, "rankingGeneral"),
-    where("rama", "==", rama)      // "F" o "M"
-  );
+  // Leemos TODOS los partidos
+  const snap = await getDocs(collection(db, "matches"));
+  const matches = [];
 
-  const snap = await getDocs(q);
-  const items = snap.docs.map(d => d.data());
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+    const categoria = (d.categoria || d.category || d.rama || "").toString().toUpperCase().charAt(0);
+    const zona      = (d.zona || d.zone || "").toString().trim().toUpperCase();
+    const phase     = d.phase || d.fase || null;
 
-  // Ordenamos por posición (1,2,3…)
-  items.sort((a, b) => (a.position || 9999) - (b.position || 9999));
+    // Solo partidos de esta rama y que NO sean del cuadro principal
+    if(categoria !== rama) return;
+    if(phase === "maindraw") return;
 
-  return items;  // { rama, position, teamName, teamId, ... }
+    matches.push({
+      localName: d.localName || "",
+      visitanteName: d.visitanteName || "",
+      categoria,
+      zona,
+      estado: d.estado || "Pendiente",
+      setsData: d.setsData || []
+    });
+  });
+
+  if(matches.length === 0) {
+    return [];
+  }
+
+  // Helpers internos
+  function calcCoef(t){
+    if (t.ptsLost === 0){
+      return t.ptsWon > 0 ? t.ptsWon : 0;
+    }
+    return t.ptsWon / t.ptsLost;
+  }
+
+  function compareTeams(a,b){
+    if(b.tablePts !== a.tablePts) return b.tablePts - a.tablePts;
+
+    const diffA = a.ptsWon - a.ptsLost;
+    const diffB = b.ptsWon - b.ptsLost;
+    if(diffB !== diffA) return diffB - diffA;
+
+    const coefA = calcCoef(a);
+    const coefB = calcCoef(b);
+    if(coefB !== coefA) return coefB - coefA;
+
+    return (a.teamName || "").localeCompare(b.teamName || "");
+  }
+
+  function computeStandingsByZone(){
+    const map = new Map();
+
+    // Inicializar equipos
+    matches.forEach(m => {
+      const zona = m.zona || "SIN ZONA";
+
+      const equipos = [
+        { name: m.localName },
+        { name: m.visitanteName }
+      ];
+
+      equipos.forEach(e => {
+        if(!e.name) return;
+        const key = `${e.name}|${rama}|${zona}`;
+        if(!map.has(key)){
+          map.set(key, {
+            teamName: e.name,
+            categoria: rama,
+            zona: zona,
+            played: 0,
+            wins: 0,
+            losses: 0,
+            ptsWon: 0,
+            ptsLost: 0,
+            tablePts: 0
+          });
+        }
+      });
+    });
+
+    const PTS_WIN  = 2;
+    const PTS_LOSS = 1;
+
+    // Sumamos stats solo de finalizados
+    matches.forEach(m => {
+      if(m.estado !== "Finalizado") return;
+
+      const zona = m.zona || "SIN ZONA";
+      const { localName, visitanteName } = m;
+      if(!localName || !visitanteName) return;
+
+      let ptsLocal = 0;
+      let ptsVisit = 0;
+      if(Array.isArray(m.setsData)){
+        m.setsData.forEach(s => {
+          ptsLocal += s.puntosLocal ?? 0;
+          ptsVisit += s.puntosVisitante ?? 0;
+        });
+      }
+      if(ptsLocal === 0 && ptsVisit === 0) return;
+
+      const localKey = `${localName}|${rama}|${zona}`;
+      const visitKey = `${visitanteName}|${rama}|${zona}`;
+
+      if(!map.has(localKey)){
+        map.set(localKey, {
+          teamName: localName,
+          categoria: rama,
+          zona,
+          played: 0,wins:0,losses:0,ptsWon:0,ptsLost:0,tablePts:0
+        });
+      }
+      if(!map.has(visitKey)){
+        map.set(visitKey, {
+          teamName: visitanteName,
+          categoria: rama,
+          zona,
+          played: 0,wins:0,losses:0,ptsWon:0,ptsLost:0,tablePts:0
+        });
+      }
+
+      const localStat = map.get(localKey);
+      const visitStat = map.get(visitKey);
+
+      localStat.played++;
+      visitStat.played++;
+
+      localStat.ptsWon  += ptsLocal;
+      localStat.ptsLost += ptsVisit;
+      visitStat.ptsWon  += ptsVisit;
+      visitStat.ptsLost += ptsLocal;
+
+      if(ptsLocal > ptsVisit){
+        localStat.wins++;
+        visitStat.losses++;
+        localStat.tablePts += PTS_WIN;
+        visitStat.tablePts += PTS_LOSS;
+      } else {
+        visitStat.wins++;
+        localStat.losses++;
+        visitStat.tablePts += PTS_WIN;
+        localStat.tablePts += PTS_LOSS;
+      }
+    });
+
+    const zonasMap = {};
+    for(const s of map.values()){
+      const z = s.zona || "SIN ZONA";
+      if(!zonasMap[z]) zonasMap[z] = [];
+      zonasMap[z].push(s);
+    }
+
+    Object.keys(zonasMap).forEach(z => {
+      zonasMap[z].sort(compareTeams);
+    });
+
+    return zonasMap;
+  }
+
+  function computeGlobalStandings(){
+    const zonasMap  = computeStandingsByZone();
+    const zoneNames = Object.keys(zonasMap);
+
+    const firsts  = [];
+    const seconds = [];
+    const thirds  = [];
+    const others  = [];
+
+    zoneNames.forEach(z => {
+      const lista = zonasMap[z];
+      lista.forEach((t, idx) => {
+        const enriched = {
+          ...t,
+          zoneName: z,
+          posZona: idx + 1
+        };
+        if(idx === 0) firsts.push(enriched);
+        else if(idx === 1) seconds.push(enriched);
+        else if(idx === 2) thirds.push(enriched);
+        else others.push(enriched);
+      });
+    });
+
+    firsts.sort(compareTeams);
+    seconds.sort(compareTeams);
+    thirds.sort(compareTeams);
+    others.sort(compareTeams);
+
+    return [...firsts, ...seconds, ...thirds, ...others];
+  }
+
+  const globalList = computeGlobalStandings();
+
+  // Adaptamos al formato que usa assignTeamsFromRanking
+  return globalList.map((t, idx) => ({
+    teamId: t.teamId || null,
+    teamName: t.teamName || "",
+    position: idx + 1
+  }));
 }
+
 
 
   /* ============================

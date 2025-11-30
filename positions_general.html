@@ -138,14 +138,6 @@ h1 {
   <button class="tab-btn" data-cat="M">Masculino</button>
 </div>
 
-<!-- BOTÓN PARA GUARDAR RANKING -->
-<div style="text-align:center; margin-bottom:10px;">
-  <button id="btnSaveRanking" class="top-btn" style="font-size:13px; padding:8px 14px;">
-    Guardar ranking para cuadro (rama actual)
-  </button>
-</div>
-<div id="rankingStatus" style="text-align:center; font-size:13px; color:#cccccc; margin-bottom:10px;"></div>
-
 <!-- CONTENEDOR TABLA GENERAL -->
 <div id="globalContainer"></div>
 
@@ -155,12 +147,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
 import {
   getFirestore,
   collection,
-  onSnapshot,
-  query,
-  where,
-  getDocs,
-  writeBatch,
-  doc
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -177,11 +164,9 @@ const db  = getFirestore(app);
 
 const globalContainer = document.getElementById("globalContainer");
 const tabButtons      = document.querySelectorAll(".tab-btn");
-const btnSaveRanking  = document.getElementById("btnSaveRanking");
-const rankingStatus   = document.getElementById("rankingStatus");
 
-let allMatches = [];          // todo viene de matches
-let currentCategory = "F";    // pestaña por defecto
+let allMatches = [];
+let currentCategory = "F";
 
 /* -------- Normalizadores -------- */
 
@@ -230,20 +215,16 @@ function calcCoef(t){
 }
 
 function compareTeams(a,b){
-  // Puntos de tabla
   if(b.tablePts !== a.tablePts) return b.tablePts - a.tablePts;
 
-  // Diferencia de puntos (PF - PC)
   const diffA = a.ptsWon - a.ptsLost;
   const diffB = b.ptsWon - b.ptsLost;
   if(diffB !== diffA) return diffB - diffA;
 
-  // Coeficiente PF/PC
   const coefA = calcCoef(a);
   const coefB = calcCoef(b);
   if(coefB !== coefA) return coefB - coefA;
 
-  // Nombre
   return (a.teamName || "").localeCompare(b.teamName || "");
 }
 
@@ -252,7 +233,6 @@ function compareTeams(a,b){
 function computeStandingsByZone(categoriaFiltro){
   const map = new Map();
 
-  // 1) Inicializar equipos según TODOS los partidos de esa rama
   allMatches.forEach(m => {
     if(m.categoria !== categoriaFiltro) return;
 
@@ -282,11 +262,9 @@ function computeStandingsByZone(categoriaFiltro){
     });
   });
 
-  // Parámetros de puntos de tabla
   const PTS_WIN  = 2;
   const PTS_LOSS = 1;
 
-  // 2) Procesar SOLO partidos finalizados de esa rama para sumar stats
   allMatches.forEach(m => {
     if(m.categoria !== categoriaFiltro) return;
     if(m.estado !== "Finalizado") return;
@@ -296,7 +274,6 @@ function computeStandingsByZone(categoriaFiltro){
     const { localName, visitanteName } = m;
     if(!localName || !visitanteName) return;
 
-    // puntos por set
     let ptsLocal = 0;
     let ptsVisit = 0;
     if(Array.isArray(m.setsData)){
@@ -305,8 +282,7 @@ function computeStandingsByZone(categoriaFiltro){
         ptsVisit += s.puntosVisitante ?? 0;
       });
     }
-
-    if(ptsLocal === 0 && ptsVisit === 0) return; // partido raro
+    if(ptsLocal === 0 && ptsVisit === 0) return;
 
     const localKey = `${localName}|${categoria}|${zona}`;
     const visitKey = `${visitanteName}|${categoria}|${zona}`;
@@ -334,10 +310,10 @@ function computeStandingsByZone(categoriaFiltro){
     localStat.played++;
     visitStat.played++;
 
-    localStat.ptsWon   += ptsLocal;
-    localStat.ptsLost  += ptsVisit;
-    visitStat.ptsWon   += ptsVisit;
-    visitStat.ptsLost  += ptsLocal;
+    localStat.ptsWon  += ptsLocal;
+    localStat.ptsLost += ptsVisit;
+    visitStat.ptsWon  += ptsVisit;
+    visitStat.ptsLost += ptsLocal;
 
     if(ptsLocal > ptsVisit){
       localStat.wins++;
@@ -352,7 +328,6 @@ function computeStandingsByZone(categoriaFiltro){
     }
   });
 
-  // Agrupamos por zona
   const zonasMap = {};
   for(const s of map.values()){
     const z = s.zona || "SIN ZONA";
@@ -360,7 +335,6 @@ function computeStandingsByZone(categoriaFiltro){
     zonasMap[z].push(s);
   }
 
-  // Ordenamos cada zona
   Object.keys(zonasMap).forEach(z => {
     zonasMap[z].sort(compareTeams);
   });
@@ -400,55 +374,6 @@ function computeGlobalStandings(categoriaFiltro){
   others.sort(compareTeams);
 
   return [...firsts, ...seconds, ...thirds, ...others];
-}
-
-/* -------- Guardar ranking para cuadro (collection rankingGeneral) -------- */
-
-async function saveRankingForCurrentCategory() {
-  try {
-    const rama = currentCategory; // "F" o "M"
-    rankingStatus.textContent =
-      `Guardando ranking de ${rama === "F" ? "Femenino" : "Masculino"}...`;
-
-    const globalList = computeGlobalStandings(rama);
-    if (globalList.length === 0) {
-      rankingStatus.textContent = "No hay equipos para esta rama.";
-      return;
-    }
-
-    const rankingCol = collection(db, "rankingGeneral");
-
-    // Borrar ranking previo de esa rama
-    const existingQ = query(rankingCol, where("rama", "==", rama));
-    const existingSnap = await getDocs(existingQ);
-
-    const batch = writeBatch(db);
-    existingSnap.forEach(docSnap => batch.delete(docSnap.ref));
-
-    // Guardar ranking nuevo (32, o todos los que haya)
-    globalList.forEach((t, idx) => {
-      const ref = doc(rankingCol);
-      batch.set(ref, {
-        rama,                         // "F" o "M"
-        position: idx + 1,            // 1, 2, 3...
-        teamName: t.teamName || "",
-        teamId: t.teamId || null,
-        zona: t.zoneName || null,
-        tablePts: t.tablePts,
-        ptsWon: t.ptsWon,
-        ptsLost: t.ptsLost
-      });
-    });
-
-    await batch.commit();
-    rankingStatus.textContent =
-      `✅ Ranking guardado para ${rama === "F" ? "Femenino" : "Masculino"}.`;
-
-  } catch (err) {
-    console.error(err);
-    rankingStatus.textContent =
-      "❌ Error al guardar el ranking. Revisá la consola.";
-  }
 }
 
 /* -------- Render tabla general -------- */
@@ -518,7 +443,7 @@ function renderGlobal(){
   globalContainer.innerHTML = html;
 }
 
-/* -------- Eventos de pestañas F / M -------- */
+/* -------- Eventos tabs -------- */
 
 tabButtons.forEach(btn => {
   btn.addEventListener("click", () => {
@@ -532,12 +457,6 @@ tabButtons.forEach(btn => {
 
     renderGlobal();
   });
-});
-
-/* -------- Evento del botón Guardar ranking -------- */
-
-btnSaveRanking.addEventListener("click", () => {
-  saveRankingForCurrentCategory();
 });
 
 </script>

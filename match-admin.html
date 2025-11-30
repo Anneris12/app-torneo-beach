@@ -295,13 +295,14 @@
       <option value="M">Masculino</option>
     </select>
 
-    <!-- AHORA FASE VA ARRIBA -->
+    <!-- Fase (grupos / cuadro) -->
     <label style="margin-top:10px;">Fase</label>
     <select id="filterPhase">
       <option value="groups">Fase de grupos</option>
       <option value="maindraw">Cuadro principal</option>
     </select>
 
+    <!-- Zona (solo grupos) -->
     <label id="zoneLabel" style="margin-top:10px;">Zona</label>
     <select id="filterZone">
       <option value="all">Todas</option>
@@ -315,7 +316,7 @@
       <option value="H">Zona H</option>
     </select>
 
-    <!-- RONDA SOLO PARA MAINDRAW -->
+    <!-- Ronda (solo cuadro) -->
     <label id="roundLabel" style="margin-top:10px; display:none;">Ronda</label>
     <select id="filterRound" style="display:none;">
       <option value="all">Todas</option>
@@ -447,6 +448,7 @@
       </div>
 
       <button class="set-btn undo-btn" onclick="undoLast()">Deshacer último</button>
+      <!-- Sin botón de finalizar partido: se finaliza solo por sets -->
 
     </div>
   </div>
@@ -483,12 +485,13 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
+  const MATCHES_COLLECTION = "matches";
 
   let allMatches = [];
   let currentMatchId = null;
   let currentMatchData = null;
   let unsubscribeMatch = null;
-  let stateHistory = [];
+  let stateHistory = [];         // historial para deshacer
   let isEditingFirstServe = false;
 
   const selCat   = document.getElementById("filterCat");
@@ -501,28 +504,42 @@
   const zoneLabel  = document.getElementById("zoneLabel");
   const roundLabel = document.getElementById("roundLabel");
 
-  const btnSetPlaying    = document.getElementById("btnSetPlaying");
-  const estadoLabel      = document.getElementById("estadoLabel");
-  const matchNumberLabel = document.getElementById("matchNumberLabel");
-  const infoExtraLabel   = document.getElementById("infoExtraLabel");
+  const btnSetPlaying     = document.getElementById("btnSetPlaying");
+  const estadoLabel       = document.getElementById("estadoLabel");
+  const matchNumberLabel  = document.getElementById("matchNumberLabel");
+  const infoExtraLabel    = document.getElementById("infoExtraLabel");
   const btnEditFirstServe = document.getElementById("btnEditFirstServe");
-  const setsCurrentLabel = document.getElementById("setsCurrentLabel");
-  const setsChips        = document.getElementById("setsChips");
+  const setsCurrentLabel  = document.getElementById("setsCurrentLabel");
+  const setsChips         = document.getElementById("setsChips");
 
+  // Proteger acceso
   onAuthStateChanged(auth, u => { 
     if (!u) location.href = "login.html"; 
   });
 
+  /* ------- Helpers de normalización (igual que cuadro principal) ------- */
+
+  function normalizeCategoria(c){
+    if(!c) return "";
+    const up = c.toString().toUpperCase();
+    if(up.startsWith("F")) return "F";
+    if(up.startsWith("M")) return "M";
+    return up;
+  }
+
+  // ==== NUEVO: normalización de hora HH:MM ====
   function normalizeHora(horaRaw) {
     if (!horaRaw && horaRaw !== 0) return "";
     let str = String(horaRaw).trim();
     if (!str) return "";
 
+    // ya viene con :
     if (/^\d{1,2}:\d{2}$/.test(str)) {
       const [h, m] = str.split(":");
       return h.padStart(2, "0") + ":" + m;
     }
 
+    // solo dígitos (ej: 900, 0930, 1330)
     const digits = str.replace(/\D/g, "");
     if (digits.length === 3) {
       const h = digits.slice(0, 1);
@@ -535,6 +552,7 @@
       return h + ":" + m;
     }
 
+    // fallback: lo devolvemos como venga
     return str;
   }
 
@@ -618,6 +636,7 @@
     }
   }
 
+  // Sonidito con Web Audio API
   function playSideChangeSound() {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -637,9 +656,12 @@
 
       osc.start();
       osc.stop(ctx.currentTime + 0.18);
-    } catch (e) {}
+    } catch (e) {
+      // si falla no pasa nada
+    }
   }
 
+  // CARTEL CAMBIO DE LADO
   function showSideChangeBanner() {
     const banner = document.getElementById("sideChangeBanner");
 
@@ -677,6 +699,7 @@
     }
   }
 
+  // Cerrar set automático según puntuación
   async function maybeAutoCloseSet(newLocal, newVisit) {
     if (!currentMatchId || !currentMatchData) return;
     if (currentMatchData.estado !== "En juego") return;
@@ -697,7 +720,7 @@
 
     if (maxPoints < targetPoints || diff < 2) return;
 
-    const matchRef = doc(db, "matches", currentMatchId);
+    const matchRef = doc(db, MATCHES_COLLECTION, currentMatchId);
 
     const winner = newLocal > newVisit ? "local" : "visit";
 
@@ -754,52 +777,94 @@
     });
   }
 
+  // ----------- Cargar TODOS los partidos de matches -----------
   async function loadMatches() {
-    const qAll = query(collection(db, "matches"), orderBy("zona"));
+    const qAll = query(collection(db, MATCHES_COLLECTION), orderBy("numeroPartido"));
     const snap = await getDocs(qAll);
 
     allMatches = [];
-    snap.forEach(d => allMatches.push({ id: d.id, ...d.data() }));
+
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+
+      const categoria = normalizeCategoria(d.categoria || d.category || d.rama || "");
+      const phase     = (d.phase || "").toString().trim().toLowerCase();
+      const roundLabel = (d.roundLabel || "").toString();
+
+      let estado = d.estado;
+      if (!estado && d.status) {
+        if (d.status === "finished") estado = "Finalizado";
+        else if (d.status === "in_progress") estado = "En juego";
+        else estado = "Pendiente";
+      }
+      if (!estado) estado = "Pendiente";
+
+      allMatches.push({
+        id: docSnap.id,
+        numeroPartido: d.numeroPartido ?? d.drawMatchNumber ?? null,
+        drawMatchNumber: d.drawMatchNumber ?? null,
+        localName: d.localName ?? d.team1Name ?? "",
+        visitanteName: d.visitanteName ?? d.team2Name ?? "",
+        categoria,
+        phase,          // "maindraw" o "" para grupos
+        roundLabel,
+        zona: d.zona || "",
+        cancha: d.cancha || "",
+        fecha: d.fecha || "",
+        hora: d.hora || "",
+        estado,
+        setsData: d.setsData || [],
+        setsLocal: d.setsLocal ?? 0,
+        setsVisitante: d.setsVisitante ?? 0,
+        totalPointsLocal: d.totalPointsLocal ?? 0,
+        totalPointsVisitante: d.totalPointsVisitante ?? 0,
+        setActual: d.setActual ?? 1,
+        puntosLocal: d.puntosLocal ?? 0,
+        puntosVisitante: d.puntosVisitante ?? 0,
+        currentServerTeam: d.currentServerTeam ?? null,
+        currentServerPlayer: d.currentServerPlayer ?? null,
+        localNextServer: d.localNextServer ?? null,
+        visitNextServer: d.visitNextServer ?? null,
+        localFirstServer: d.localFirstServer ?? null,
+        visitFirstServer: d.visitFirstServer ?? null
+      });
+    });
 
     buildRoundOptions();
-    updatePhaseUI(); // esto también llama a renderMatchList
+    updatePhaseUI();
   }
 
-function buildRoundOptions() {
-  selRound.innerHTML = `<option value="all">Todas</option>`;
+  function isMainDraw(m) {
+    return m.phase === "maindraw";
+  }
 
-  const roundsSet = new Set();
+  function buildRoundOptions() {
+    selRound.innerHTML = `<option value="all">Todas</option>`;
 
-  allMatches.forEach(m => {
-    if (isMainDraw(m)) {
-      const r =
-        m.roundLabel ||
-        m.ronda ||
-        m.round ||
-        m.roundLabelCSV ||
-        "";
-      if (r) roundsSet.add(r);
-    }
-  });
+    const roundsSet = new Set();
 
-  Array.from(roundsSet).sort().forEach(r => {
-    const opt = document.createElement("option");
-    opt.value = r;
-    opt.textContent = r;
-    selRound.appendChild(opt);
-  });
+    allMatches
+      .filter(isMainDraw)
+      .forEach(m => {
+        const r = m.roundLabel || "";
+        if (r) roundsSet.add(r);
+      });
 
-  // Para debug visual en consola (te va a ayudar si algo sigue raro)
-  console.log(
-    "Partidos totales:", allMatches.length,
-    "| Cuadro:", allMatches.filter(isMainDraw).length,
-    "| Grupos:", allMatches.filter(m => !isMainDraw(m)).length
-  );
-}
-
+    Array.from(roundsSet).sort().forEach(r => {
+      const opt = document.createElement("option");
+      opt.value = r;
+      opt.textContent = r;
+      selRound.appendChild(opt);
+    });
+  }
 
   function updatePhaseUI() {
     const phase = selPhase.value; // groups | maindraw
+
+    // limpiar selección de partido al cambiar fase
+    selMatch.value = "";
+    currentMatchId = null;
+    panel.style.display = "none";
 
     if (phase === "groups") {
       zoneLabel.style.display  = "";
@@ -819,16 +884,19 @@ function buildRoundOptions() {
   function renderMatchList() {
     selMatch.innerHTML = `<option value="">-- Elegí un partido --</option>`;
 
-    let list = allMatches;
-
     const phaseFilter = selPhase.value; // groups | maindraw
+    let list = [...allMatches];
 
-    // Rama: usar categoria o rama (para maindraw)
+    // Fase
+    list = list.filter(m => {
+      const md = isMainDraw(m);
+      if (phaseFilter === "maindraw") return md;
+      return !md;
+    });
+
+    // Rama
     if (selCat.value !== "all") {
-      list = list.filter(m => {
-        const gender = m.categoria || m.rama || "";
-        return gender === selCat.value;
-      });
+      list = list.filter(m => m.categoria === selCat.value);
     }
 
     // Zona solo en grupos
@@ -836,26 +904,9 @@ function buildRoundOptions() {
       list = list.filter(m => m.zona === selZone.value);
     }
 
-    // Fase según campo phase
-// Fase: usar helper isMainDraw
-list = list.filter(m => {
-  const md = isMainDraw(m);
-  if (phaseFilter === "maindraw") {
-    return md;
-  } else {
-    // groups: todo lo que NO sea del cuadro
-    return !md;
-  }
-});
-
-
     // Ronda solo en maindraw
     if (phaseFilter === "maindraw" && selRound.value !== "all") {
-      const roundFilter = selRound.value;
-      list = list.filter(m => {
-        const roundValue = m.roundLabel || m.ronda || m.round || "";
-        return roundValue === roundFilter;
-      });
+      list = list.filter(m => m.roundLabel === selRound.value);
     }
 
     // excluir finalizados
@@ -901,7 +952,7 @@ list = list.filter(m => {
 
     panel.style.display = "block";
 
-    const ref = doc(db, "matches", currentMatchId);
+    const ref = doc(db, MATCHES_COLLECTION, currentMatchId);
     unsubscribeMatch = onSnapshot(ref, snap => {
       currentMatchData = snap.data();
       renderPanel();
@@ -1033,7 +1084,7 @@ list = list.filter(m => {
   });
 
   async function updateServe(pointWinner) {
-    const matchRef = doc(db, "matches", currentMatchId);
+    const matchRef = doc(db, MATCHES_COLLECTION, currentMatchId);
 
     let {
       currentServerTeam,
@@ -1113,7 +1164,7 @@ list = list.filter(m => {
 
     saveLastState();
 
-    const matchRef = doc(db, "matches", currentMatchId);
+    const matchRef = doc(db, MATCHES_COLLECTION, currentMatchId);
 
     const oldLocal = currentMatchData.puntosLocal || 0;
     const oldVisit = currentMatchData.puntosVisitante || 0;
@@ -1149,7 +1200,7 @@ list = list.filter(m => {
     saveLastState();
 
     const key = side === "local" ? "puntosLocal" : "puntosVisitante";
-    const matchRef = doc(db, "matches", currentMatchId);
+    const matchRef = doc(db, MATCHES_COLLECTION, currentMatchId);
 
     await updateDoc(matchRef, {
       [key]: Math.max(0, (currentMatchData[key] || 0) - 1)
@@ -1164,7 +1215,7 @@ list = list.filter(m => {
 
     saveLastState();
 
-    const matchRef = doc(db, "matches", currentMatchId);
+    const matchRef = doc(db, MATCHES_COLLECTION, currentMatchId);
 
     const localFirst = getRadioValue("localStarter") || 1;
     const visitFirst = getRadioValue("visitStarter") || 1;
@@ -1188,7 +1239,7 @@ list = list.filter(m => {
   window.undoLast = async () => {
     if (!currentMatchId || stateHistory.length === 0) return;
 
-    const matchRef = doc(db, "matches", currentMatchId);
+    const matchRef = doc(db, MATCHES_COLLECTION, currentMatchId);
     const prev = stateHistory.pop();
     if (!prev) return;
 
@@ -1231,21 +1282,6 @@ list = list.filter(m => {
   };
 
   loadMatches();
-  
-  // Detectar si un partido es del cuadro principal (maindraw)
-function isMainDraw(m) {
-  if (!m) return false;
-
-  const phase = (m.phase ?? "").toString().trim().toLowerCase();
-  if (phase === "maindraw") return true;
-
-  // Por las dudas, si viene con campos propios del cuadro,
-  // también lo consideramos maindraw:
-  if (m.roundLabel || m.roundLabelCSV || m.drawMatchNumber) return true;
-
-  return false;
-}
-
 </script>
 
 </body>
