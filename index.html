@@ -2,118 +2,105 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Torneo Beach Voley 2026 – Inicio (App Style)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Torneo Beach Volley 2026</title>
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
   <style>
     :root {
       --bg: #ffffff;
-      --bg-light: #f9fafb;
-      --accent: #ffb300;
-      --accent-dark: #f59e0b;
-      --text-main: #1f2933;
-      --text-soft: #6b7280;
+      --text: #111827;
+      --soft: #6b7280;
     }
-    * { box-sizing: border-box; margin:0; padding:0; }
-    body { background: var(--bg); font-family: system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
-    header { padding: 24px 16px 8px; text-align: center; }
-    header h1 { font-size: 24px; color: var(--text-main); }
-    .hero { text-align: center; padding: 0 16px 24px; }
-    .hero img { width: 100%; max-width: 240px; border-radius: 16px; }
-    .grid-menu {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-      gap: 16px;
-      padding: 0 16px 24px;
-      flex-grow: 1;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, sans-serif;
     }
-    .grid-item {
-      background: var(--bg-light);
-      border-radius: 16px;
+    body {
+      background: var(--bg);
+      color: var(--text);
       padding: 16px;
-      text-align: center;
-      text-decoration: none;
-      color: var(--text-main);
-      transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
-    }
-    .grid-item:hover {
-      background: #ffffff;
-      transform: translateY(-4px);
-      box-shadow: 0 8px 16px rgba(0,0,0,0.08);
-    }
-    .grid-item .icon {
-      font-size: 32px;
-      margin-bottom: 8px;
-    }
-    .grid-item .label {
-      font-size: 12px;
-      color: var(--text-soft);
-    }
-    nav.bottom-nav {
-      background: #ffffff;
-      border-top: 1px solid #e5e7eb;
-      display: flex;
-      justify-content: space-around;
-      padding: 8px 0;
-    }
-    nav.bottom-nav a {
-      text-decoration: none;
-      color: var(--text-soft);
-      font-size: 12px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
     }
-    nav.bottom-nav a.active {
-      color: var(--accent);
-      font-weight: 600;
+    h1 {
+      font-size: 24px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .card {
+      background: #f9fafb;
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      transition: transform 0.2s ease;
+      text-decoration: none;
+      color: inherit;
+    }
+    .card:hover {
+      transform: scale(1.05);
+    }
+    .card lottie-player {
+      width: 70px;
+      height: 70px;
+      margin-bottom: 10px;
+    }
+    .label {
+      font-size: 14px;
+      color: var(--soft);
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>🏐 Torneo Beach Volley 2026</h1>
-  </header>
+  <h1>Torneo Beach Volley 2026</h1>
 
-  <div class="hero">
-    <img src="img/beach-villa-nueva-2026.jpeg" alt="Beach Volley">
-  </div>
+  <div class="grid">
 
-  <div class="grid-menu">
-    <a class="grid-item" href="live.html">
-      <div class="icon">🔴</div>
+    <a class="card" href="live.html">
+      <lottie-player src="https://lottie.host/6757b11e-c701-4be0-8439-e26953f29298/XoFB5IRobv.json" autoplay loop></lottie-player>
       <div class="label">En vivo</div>
     </a>
-    <a class="grid-item" href="fixture.html">
-      <div class="icon">🗓️</div>
+
+    <a class="card" href="fixture.html">
+      <lottie-player src="https://lottie.host/b2e4f1ab-85cd-453b-98a4-36c0e1ec705c/l4dOGw1tWT.json" autoplay loop></lottie-player>
       <div class="label">Fixture</div>
     </a>
-    <a class="grid-item" href="positions.html">
-      <div class="icon">📊</div>
+
+    <a class="card" href="positions.html">
+      <lottie-player src="https://lottie.host/bc9ce69f-c37d-44d7-9d4c-d4f5eb267aaf/WFkK3MQPWU.json" autoplay loop></lottie-player>
       <div class="label">Posiciones</div>
     </a>
-    <a class="grid-item" href="positions_general.html">
-      <div class="icon">🏅</div>
+
+    <a class="card" href="positions_general.html">
+      <lottie-player src="https://lottie.host/7db1e5c3-0c9e-42ff-8fc4-048b3c33f56c/V2SxAHzlsK.json" autoplay loop></lottie-player>
       <div class="label">General</div>
     </a>
-    <a class="grid-item" href="bracket.html">
-      <div class="icon">🏆</div>
+
+    <a class="card" href="bracket.html">
+      <lottie-player src="https://lottie.host/91e39e1b-fbc1-4cf3-98c5-e2291ab35c1a/LH3o7Oiqkz.json" autoplay loop></lottie-player>
       <div class="label">Doble elim.</div>
     </a>
-    <a class="grid-item" href="login.html">
-      <div class="icon">⚙️</div>
+
+    <a class="card" href="login.html">
+      <lottie-player src="https://lottie.host/c97dc304-51de-46c1-9e24-c17d48b4cb6c/MKnV1ZsVh0.json" autoplay loop></lottie-player>
       <div class="label">Admin</div>
     </a>
-  </div>
 
-  <nav class="bottom-nav">
-    <a class="active" href="index.html"><div>🏠</div> Inicio</a>
-    <a href="fixture.html"><div>🗓️</div> Fixture</a>
-    <a href="positions.html"><div>📊</div> Posiciones</a>
-    <a href="positions_general.html"><div>🏅</div> General</a>
-    <a href="login.html"><div>⚙️</div> Admin</a>
-  </nav>
+  </div>
 
 </body>
 </html>
