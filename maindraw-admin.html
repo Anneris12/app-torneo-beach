@@ -167,11 +167,12 @@
       </button>
     </div>
 
-    <p style="font-size:13px; color:#b0b0b0; margin-top:0;">
-      Formato CSV esperado (1ra fila encabezados):<br>
-      <code>numeroPartido;cruce;fecha;hora;cancha</code><br>
-      Ej: <code>1;1 vs 32;2026-02-01;08:00;1</code>
-    </p>
+<p style="font-size:13px; color:#b0b0b0; margin-top:0;">
+  Formato CSV esperado (1ra fila encabezados):<br>
+  <code>numeroPartido;ronda;cruce;fecha;hora;cancha</code><br>
+  Ej: <code>1;1ra ronda;1 vs 32;2026-02-01;08:00;1</code>
+</p>
+
 
     <div id="mainDrawStatus"></div>
 
@@ -398,21 +399,43 @@
         return;
       }
 
-      const headerLine = lines[0];
-      const sep = headerLine.includes(";") ? ";" : ",";
-      const headers = headerLine.split(sep).map(h => h.trim().toLowerCase());
+      // Convertimos encabezados a minúsculas para comparar
+const headersRaw = headerLine.split(sep).map(h => h.trim());
+const headers = headersRaw.map(h => h.toLowerCase());
 
-      const idxNum   = headers.findIndex(h => ["numero", "numpartido", "numero_partido", "#", "partido", "match", "drawmatchnumber"].includes(h));
-      const idxCruce = headers.findIndex(h => h.includes("cruce"));
-      const idxFecha = headers.findIndex(h => h.startsWith("fecha"));
-      const idxHora  = headers.findIndex(h => h.startsWith("hora"));
-      const idxCancha= headers.findIndex(h => h.startsWith("cancha"));
+// Columnas requeridas
+const idxNum = headers.findIndex(h =>
+  [
+    "numero",
+    "numeropartido",
+    "numero_partido",
+    "numpartido",
+    "#",
+    "partido",
+    "match",
+    "drawmatchnumber"
+  ].includes(h)
+);
 
-      if (idxNum === -1 || idxHora === -1 || idxCancha === -1 || idxFecha === -1) {
-        mainDrawStatus.textContent =
-          "No se encontraron las columnas requeridas en el CSV.\nNecesita al menos: numeroPartido, cruce, fecha, hora, cancha.";
-        return;
-      }
+// Columna opcional ronda
+const idxRonda = headers.findIndex(h =>
+  ["ronda", "round", "roundlabel"].includes(h)
+);
+
+// Columnas estándar
+const idxCruce = headers.findIndex(h => h.includes("cruce"));
+const idxFecha = headers.findIndex(h => h.startsWith("fecha"));
+const idxHora  = headers.findIndex(h => h.startsWith("hora"));
+const idxCancha= headers.findIndex(h => h.startsWith("cancha"));
+
+// Validación mínima
+if (idxNum === -1 || idxCruce === -1 || idxFecha === -1 || idxHora === -1 || idxCancha === -1) {
+  mainDrawStatus.textContent =
+    "No se encontraron las columnas requeridas en el CSV.\n" +
+    "Necesita al menos: numeroPartido, cruce, fecha, hora, cancha.";
+  return;
+}
+
 
       // 1) Borrar partidos previos de este cuadro + rama
       mainDrawStatus.textContent = "Eliminando partidos anteriores del cuadro para esta rama...";
