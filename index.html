@@ -50,6 +50,8 @@
       justify-content: center;
       box-shadow: 0 2px 6px rgba(0,0,0,0.06);
       transition: transform 0.2s ease;
+      text-decoration: none;
+      color: #333;
     }
 
     .card:hover {
@@ -60,11 +62,11 @@
       width: 80px;
       height: 80px;
       margin-bottom: 10px;
+      pointer-events: none;
     }
 
     .label {
       font-size: 15px;
-      color: #333;
     }
   </style>
 </head>
@@ -73,35 +75,35 @@
   <h1>Torneo Beach Volley 2026</h1>
 
   <div class="grid">
-    <div class="card">
+    <a class="card" href="live.html">
       <lottie-player src="assets/lottie/live.json" autoplay loop></lottie-player>
       <div class="label">En vivo</div>
-    </div>
+    </a>
 
-    <div class="card">
+    <a class="card" href="fixture.html">
       <lottie-player src="assets/lottie/fixture.json" autoplay loop></lottie-player>
       <div class="label">Fixture</div>
-    </div>
+    </a>
 
-    <div class="card">
+    <a class="card" href="positions.html">
       <lottie-player src="assets/lottie/positions.json" autoplay loop></lottie-player>
       <div class="label">Posiciones</div>
-    </div>
+    </a>
 
-    <div class="card">
+    <a class="card" href="positions_general.html">
       <lottie-player src="assets/lottie/ranking_general.json" autoplay loop></lottie-player>
       <div class="label">General</div>
-    </div>
+    </a>
 
-    <div class="card">
+    <a class="card" href="bracket.html">
       <lottie-player src="assets/lottie/cuadro.json" autoplay loop></lottie-player>
       <div class="label">Doble elim.</div>
-    </div>
+    </a>
 
-    <div class="card">
+    <a class="card" href="admin.html">
       <lottie-player src="assets/lottie/admin.json" autoplay loop></lottie-player>
       <div class="label">Admin</div>
-    </div>
+    </a>
   </div>
 
 </body>
