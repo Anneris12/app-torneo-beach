@@ -139,6 +139,15 @@ h1 {
   <button class="tab-btn" data-cat="M">Masculino</button>
 </div>
 
+<!-- BOTÓN PARA GUARDAR RANKING -->
+<div style="text-align:center; margin-bottom:10px;">
+  <button id="btnSaveRanking" class="top-btn" style="font-size:13px; padding:8px 14px;">
+    Guardar ranking para cuadro (rama actual)
+  </button>
+</div>
+<div id="rankingStatus" style="text-align:center; font-size:13px; color:#cccccc; margin-bottom:10px;"></div>
+
+
 <!-- CONTENEDOR TABLA GENERAL -->
 <div id="globalContainer"></div>
 
@@ -148,8 +157,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
 import {
   getFirestore,
   collection,
-  onSnapshot
+  onSnapshot,
+  query,
+  where,
+  getDocs,
+  writeBatch,
+  doc
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
@@ -165,6 +180,10 @@ const db  = getFirestore(app);
 
 const globalContainer = document.getElementById("globalContainer");
 const tabButtons      = document.querySelectorAll(".tab-btn");
+
+const btnSaveRanking  = document.getElementById("btnSaveRanking");
+const rankingStatus   = document.getElementById("rankingStatus");
+
 
 let allMatches = [];          // todo viene de matches
 let currentCategory = "F";    // pestaña por defecto
@@ -387,6 +406,58 @@ function computeGlobalStandings(categoriaFiltro){
 
   return [...firsts, ...seconds, ...thirds, ...others];
 }
+
+async function saveRankingForCurrentCategory() {
+  try {
+    const rama = currentCategory; // "F" o "M"
+    rankingStatus.textContent =
+      `Guardando ranking de ${rama === "F" ? "Femenino" : "Masculino"}...`;
+
+    // Usamos la misma lógica que la tabla general
+    const globalList = computeGlobalStandings(rama);
+    if (globalList.length === 0) {
+      rankingStatus.textContent = "No hay equipos para esta rama.";
+      return;
+    }
+
+    const rankingCol = collection(db, "rankingGeneral");
+
+    // Borrar ranking previo de esa rama
+    const existingQ = query(rankingCol, where("rama", "==", rama));
+    const existingSnap = await getDocs(existingQ);
+
+    const batch = writeBatch(db);
+    existingSnap.forEach(docSnap => batch.delete(docSnap.ref));
+
+    // Guardar ranking nuevo
+    globalList.forEach((t, idx) => {
+      const ref = doc(rankingCol);
+      batch.set(ref, {
+        rama,                         // "F" o "M"
+        position: idx + 1,            // 1, 2, 3...
+        teamName: t.teamName || "",
+        teamId: t.teamId || null,     // ahora será null, podemos mejorar luego
+        zona: t.zoneName || null,
+        tablePts: t.tablePts,
+        ptsWon: t.ptsWon,
+        ptsLost: t.ptsLost
+      });
+    });
+
+    await batch.commit();
+    rankingStatus.textContent =
+      `✅ Ranking guardado para ${rama === "F" ? "Femenino" : "Masculino"}.`;
+
+  } catch (err) {
+    console.error(err);
+    rankingStatus.textContent =
+      "❌ Error al guardar el ranking. Revisá la consola.";
+  }
+}
+btnSaveRanking.addEventListener("click", () => {
+  saveRankingForCurrentCategory();
+});
+
 
 /* -------- Render tabla general -------- */
 

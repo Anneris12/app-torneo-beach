@@ -1174,6 +1174,1185 @@
     const matchRef = doc(db, "matches", currentMatchId);
     const prev = stateHistory.pop();
     if (!prev) return;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel de Partido – Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    body {
+      margin: 0;
+      background: #031926;
+      color: white;
+      font-family: system-ui, sans-serif;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+
+    .top-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      gap: 8px;
+    }
+
+    .top-btn {
+      background: #ffe36a;
+      color: #000;
+      font-weight: bold;
+      padding: 10px 16px;
+      border-radius: 12px;
+      text-decoration: none;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.15);
+      padding: 20px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.25);
+      margin-bottom: 22px;
+      backdrop-filter: blur(14px);
+    }
+
+    label {
+      font-size: 14px;
+      opacity: 0.9;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 12px;
+      border: none;
+      background: rgba(0,0,0,0.28);
+      color: white;
+    }
+
+    .state-btn-top {
+      width: 100%;
+      padding: 16px 0;
+      border-radius: 12px;
+      margin: 18px 0;
+      border: none;
+      font-size: 18px;
+      font-weight: bold;
+      background: #ffe36a;
+      color:black;
+      cursor: pointer;
+    }
+
+    .state-btn-top[disabled] {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .estado-label {
+      font-size: 14px;
+      opacity: 0.85;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .config-panel {
+      margin-top: 10px;
+      margin-bottom: 4px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.35);
+    }
+
+    .first-serve-panel {
+      margin-top: 10px;
+      margin-bottom: 4px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.35);
+    }
+
+    .first-serve-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 4px 0;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+
+    .first-serve-team-label {
+      min-width: 70px;
+      font-weight: 600;
+    }
+
+    .starter-label {
+      font-size: 12px;
+      opacity: 0.9;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .starter-label input {
+      transform: scale(0.9);
+    }
+
+    .small-edit-btn {
+      margin-top: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .sets-info {
+      margin-top: 10px;
+      margin-bottom: 4px;
+    }
+
+    .sets-current {
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0.9;
+    }
+
+    .sets-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .set-chip {
+      padding: 4px 8px;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.4);
+      font-size: 13px;
+    }
+
+    .set-chip span.winner {
+      color: #7cffc1;
+      font-weight: 700;
+    }
+
+    .team-block {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      padding: 20px;
+      background: rgba(0,0,0,0.35);
+      border-radius: 16px;
+      gap: 16px;
+    }
+
+    .team-info {
+      flex: 1 1 auto;
+    }
+
+    .players {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .player-line {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .player-name {
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    .serve-icon {
+      width: 28px;
+      font-size: 26px;
+      text-align: center;
+    }
+
+    .score {
+      font-size: 40px;
+      font-weight: bold;
+      width: 60px;
+      text-align: center;
+    }
+
+    .btns {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .big-btn {
+      padding: 12px 0;
+      font-size: 22px;
+      border-radius: 12px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      background: #ffe36a;
+      color: black;
+    }
+
+    .minus { background: #ff6b6b; }
+
+    .set-btn {
+      width: 100%;
+      padding: 16px 0;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      background: #6be0ff;
+      border: none;
+      color: black;
+      margin-top: 16px;
+      cursor: pointer;
+    }
+
+    .undo-btn {
+      background: #b3b3b3;
+      color: #000;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Panel del Partido</h1>
+
+  <!-- CARTEL CAMBIO DE LADO (GRANDE + ANIMADO) -->
+  <div id="sideChangeBanner"
+       style="
+        display:none;
+        position:fixed;
+        top:15px; left:50%;
+        transform:translate(-50%, -20px);
+        background:#ffe36a;
+        color:#000;
+        padding:18px 28px;
+        border-radius:16px;
+        font-weight:900;
+        font-size:22px;
+        letter-spacing:1px;
+        box-shadow:0 6px 18px rgba(0,0,0,0.35);
+        z-index:9999;
+        opacity:0;
+        transition:opacity .35s ease, transform .35s ease;
+       ">
+    🔄 CAMBIO DE LADO
+  </div>
+
+  <!-- BOTONES SUPERIORES -->
+  <div class="top-buttons">
+    <a class="top-btn" href="admin.html">← Volver</a>
+    <a class="top-btn" href="index.html">🏠 Home</a>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="card">
+    <label>Rama</label>
+    <select id="filterCat">
+      <option value="all">Todas</option>
+      <option value="F">Femenino</option>
+      <option value="M">Masculino</option>
+    </select>
+
+    <!-- AHORA FASE VA ARRIBA -->
+    <label style="margin-top:10px;">Fase</label>
+    <select id="filterPhase">
+      <option value="groups">Fase de grupos</option>
+      <option value="maindraw">Cuadro principal</option>
+    </select>
+
+    <label id="zoneLabel" style="margin-top:10px;">Zona</label>
+    <select id="filterZone">
+      <option value="all">Todas</option>
+      <option value="A">Zona A</option>
+      <option value="B">Zona B</option>
+      <option value="C">Zona C</option>
+      <option value="D">Zona D</option>
+      <option value="E">Zona E</option>
+      <option value="F">Zona F</option>
+      <option value="G">Zona G</option>
+      <option value="H">Zona H</option>
+    </select>
+
+    <!-- RONDA SOLO PARA MAINDRAW -->
+    <label id="roundLabel" style="margin-top:10px; display:none;">Ronda</label>
+    <select id="filterRound" style="display:none;">
+      <option value="all">Todas</option>
+    </select>
+
+    <label style="margin-top:16px;">Partido</label>
+    <select id="selectMatch"></select>
+  </div>
+
+  <!-- PANEL DE PARTIDO -->
+  <div id="matchPanel" style="display:none;">
+    <div class="card">
+
+      <!-- INFO DEL PARTIDO -->
+      <div class="estado-label" id="matchNumberLabel">
+        Partido: —
+      </div>
+      <div class="estado-label" id="infoExtraLabel">
+        Cancha: — · Hora: —
+      </div>
+      <div class="estado-label" id="estadoLabel">
+        Estado: —
+      </div>
+
+      <!-- FORMATO DEL PARTIDO -->
+      <div class="config-panel">
+        <div class="estado-label" style="margin-bottom:6px;">
+          Formato del partido
+        </div>
+        <div class="first-serve-row">
+          <label class="starter-label">
+            <input type="radio" name="setsMode" value="ONE" checked> 1 set
+          </label>
+          <label class="starter-label">
+            <input type="radio" name="setsMode" value="BEST_OF_3"> Mejor de 3
+          </label>
+        </div>
+      </div>
+
+      <!-- INFO DE SETS -->
+      <div class="sets-info">
+        <div class="sets-current" id="setsCurrentLabel">
+          Set actual: — / — 
+        </div>
+        <div class="sets-chips" id="setsChips"></div>
+      </div>
+
+      <!-- PANEL 1ER SAQUE -->
+      <div class="first-serve-panel">
+        <div class="estado-label" style="margin-bottom:6px;">
+          Configurar 1er saque
+        </div>
+        <div class="first-serve-row">
+          <span class="first-serve-team-label">Local:</span>
+          <label class="starter-label">
+            <input type="radio" name="localStarter" value="1" checked>
+            <span id="localStarterName1">Jugador 1</span>
+          </label>
+          <label class="starter-label">
+            <input type="radio" name="localStarter" value="2">
+            <span id="localStarterName2">Jugador 2</span>
+          </label>
+        </div>
+        <div class="first-serve-row">
+          <span class="first-serve-team-label">Visitante:</span>
+          <label class="starter-label">
+            <input type="radio" name="visitStarter" value="1" checked>
+            <span id="visitStarterName1">Jugador 1</span>
+          </label>
+          <label class="starter-label">
+            <input type="radio" name="visitStarter" value="2">
+            <span id="visitStarterName2">Jugador 2</span>
+          </label>
+        </div>
+        <button type="button" id="btnEditFirstServe" class="top-btn small-edit-btn">
+          Editar 1er saque
+        </button>
+      </div>
+
+      <!-- MARCAR EN JUEGO ARRIBA -->
+      <button
+        class="state-btn-top"
+        id="btnSetPlaying"
+        onclick="setPlaying()"
+      >
+        🔥 Marcar en juego
+      </button>
+
+      <!-- LOCAL -->
+      <div class="team-block">
+        <div class="team-info">
+          <div class="players">
+            <div class="player-line">
+              <span id="localPlayer1ServeIcon" class="serve-icon"></span>
+              <span id="localPlayer1Name" class="player-name">Jugador 1</span>
+            </div>
+            <div class="player-line">
+              <span id="localPlayer2ServeIcon" class="serve-icon"></span>
+              <span id="localPlayer2Name" class="player-name">Jugador 2</span>
+            </div>
+          </div>
+        </div>
+        <div class="score" id="localPoints">0</div>
+        <div class="btns">
+          <button class="big-btn" onclick="addPoint('local')">+1</button>
+          <button class="big-btn minus" onclick="subPoint('local')">-1</button>
+        </div>
+      </div>
+
+      <!-- VISITANTE -->
+      <div class="team-block">
+        <div class="team-info">
+          <div class="players">
+            <div class="player-line">
+              <span id="visitPlayer1ServeIcon" class="serve-icon"></span>
+              <span id="visitPlayer1Name" class="player-name">Jugador 1</span>
+            </div>
+            <div class="player-line">
+              <span id="visitPlayer2ServeIcon" class="serve-icon"></span>
+              <span id="visitPlayer2Name" class="player-name">Jugador 2</span>
+            </div>
+          </div>
+        </div>
+        <div class="score" id="visitPoints">0</div>
+        <div class="btns">
+          <button class="big-btn" onclick="addPoint('visit')">+1</button>
+          <button class="big-btn minus" onclick="subPoint('visit')">-1</button>
+        </div>
+      </div>
+
+      <button class="set-btn undo-btn" onclick="undoLast()">Deshacer último</button>
+
+    </div>
+  </div>
+
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getAuth,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import {
+    getFirestore,
+    collection,
+    query,
+    orderBy,
+    getDocs,
+    doc,
+    updateDoc,
+    onSnapshot,
+    deleteField
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
+    authDomain: "torneo-beach.firebaseapp.com",
+    projectId: "torneo-beach",
+    storageBucket: "torneo-beach.firebasestorage.app",
+    messagingSenderId: "21136645638",
+    appId: "1:21136645638:web:52c3b06affc2ee151eed87"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let allMatches = [];
+  let currentMatchId = null;
+  let currentMatchData = null;
+  let unsubscribeMatch = null;
+  let stateHistory = [];
+  let isEditingFirstServe = false;
+
+  const selCat   = document.getElementById("filterCat");
+  const selPhase = document.getElementById("filterPhase");
+  const selZone  = document.getElementById("filterZone");
+  const selRound = document.getElementById("filterRound");
+  const selMatch = document.getElementById("selectMatch");
+  const panel    = document.getElementById("matchPanel");
+
+  const zoneLabel  = document.getElementById("zoneLabel");
+  const roundLabel = document.getElementById("roundLabel");
+
+  const btnSetPlaying    = document.getElementById("btnSetPlaying");
+  const estadoLabel      = document.getElementById("estadoLabel");
+  const matchNumberLabel = document.getElementById("matchNumberLabel");
+  const infoExtraLabel   = document.getElementById("infoExtraLabel");
+  const btnEditFirstServe = document.getElementById("btnEditFirstServe");
+  const setsCurrentLabel = document.getElementById("setsCurrentLabel");
+  const setsChips        = document.getElementById("setsChips");
+
+  onAuthStateChanged(auth, u => { 
+    if (!u) location.href = "login.html"; 
+  });
+
+  function normalizeHora(horaRaw) {
+    if (!horaRaw && horaRaw !== 0) return "";
+    let str = String(horaRaw).trim();
+    if (!str) return "";
+
+    if (/^\d{1,2}:\d{2}$/.test(str)) {
+      const [h, m] = str.split(":");
+      return h.padStart(2, "0") + ":" + m;
+    }
+
+    const digits = str.replace(/\D/g, "");
+    if (digits.length === 3) {
+      const h = digits.slice(0, 1);
+      const m = digits.slice(1);
+      return h.padStart(2, "0") + ":" + m.padEnd(2, "0");
+    }
+    if (digits.length === 4) {
+      const h = digits.slice(0, 2);
+      const m = digits.slice(2);
+      return h + ":" + m;
+    }
+
+    return str;
+  }
+
+  function splitPlayers(teamName) {
+    if (!teamName) return ["Jugador 1", "Jugador 2"];
+    const parts = teamName.split("-");
+    if (parts.length < 2) return [teamName.trim(), "Jugador 2"];
+    return [parts[0].trim(), parts[1].trim()];
+  }
+
+  function getRadioValue(name) {
+    const radios = document.querySelectorAll(`input[name="${name}"]`);
+    for (const r of radios) {
+      if (r.checked) return Number(r.value);
+    }
+    return null;
+  }
+
+  function setRadioValue(name, value) {
+    const radios = document.querySelectorAll(`input[name="${name}"]`);
+    radios.forEach(r => {
+      r.checked = Number(r.value) === Number(value);
+    });
+  }
+
+  function getSetsModeFromInputs() {
+    const r = document.querySelector('input[name="setsMode"]:checked');
+    return r ? r.value : "ONE";
+  }
+
+  function setSetsModeInputs(mode) {
+    const value = mode || "ONE";
+    const radios = document.querySelectorAll('input[name="setsMode"]');
+    radios.forEach(r => {
+      r.checked = (r.value === value);
+    });
+  }
+
+  function setSetsModeDisabled(disabled) {
+    const radios = document.querySelectorAll('input[name="setsMode"]');
+    radios.forEach(r => {
+      r.disabled = disabled;
+    });
+  }
+
+  function setFirstServeInputsDisabled(disabled) {
+    const inputs = document.querySelectorAll('input[name="localStarter"], input[name="visitStarter"]');
+    inputs.forEach(i => {
+      i.disabled = disabled;
+    });
+  }
+
+  function renderServeIcons() {
+    const localP1Icon = document.getElementById("localPlayer1ServeIcon");
+    const localP2Icon = document.getElementById("localPlayer2ServeIcon");
+    const visitP1Icon = document.getElementById("visitPlayer1ServeIcon");
+    const visitP2Icon = document.getElementById("visitPlayer2ServeIcon");
+
+    localP1Icon.textContent = "";
+    localP2Icon.textContent = "";
+    visitP1Icon.textContent = "";
+    visitP2Icon.textContent = "";
+
+    const team = currentMatchData?.currentServerTeam;
+    const player = currentMatchData?.currentServerPlayer;
+
+    if (!team || !player) return;
+
+    if (team === "local") {
+      if (player === 1) localP1Icon.textContent = "🏐";
+      if (player === 2) localP2Icon.textContent = "🏐";
+    } else if (team === "visit") {
+      if (player === 1) visitP1Icon.textContent = "🏐";
+      if (player === 2) visitP2Icon.textContent = "🏐";
+    }
+  }
+
+  function saveLastState() {
+    if (currentMatchData) {
+      stateHistory.push({ ...currentMatchData });
+    }
+  }
+
+  function playSideChangeSound() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.18);
+    } catch (e) {}
+  }
+
+  function showSideChangeBanner() {
+    const banner = document.getElementById("sideChangeBanner");
+
+    playSideChangeSound();
+
+    banner.style.display = "block";
+
+    requestAnimationFrame(() => {
+      banner.style.opacity = 1;
+      banner.style.transform = "translate(-50%, 0px)";
+    });
+
+    setTimeout(() => {
+      banner.style.opacity = 0;
+      banner.style.transform = "translate(-50%, -20px)";
+      setTimeout(() => {
+        banner.style.display = "none";
+      }, 350);
+    }, 2300);
+  }
+
+  function maybeShowSideChangeAlert(newLocalPoints, newVisitPoints) {
+    if (!currentMatchData) return;
+
+    const total = (newLocalPoints || 0) + (newVisitPoints || 0);
+    if (total <= 0) return;
+
+    const setsData = currentMatchData.setsData || [];
+    const setActual = currentMatchData.setActual || (setsData.length + 1);
+
+    const modulo = (setActual === 3 ? 5 : 7);
+
+    if (total % modulo === 0) {
+      showSideChangeBanner();
+    }
+  }
+
+  async function maybeAutoCloseSet(newLocal, newVisit) {
+    if (!currentMatchId || !currentMatchData) return;
+    if (currentMatchData.estado !== "En juego") return;
+
+    const setsData = currentMatchData.setsData || [];
+    const setsMode = currentMatchData.setsMode || getSetsModeFromInputs();
+    const setActual = currentMatchData.setActual || (setsData.length + 1);
+
+    let targetPoints;
+    if (setsMode === "BEST_OF_3" && setActual === 3) {
+      targetPoints = 15;
+    } else {
+      targetPoints = 21;
+    }
+
+    const maxPoints = Math.max(newLocal, newVisit);
+    const diff = Math.abs(newLocal - newVisit);
+
+    if (maxPoints < targetPoints || diff < 2) return;
+
+    const matchRef = doc(db, "matches", currentMatchId);
+
+    const winner = newLocal > newVisit ? "local" : "visit";
+
+    const prevSetsData = currentMatchData.setsData || [];
+    const setNumber = setActual;
+
+    const newSetEntry = {
+      setNumber,
+      puntosLocal: newLocal,
+      puntosVisitante: newVisit
+    };
+
+    let setsLocal = currentMatchData.setsLocal || 0;
+    let setsVisitante = currentMatchData.setsVisitante || 0;
+
+    if (winner === "local") setsLocal++;
+    else setsVisitante++;
+
+    const totalPointsLocalPrev = currentMatchData.totalPointsLocal || 0;
+    const totalPointsVisitantePrev = currentMatchData.totalPointsVisitante || 0;
+
+    const totalPointsLocal = totalPointsLocalPrev + newLocal;
+    const totalPointsVisitante = totalPointsVisitantePrev + newVisit;
+
+    let estado = currentMatchData.estado || "Pendiente";
+
+    if (setsMode === "ONE") {
+      estado = "Finalizado";
+    } else {
+      if (setsLocal === 2 || setsVisitante === 2) {
+        estado = "Finalizado";
+      } else {
+        estado = "En juego";
+      }
+    }
+
+    const newSetActual = setNumber + 1;
+
+    await updateDoc(matchRef, {
+      setsData: [...prevSetsData, newSetEntry],
+      setsLocal,
+      setsVisitante,
+      totalPointsLocal,
+      totalPointsVisitante,
+      setActual: newSetActual,
+      puntosLocal: 0,
+      puntosVisitante: 0,
+      currentServerTeam: null,
+      currentServerPlayer: null,
+      localNextServer: null,
+      visitNextServer: null,
+      estado,
+      setsMode
+    });
+  }
+
+  async function loadMatches() {
+    const qAll = query(collection(db, "matches"), orderBy("zona"));
+    const snap = await getDocs(qAll);
+
+    allMatches = [];
+    snap.forEach(d => allMatches.push({ id: d.id, ...d.data() }));
+
+    buildRoundOptions();
+    updatePhaseUI(); // esto también llama a renderMatchList
+  }
+
+  function buildRoundOptions() {
+    selRound.innerHTML = `<option value="all">Todas</option>`;
+
+    const roundsSet = new Set();
+
+    allMatches.forEach(m => {
+      const phase = (m.phase || "").toString().trim().toLowerCase();
+      if (phase === "maindraw") {
+        const r = m.roundLabel || m.ronda || m.round || "";
+        if (r) roundsSet.add(r);
+      }
+    });
+
+    Array.from(roundsSet).sort().forEach(r => {
+      const opt = document.createElement("option");
+      opt.value = r;
+      opt.textContent = r;
+      selRound.appendChild(opt);
+    });
+  }
+
+  function updatePhaseUI() {
+    const phase = selPhase.value; // groups | maindraw
+
+    if (phase === "groups") {
+      zoneLabel.style.display  = "";
+      selZone.style.display    = "";
+      roundLabel.style.display = "none";
+      selRound.style.display   = "none";
+    } else {
+      zoneLabel.style.display  = "none";
+      selZone.style.display    = "none";
+      roundLabel.style.display = "";
+      selRound.style.display   = "";
+    }
+
+    renderMatchList();
+  }
+
+  function renderMatchList() {
+    selMatch.innerHTML = `<option value="">-- Elegí un partido --</option>`;
+
+    let list = allMatches;
+
+    const phaseFilter = selPhase.value; // groups | maindraw
+
+    // Rama: usar categoria o rama (para maindraw)
+    if (selCat.value !== "all") {
+      list = list.filter(m => {
+        const gender = m.categoria || m.rama || "";
+        return gender === selCat.value;
+      });
+    }
+
+    // Zona solo en grupos
+    if (phaseFilter === "groups" && selZone.value !== "all") {
+      list = list.filter(m => m.zona === selZone.value);
+    }
+
+    // Fase según campo phase
+    list = list.filter(m => {
+      const phase = (m.phase || "").toString().trim().toLowerCase();
+      if (phaseFilter === "maindraw") {
+        return phase === "maindraw";
+      } else {
+        // groups: todo lo que NO sea maindraw
+        return phase !== "maindraw";
+      }
+    });
+
+    // Ronda solo en maindraw
+    if (phaseFilter === "maindraw" && selRound.value !== "all") {
+      const roundFilter = selRound.value;
+      list = list.filter(m => {
+        const roundValue = m.roundLabel || m.ronda || m.round || "";
+        return roundValue === roundFilter;
+      });
+    }
+
+    // excluir finalizados
+    list = list.filter(m => m.estado !== "Finalizado");
+
+    list.sort((a, b) => {
+      const na = typeof a.numeroPartido === "number" ? a.numeroPartido : 9999;
+      const nb = typeof b.numeroPartido === "number" ? b.numeroPartido : 9999;
+      return na - nb;
+    });
+
+    list.forEach(m => {
+      const labelNumero = typeof m.numeroPartido === "number"
+        ? `#${m.numeroPartido} – `
+        : "";
+
+      selMatch.innerHTML += `
+        <option value="${m.id}">
+          ${labelNumero}${m.localName} vs ${m.visitanteName}
+        </option>
+      `;
+    });
+  }
+
+  selCat.onchange   = renderMatchList;
+  selPhase.onchange = updatePhaseUI;
+  selZone.onchange  = renderMatchList;
+  selRound.onchange = renderMatchList;
+
+  selMatch.onchange = () => {
+    currentMatchId = selMatch.value;
+    stateHistory = [];
+
+    if (unsubscribeMatch) {
+      unsubscribeMatch();
+      unsubscribeMatch = null;
+    }
+
+    if (!currentMatchId) { 
+      panel.style.display = "none"; 
+      return; 
+    }
+
+    panel.style.display = "block";
+
+    const ref = doc(db, "matches", currentMatchId);
+    unsubscribeMatch = onSnapshot(ref, snap => {
+      currentMatchData = snap.data();
+      renderPanel();
+    });
+  };
+
+  function renderSetsInfo() {
+    const setsData = currentMatchData.setsData || [];
+    const setsMode = currentMatchData.setsMode || getSetsModeFromInputs();
+    const setsMax = (setsMode === "BEST_OF_3") ? 3 : 1;
+    const setActualStored = currentMatchData.setActual || (setsData.length + 1);
+    const setActual = Math.min(setActualStored, setsMax);
+
+    setsCurrentLabel.textContent = `Set actual: ${setActual} / ${setsMax}`;
+
+    let html = "";
+    setsData.forEach(s => {
+      const pl = s.puntosLocal ?? 0;
+      const pv = s.puntosVisitante ?? 0;
+      const localWinner = pl > pv;
+      const visitWinner = pv > pl;
+
+      html += `
+        <div class="set-chip">
+          <span class="${localWinner ? "winner" : ""}">${pl}</span>
+          -
+          <span class="${visitWinner ? "winner" : ""}">${pv}</span>
+        </div>
+      `;
+    });
+
+    setsChips.innerHTML = html;
+  }
+
+  function renderPanel() {
+    if (!currentMatchData) return;
+
+    document.getElementById("localPoints").textContent = currentMatchData.puntosLocal ?? 0;
+    document.getElementById("visitPoints").textContent = currentMatchData.puntosVisitante ?? 0;
+
+    const [localP1, localP2] = splitPlayers(currentMatchData.localName);
+    const [visitP1, visitP2] = splitPlayers(currentMatchData.visitanteName);
+
+    document.getElementById("localPlayer1Name").textContent = localP1;
+    document.getElementById("localPlayer2Name").textContent = localP2;
+    document.getElementById("visitPlayer1Name").textContent = visitP1;
+    document.getElementById("visitPlayer2Name").textContent = visitP2;
+
+    document.getElementById("localStarterName1").textContent = localP1;
+    document.getElementById("localStarterName2").textContent = localP2;
+    document.getElementById("visitStarterName1").textContent = visitP1;
+    document.getElementById("visitStarterName2").textContent = visitP2;
+
+    if (typeof currentMatchData.numeroPartido === "number") {
+      matchNumberLabel.textContent = `Partido #${currentMatchData.numeroPartido}`;
+    } else {
+      matchNumberLabel.textContent = "Partido: —";
+    }
+
+    const cancha = currentMatchData.cancha || "—";
+    const rawHora = currentMatchData.hora || "";
+    const horaFormateada = normalizeHora(rawHora);
+    infoExtraLabel.textContent = `Cancha: ${cancha} · Hora: ${horaFormateada || "—"}`;
+
+    const estado = currentMatchData.estado || "Pendiente";
+    estadoLabel.textContent = `Estado: ${estado}`;
+
+    btnSetPlaying.disabled = false;
+    btnSetPlaying.style.background = "#ffe36a";
+    btnSetPlaying.style.color = "black";
+    btnSetPlaying.textContent = "🔥 Marcar en juego";
+
+    if (estado === "En juego") {
+      btnSetPlaying.disabled = true;
+      btnSetPlaying.style.background = "#7cffc1";
+      btnSetPlaying.style.color = "black";
+      btnSetPlaying.textContent = "✅ En juego";
+    } else if (estado === "Finalizado") {
+      btnSetPlaying.disabled = true;
+      btnSetPlaying.style.background = "#7cffc1";
+      btnSetPlaying.style.color = "black";
+      btnSetPlaying.textContent = "🏁 Partido finalizado";
+    }
+
+    const setsMode = currentMatchData.setsMode || getSetsModeFromInputs();
+    setSetsModeInputs(setsMode);
+
+    if (estado === "Pendiente") {
+      setSetsModeDisabled(false);
+    } else {
+      setSetsModeDisabled(true);
+    }
+
+    const localFS = currentMatchData.localFirstServer || 1;
+    const visitFS = currentMatchData.visitFirstServer || 1;
+    setRadioValue("localStarter", localFS);
+    setRadioValue("visitStarter", visitFS);
+
+    if (estado === "En juego" || estado === "Finalizado") {
+      if (!isEditingFirstServe) {
+        setFirstServeInputsDisabled(true);
+      }
+      btnEditFirstServe.disabled = (estado === "Finalizado");
+      btnEditFirstServe.textContent = isEditingFirstServe
+        ? "Bloquear 1er saque"
+        : "Editar 1er saque";
+    } else {
+      isEditingFirstServe = false;
+      setFirstServeInputsDisabled(false);
+      btnEditFirstServe.disabled = false;
+      btnEditFirstServe.textContent = "Editar 1er saque";
+    }
+
+    renderServeIcons();
+    renderSetsInfo();
+  }
+
+  btnEditFirstServe.addEventListener("click", () => {
+    if (!currentMatchData) return;
+    if (currentMatchData.estado !== "En juego") {
+      alert("Solo podés editar el 1er saque cuando el partido está en juego.");
+      return;
+    }
+    isEditingFirstServe = !isEditingFirstServe;
+    setFirstServeInputsDisabled(!isEditingFirstServe);
+    btnEditFirstServe.textContent = isEditingFirstServe
+      ? "Bloquear 1er saque"
+      : "Editar 1er saque";
+  });
+
+  async function updateServe(pointWinner) {
+    const matchRef = doc(db, "matches", currentMatchId);
+
+    let {
+      currentServerTeam,
+      currentServerPlayer,
+      localNextServer,
+      visitNextServer,
+      localFirstServer,
+      visitFirstServer
+    } = currentMatchData || {};
+
+    if (!localFirstServer) {
+      localFirstServer = getRadioValue("localStarter") || 1;
+    }
+    if (!visitFirstServer) {
+      visitFirstServer = getRadioValue("visitStarter") || 1;
+    }
+
+    if (!localNextServer) localNextServer = localFirstServer;
+    if (!visitNextServer) visitNextServer = visitFirstServer;
+
+    const updates = {
+      localFirstServer,
+      visitFirstServer,
+      localNextServer,
+      visitNextServer
+    };
+
+    if (!currentServerTeam) {
+      if (pointWinner === "local") {
+        currentServerTeam = "local";
+        currentServerPlayer = localNextServer;
+        localNextServer = localNextServer === 1 ? 2 : 1;
+      } else {
+        currentServerTeam = "visit";
+        currentServerPlayer = visitNextServer;
+        visitNextServer = visitNextServer === 1 ? 2 : 1;
+      }
+      updates.currentServerTeam = currentServerTeam;
+      updates.currentServerPlayer = currentServerPlayer;
+      updates.localNextServer = localNextServer;
+      updates.visitNextServer = visitNextServer;
+    } else if (pointWinner === currentServerTeam) {
+      // mismo sacador
+    } else {
+      if (pointWinner === "local") {
+        currentServerTeam = "local";
+        currentServerPlayer = localNextServer;
+        localNextServer = localNextServer === 1 ? 2 : 1;
+        updates.currentServerTeam = currentServerTeam;
+        updates.currentServerPlayer = currentServerPlayer;
+        updates.localNextServer = localNextServer;
+      } else {
+        currentServerTeam = "visit";
+        currentServerPlayer = visitNextServer;
+        visitNextServer = visitNextServer === 1 ? 2 : 1;
+        updates.currentServerTeam = currentServerTeam;
+        updates.currentServerPlayer = currentServerPlayer;
+        updates.visitNextServer = visitNextServer;
+      }
+    }
+
+    await updateDoc(matchRef, updates);
+  }
+
+  window.addPoint = async side => {
+    if (!currentMatchId || !currentMatchData) return;
+
+    if (currentMatchData.estado === "Finalizado") {
+      alert("El partido ya está finalizado, no podés modificar el marcador.");
+      return;
+    }
+
+    if (currentMatchData.estado !== "En juego") {
+      alert("No podés modificar el marcador hasta que el partido esté EN JUEGO.");
+      return;
+    }
+
+    saveLastState();
+
+    const matchRef = doc(db, "matches", currentMatchId);
+
+    const oldLocal = currentMatchData.puntosLocal || 0;
+    const oldVisit = currentMatchData.puntosVisitante || 0;
+
+    const newLocal = side === "local" ? oldLocal + 1 : oldLocal;
+    const newVisit = side === "visit" ? oldVisit + 1 : oldVisit;
+
+    maybeShowSideChangeAlert(newLocal, newVisit);
+
+    await updateDoc(matchRef, {
+      puntosLocal: newLocal,
+      puntosVisitante: newVisit
+    });
+
+    await updateServe(side);
+
+    await maybeAutoCloseSet(newLocal, newVisit);
+  };
+
+  window.subPoint = async side => {
+    if (!currentMatchId || !currentMatchData) return;
+
+    if (currentMatchData.estado === "Finalizado") {
+      alert("El partido ya está finalizado, no podés modificar el marcador.");
+      return;
+    }
+
+    if (currentMatchData.estado !== "En juego") {
+      alert("No podés modificar el marcador hasta que el partido esté EN JUEGO.");
+      return;
+    }
+
+    saveLastState();
+
+    const key = side === "local" ? "puntosLocal" : "puntosVisitante";
+    const matchRef = doc(db, "matches", currentMatchId);
+
+    await updateDoc(matchRef, {
+      [key]: Math.max(0, (currentMatchData[key] || 0) - 1)
+    });
+  };
+
+  window.setPlaying = async () => {
+    if (!currentMatchId || !currentMatchData) return;
+
+    const confirmar = confirm("¿Estás segura de que querés marcar este partido como EN JUEGO?");
+    if (!confirmar) return;
+
+    saveLastState();
+
+    const matchRef = doc(db, "matches", currentMatchId);
+
+    const localFirst = getRadioValue("localStarter") || 1;
+    const visitFirst = getRadioValue("visitStarter") || 1;
+    const setsMode = getSetsModeFromInputs();
+
+    await updateDoc(matchRef, {
+      estado: "En juego",
+      localFirstServer: localFirst,
+      visitFirstServer: visitFirst,
+      currentServerTeam: null,
+      currentServerPlayer: null,
+      localNextServer: localFirst,
+      visitNextServer: visitFirst,
+      setsMode,
+      setActual: currentMatchData.setActual || 1
+    });
+
+    isEditingFirstServe = false;
+  };
+
+  window.undoLast = async () => {
+    if (!currentMatchId || stateHistory.length === 0) return;
+
+    const matchRef = doc(db, "matches", currentMatchId);
+    const prev = stateHistory.pop();
+    if (!prev) return;
 
     const knownSetFields = [
       "setsData",
