@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Torneo Beach Volley 2026</title>
   <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
   <style>
     * {
       margin: 0;
@@ -18,18 +19,20 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: start;
+      justify-content: flex-start;
       min-height: 100vh;
       padding: 24px 16px;
+      gap: 20px;
     }
 
     h1 {
       font-size: 26px;
       font-weight: 700;
-      margin-bottom: 28px;
+      margin-bottom: 8px;
       text-align: center;
     }
 
+    /* GRID PRINCIPAL */
     .grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -68,6 +71,58 @@
     .label {
       font-size: 15px;
     }
+
+    /* LOGIN EN BARRITAS */
+    .login-bar {
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .login-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .login-row input {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    .login-row button {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: none;
+      background: #ffb703;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .login-row button:hover {
+      background: #f39c12;
+    }
+
+    .login-info {
+      font-size: 12px;
+      color: #555;
+      text-align: left;
+    }
+
+    .login-error {
+      font-size: 12px;
+      color: #b00020;
+      text-align: left;
+      min-height: 14px;
+    }
   </style>
 </head>
 <body>
@@ -99,12 +154,96 @@
       <lottie-player src="assets/lottie/cuadro.json" autoplay loop></lottie-player>
       <div class="label">Doble elim.</div>
     </a>
-
-    <a class="card" href="admin.html">
-      <lottie-player src="assets/lottie/admin.json" autoplay loop></lottie-player>
-      <div class="label">Admin</div>
-    </a>
   </div>
+
+  <!-- LOGIN ADMIN EN BARRITAS -->
+  <div class="login-bar">
+    <div class="login-row">
+      <input type="email" id="email" placeholder="Email admin">
+    </div>
+    <div class="login-row">
+      <input type="password" id="password" placeholder="Contraseña">
+      <button id="loginBtn">Ingresar</button>
+    </div>
+    <div id="loginError" class="login-error"></div>
+    <div class="login-info">
+      Acceso solo para administradores del torneo.
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
+      authDomain: "torneo-beach.firebaseapp.com",
+      projectId: "torneo-beach",
+      storageBucket: "torneo-beach.firebasestorage.app",
+      messagingSenderId: "21136645638",
+      appId: "1:21136645638:web:52c3b06affc2ee151eed87"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const emailInput = document.getElementById("email");
+    const passInput  = document.getElementById("password");
+    const loginBtn   = document.getElementById("loginBtn");
+    const loginError = document.getElementById("loginError");
+
+    // Si ya está logueado, lo mando directo al admin
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        window.location.href = "admin.html";
+      }
+    });
+
+    async function doLogin() {
+      loginError.textContent = "";
+
+      const email = emailInput.value.trim();
+      const password = passInput.value.trim();
+
+      if (!email || !password) {
+        loginError.textContent = "Completá email y contraseña.";
+        return;
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        // onAuthStateChanged hará el redirect a admin.html
+      } catch (err) {
+        console.error(err);
+        let msg = "Error al iniciar sesión.";
+        if (err.code === "auth/invalid-credential" ||
+            err.code === "auth/wrong-password" ||
+            err.code === "auth/user-not-found") {
+          msg = "Email o contraseña incorrectos.";
+        }
+        loginError.textContent = msg;
+      }
+    }
+
+    loginBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      doLogin();
+    });
+
+    // Enter desde los campos también dispara login
+    [emailInput, passInput].forEach(input => {
+      input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          doLogin();
+        }
+      });
+    });
+  </script>
 
 </body>
 </html>
