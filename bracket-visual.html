@@ -2,106 +2,118 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cuadro Principal - Visual</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuadro Principal</title>
 
 <style>
   body {
-    font-family: Arial, sans-serif;
-    background: #f1f1f1;
     margin: 0;
-    padding: 0;
-    overflow-x: auto;
-  }
-
-  header {
-    background: #333;
+    background: #031926;
     color: #fff;
-    text-align: center;
-    padding: 12px;
+    font-family: system-ui, sans-serif;
   }
 
-  .selector {
-    background: white;
-    padding: 10px;
-    border-bottom: 1px solid #ccc;
+  /* TOP NAV */
+  .top-buttons {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px;
+  }
+
+  .top-btn {
+    background: #ffe36a;
+    color: #000;
+    font-weight: bold;
+    padding: 10px 16px;
+    border-radius: 12px;
+    text-decoration: none;
+    border: none;
+    font-size: 14px;
+  }
+
+  h1 {
+    text-align: center;
+    margin-top: 10px;
+    text-transform: uppercase;
+  }
+
+  /* TABS */
+  .tabs {
+    margin: 15px auto 0;
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
   }
 
-  /* CONTENEDOR PRINCIPAL DEL BRACKET */
+  .tab {
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: #07354b;
+    color: #fff;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .tab.active {
+    background: #ffe36a;
+    color: #000;
+  }
+
+  /* BRACKET */
   .bracket {
     display: flex;
     gap: 30px;
     padding: 20px;
-    min-width: 1600px; /* para que no colapse en celular */
+    overflow-x: auto;
   }
 
   .round {
+    min-width: 220px;
     display: flex;
     flex-direction: column;
-    gap: 40px;
-    min-width: 220px;
+    gap: 25px;
   }
 
   .round-title {
-    text-align: center;
     font-weight: bold;
+    text-align: center;
     margin-bottom: 10px;
     font-size: 18px;
   }
 
   .match-box {
-    background: white;
-    border-radius: 8px;
+    background: #fff;
+    color: #000;
     padding: 8px;
-    border: 1px solid #ccc;
-    position: relative;
-    width: 200px;
+    border-radius: 12px;
+    min-height: 45px;
   }
 
   .team {
-    padding: 5px 0;
     display: flex;
     justify-content: space-between;
+    padding: 4px 0;
   }
 
   .winner {
-    font-weight: bold;
     color: green;
-  }
-
-  /* LINEAS QUE UNEN LLAVES */
-  .connector {
-    position: absolute;
-    right: -30px;
-    top: 50%;
-    width: 30px;
-    height: 2px;
-    background: #444;
-  }
-
-  .vertical-line {
-    position: absolute;
-    height: 80px;
-    width: 2px;
-    background: #444;
-    right: -30px;
+    font-weight: bold;
   }
 </style>
-
 </head>
 
 <body>
 
-<header>Cuadro Principal - Vista con llaves</header>
+<div class="top-buttons">
+  <a href="index.html" class="top-btn">Inicio</a>
+  <a href="fixture.html" class="top-btn">Fixture</a>
+</div>
 
-<div class="selector">
-  <select id="ramaSelector">
-    <option value="F">Femenino</option>
-    <option value="M">Masculino</option>
-  </select>
+<h1>Cuadro Principal</h1>
+
+<div class="tabs">
+  <div class="tab active" data-rama="F">Femenino</div>
+  <div class="tab" data-rama="M">Masculino</div>
 </div>
 
 <div id="bracketContainer" class="bracket"></div>
@@ -130,15 +142,53 @@
   const db  = getFirestore(app);
 
   const bracketContainer = document.getElementById("bracketContainer");
-  const ramaSelector     = document.getElementById("ramaSelector");
 
-  ramaSelector.addEventListener("change", loadBracket);
-  window.addEventListener("DOMContentLoaded", loadBracket);
+  // Tabs
+  const tabs = document.querySelectorAll(".tab");
+  tabs.forEach(tab => tab.addEventListener("click", () => {
+    tabs.forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    loadBracket(tab.dataset.rama);
+  }));
 
-  async function loadBracket() {
+  window.addEventListener("DOMContentLoaded", () => loadBracket("F"));
+
+  // ORDEN CORRECTO DEL CUADRO FEMENINO (VISUAL)
+  const FEM_ROUNDS = [
+    "1ra ronda",
+    "2da ronda",
+    "Pase a semi",
+    "Semi",
+    "Final",
+    "3er puesto",
+
+    // losers abajo
+    "1er ronda perd.",
+    "2da ronda perd.",
+    "3ra ronda perd.",
+    "Pase a semi perd."
+  ];
+
+  const MAS_ROUNDS = [
+    "1ra ronda",
+    "2da ronda",
+    "3ra ronda",
+    "Pase a semi",
+    "Semi",
+    "Final",
+    "3er puesto",
+    // losers…
+    "1er ronda perd.",
+    "2da ronda perd.",
+    "3ra ronda perd.",
+    "4ta ronda perd.",
+    "5ta ronda perd.",
+    "Pase a semi perd."
+  ];
+
+
+  async function loadBracket(rama) {
     bracketContainer.innerHTML = "Cargando...";
-
-    const rama = ramaSelector.value;
 
     const snap = await getDocs(
       query(
@@ -148,63 +198,51 @@
       )
     );
 
-    if (snap.empty) {
-      bracketContainer.innerHTML = "<p>No hay cuadro generado aún.</p>";
+    const matches = snap.docs.map(d => d.data());
+
+    if (!matches.length) {
+      bracketContainer.innerHTML = "<p>No hay cuadro cargado.</p>";
       return;
     }
 
-    const matches = snap.docs.map(d => d.data());
+    // Elegir orden según rama
+    const order = rama === "F" ? FEM_ROUNDS : MAS_ROUNDS;
 
-    // AGRUPAMOS POR RONDA
-    const roundsOrder = [
-      "1ra ronda",
-      "2da ronda",
-      "1er ronda perd.",
-      "2da ronda perd.",
-      "3ra ronda",
-      "3ra ronda perd.",
-      "4ta ronda perd.",
-      "Pase a semi",
-      "5ta ronda perd.",
-      "Semi 1",
-      "Semi 2",
-      "3er puesto",
-      "Final"
-    ];
-
+    // Agrupar por roundLabel
     const grouped = {};
-    roundsOrder.forEach(r => grouped[r] = []);
+    order.forEach(r => grouped[r] = []);
 
-    matches.forEach(m => grouped[m.roundLabel]?.push(m));
-
-    // ORDENAR PARTIDOS DE CADA RONDA POR Nº
-    Object.keys(grouped).forEach(r => {
-      grouped[r].sort((a,b) => a.drawMatchNumber - b.drawMatchNumber);
+    matches.forEach(m => {
+      if (grouped[m.roundLabel]) grouped[m.roundLabel].push(m);
     });
 
-    // RENDER DE LAS COLUMNAS
-    bracketContainer.innerHTML = "";
+    // Ordenar
+    Object.values(grouped).forEach(list =>
+      list.sort((a,b)=> a.drawMatchNumber - b.drawMatchNumber)
+    );
 
-    Object.entries(grouped).forEach(([roundLabel, list]) => {
-      if (list.length === 0) return;
+    // Render
+    bracketContainer.innerHTML = "";
+    order.forEach(round => {
+      if (!grouped[round].length) return;
 
       const col = document.createElement("div");
       col.className = "round";
-      col.innerHTML += `<div class="round-title">${roundLabel}</div>`;
 
-      list.forEach(m => {
+      col.innerHTML = `<div class="round-title">${round}</div>`;
+
+      grouped[round].forEach(m => {
         const box = document.createElement("div");
         box.className = "match-box";
 
         box.innerHTML = `
-          <div class="team ${m.winnerTeamId === m.team1Id ? "winner" : ""}">
-            <span>${m.team1Name || "---"}</span>
+          <div class="team ${m.winnerTeamId===m.team1Id ? "winner":""}">
+            ${m.team1Name || "---"}
           </div>
-          <div class="team ${m.winnerTeamId === m.team2Id ? "winner" : ""}">
-            <span>${m.team2Name || "---"}</span>
+          <div class="team ${m.winnerTeamId===m.team2Id ? "winner":""}">
+            ${m.team2Name || "---"}
           </div>
         `;
-
         col.appendChild(box);
       });
 

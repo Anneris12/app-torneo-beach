@@ -289,11 +289,10 @@
   <!-- FILTROS -->
   <div class="card">
     <label>Rama</label>
-    <select id="filterCat">
-      <option value="all">Todas</option>
-      <option value="F">Femenino</option>
-      <option value="M">Masculino</option>
-    </select>
+<select id="filterCat">
+  <option value="F" selected>Femenino</option>
+  <option value="M">Masculino</option>
+</select>
 
     <!-- Fase (grupos / cuadro) -->
     <label style="margin-top:10px;">Fase</label>
@@ -590,6 +589,60 @@
     { rama: "M", from: 60, winnerTo: { match: 62, slot: 2 }, loserTo: { match: 61, slot: 2 } },
 
     // TODO: agregar filas "F" para rama femenina
+	 // 1RA RONDA (1–8)
+  { rama: "F", from: 1,  winnerTo: { match: 9,  slot: 1 }, loserTo: { match: 16, slot: 2 } },
+  { rama: "F", from: 2,  winnerTo: { match: 9,  slot: 2 }, loserTo: { match: 16, slot: 1 } },
+
+  { rama: "F", from: 3,  winnerTo: { match: 10, slot: 1 }, loserTo: { match: 15, slot: 2 } },
+  { rama: "F", from: 4,  winnerTo: { match: 10, slot: 2 }, loserTo: { match: 15, slot: 1 } },
+
+  { rama: "F", from: 5,  winnerTo: { match: 11, slot: 1 }, loserTo: { match: 14, slot: 2 } },
+  { rama: "F", from: 6,  winnerTo: { match: 11, slot: 2 }, loserTo: { match: 14, slot: 1 } },
+
+  { rama: "F", from: 7,  winnerTo: { match: 12, slot: 1 }, loserTo: { match: 13, slot: 2 } },
+  { rama: "F", from: 8,  winnerTo: { match: 12, slot: 2 }, loserTo: { match: 13, slot: 1 } },
+
+  // 2DA RONDA PRINCIPAL (9–12)
+  { rama: "F", from: 9,  winnerTo: { match: 21, slot: 1 }, loserTo: { match: 18, slot: 2 } },
+  { rama: "F", from: 10, winnerTo: { match: 21, slot: 2 }, loserTo: { match: 17, slot: 2 } },
+
+  { rama: "F", from: 11, winnerTo: { match: 22, slot: 1 }, loserTo: { match: 20, slot: 2 } },
+  { rama: "F", from: 12, winnerTo: { match: 22, slot: 2 }, loserTo: { match: 19, slot: 2 } },
+
+  // 1RA RONDA PERDEDORES (13–16)
+  { rama: "F", from: 13, winnerTo: { match: 17, slot: 1 }, loserTo: null },
+  { rama: "F", from: 14, winnerTo: { match: 18, slot: 1 }, loserTo: null },
+  { rama: "F", from: 15, winnerTo: { match: 19, slot: 1 }, loserTo: null },
+  { rama: "F", from: 16, winnerTo: { match: 20, slot: 1 }, loserTo: null },
+
+  // 2DA RONDA PERDEDORES (17–20)
+  { rama: "F", from: 17, winnerTo: { match: 23, slot: 1 }, loserTo: null },
+  { rama: "F", from: 18, winnerTo: { match: 23, slot: 2 }, loserTo: null },
+
+  { rama: "F", from: 19, winnerTo: { match: 24, slot: 1 }, loserTo: null },
+  { rama: "F", from: 20, winnerTo: { match: 24, slot: 2 }, loserTo: null },
+
+  // PASE A SEMI PRINCIPAL (21–22)
+  { rama: "F", from: 21, winnerTo: { match: 27, slot: 1 }, loserTo: { match: 26, slot: 2 } },
+  { rama: "F", from: 22, winnerTo: { match: 28, slot: 1 }, loserTo: { match: 25, slot: 2 } },
+
+  // 3RA RONDA PERDEDORES (23–24)
+  { rama: "F", from: 23, winnerTo: { match: 25, slot: 1 }, loserTo: null },
+  { rama: "F", from: 24, winnerTo: { match: 26, slot: 1 }, loserTo: null },
+
+  // PASE A SEMI DESDE PERDEDORES (25–26)
+  { rama: "F", from: 25, winnerTo: { match: 27, slot: 2 }, loserTo: null },
+  { rama: "F", from: 26, winnerTo: { match: 28, slot: 2 }, loserTo: null },
+
+  // SEMIFINALES (27–28)
+  { rama: "F", from: 27, winnerTo: { match: 30, slot: 1 }, loserTo: { match: 29, slot: 1 } },
+  { rama: "F", from: 28, winnerTo: { match: 30, slot: 2 }, loserTo: { match: 29, slot: 2 } },
+
+  // 3ER PUESTO (29) – terminal
+  { rama: "F", from: 29, winnerTo: null, loserTo: null },
+
+  // FINAL (30) – terminal
+  { rama: "F", from: 30, winnerTo: null, loserTo: null },
   ];
 
   let allMatches = [];
@@ -1112,9 +1165,8 @@
       return !md;
     });
 
-    if (selCat.value !== "all") {
-      list = list.filter(m => m.categoria === selCat.value);
-    }
+    // Rama (obligatorio: siempre F o M)
+	list = list.filter(m => m.categoria === selCat.value);
 
     if (phaseFilter === "groups" && selZone.value !== "all") {
       list = list.filter(m => m.zona === selZone.value);

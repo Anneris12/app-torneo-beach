@@ -244,9 +244,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// proteger acceso
-onAuthStateChanged(auth, u => { if(!u) location.href="login.html"; });
-
 const tabF         = document.getElementById("tabF");
 const tabM         = document.getElementById("tabM");
 const filterPhase  = document.getElementById("filterPhase");
