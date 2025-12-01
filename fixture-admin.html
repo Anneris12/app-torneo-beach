@@ -269,7 +269,7 @@
         <h3>Editar Partido</h3>
 
         <label>Rama</label>
-        <select id="newCat" disabled>
+        <select id="newCat">
           <option value="F">Femenino</option>
           <option value="M">Masculino</option>
         </select>
@@ -393,15 +393,14 @@
       if (!user) window.location.href = "login.html";
     });
 
-    // ========== RAMA FIJA POR URL ==========
+    // ========== RAMA SELECCIONADA (por URL o default) ==========
     const params = new URLSearchParams(window.location.search);
-    let ramaFija = (params.get("rama") || "").toUpperCase();
-    if (ramaFija !== "F" && ramaFija !== "M") {
-      ramaFija = "F"; // default
+    let selectedRama = (params.get("rama") || "").toUpperCase();
+    if (selectedRama !== "F" && selectedRama !== "M") {
+      selectedRama = "F"; // default
     }
 
     const ramaLabel = document.getElementById("ramaLabel");
-    ramaLabel.textContent = `Rama: ${ramaFija === "F" ? "Femenino" : "Masculino"}`;
 
     // ================= DOM =================
     const selNewCat       = document.getElementById("newCat");
@@ -425,11 +424,12 @@
     const btnDeleteSelected  = document.getElementById("btnDeleteSelected");
     const btnModoSeleccion   = document.getElementById("btnModoSeleccion");
 
-    // Rama fija en formulario
-    selNewCat.value = ramaFija;
+    // aplicar rama inicial
+    selNewCat.value = selectedRama;
+    ramaLabel.textContent = `Rama actual: ${selectedRama === "F" ? "Femenino" : "Masculino"}`;
 
     // ================= STATE =================
-    let allMatches = [];
+    let allMatches = [];      // todos los partidos de todas las ramas
     let zonasDisponibles = [];
     let teams = [];
     let editingMatchId = null;
@@ -462,7 +462,7 @@
       snapMatches.forEach(docSnap => {
         const d = docSnap.data();
         const categoria = normalizarCategoria(d.categoria || d.category);
-        if (categoria !== ramaFija) return;
+        if (categoria !== selectedRama) return;
         const zona = normalizarZona(d.zona || d.zone);
         if (categoria && zona) {
           zonasSet.add(zona);
@@ -501,7 +501,7 @@
         const t = docSnap.data();
         if (!t.name) return;
         const cat = normalizarCategoria(t.category || t.categoria);
-        if (cat !== ramaFija) return;
+        if (cat !== selectedRama) return;
         teams.push({
           name: t.name,
           category: cat,
@@ -536,7 +536,18 @@
 
     selNewZona.addEventListener("change", refreshTeamSelects);
 
-    // ================= SNAPSHOT DE PARTIDOS =================
+    // Cambio de rama desde el combo
+    selNewCat.addEventListener("change", async () => {
+      selectedRama = selNewCat.value === "M" ? "M" : "F"; // por si acaso
+      ramaLabel.textContent = `Rama actual: ${selectedRama === "F" ? "Femenino" : "Masculino"}`;
+      // recargar zonas y equipos para la nueva rama
+      await loadZonesFromMatchesAndTeams();
+      await loadTeams();
+      selectedMatches.clear();
+      renderMatches();
+    });
+
+    // ================= SNAPSHOT DE PARTIDOS (todas las ramas) =================
     const qMatches = query(
       collection(db, "matches"),
       orderBy("fecha"),
@@ -550,8 +561,6 @@
       snap.forEach(docSnap => {
         const d = docSnap.data();
         const categoria = normalizarCategoria(d.categoria || d.category);
-        if (categoria !== ramaFija) return; // 👈 Solo esta rama
-
         const zona = normalizarZona(d.zona || d.zone);
         const cancha = d.cancha || "";
         const estado = d.estado || "Pendiente";
@@ -593,7 +602,7 @@
     function renderTable() {
       listaPartidos.innerHTML = "";
 
-      let lista = [...allMatches];
+      let lista = allMatches.filter(p => p.categoria === selectedRama); // 👈 nunca mezclamos ramas
 
       // Filtro zona
       if (filtroZona.value !== "all") {
@@ -701,7 +710,7 @@
     });
 
     function getVisibleMatchIds() {
-      let lista = [...allMatches];
+      let lista = allMatches.filter(p => p.categoria === selectedRama);
 
       if (filtroZona.value !== "all") {
         lista = lista.filter(p => p.zona === filtroZona.value);
@@ -774,7 +783,7 @@
         return;
       }
 
-      const categoria = ramaFija; // fija
+      const categoria = selectedRama;
       const zona = selNewZona.value;
       const localName = selNewLocal.value;
       const visitanteName = selNewVisitante.value;
@@ -817,7 +826,7 @@
 
     function startEditMatch(p) {
       editingMatchId = p.id;
-      selNewCat.value = ramaFija;
+      selNewCat.value = selectedRama;
       selNewZona.value = p.zona;
       refreshTeamSelects();
       selNewLocal.value = p.localName;
@@ -831,8 +840,10 @@
 
     // ================= EXPORTAR CSV =================
     btnExport.addEventListener("click", () => {
-      if (allMatches.length === 0) {
-        alert("No hay partidos.");
+      const matchesRama = allMatches.filter(p => p.categoria === selectedRama);
+
+      if (matchesRama.length === 0) {
+        alert("No hay partidos en esta rama.");
         return;
       }
 
@@ -850,7 +861,7 @@
       const lines = [];
       lines.push(header.join(";"));
 
-      allMatches.forEach(p => {
+      matchesRama.forEach(p => {
         lines.push([
           p.numeroPartido,
           p.categoria,
@@ -867,7 +878,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `partidos_fixture_${ramaFija}.csv`;
+      a.download = `partidos_fixture_${selectedRama}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     });
@@ -914,7 +925,7 @@
         snap.forEach(docSnap => {
           const d = docSnap.data();
           const cat  = normalizarCategoria(d.categoria || d.category);
-          if (cat !== ramaFija) return; // solo esta rama
+          if (cat !== selectedRama) return;
           const num  = d.numeroPartido?.toString().trim();
           const phase = (d.phase || "").toString().trim().toLowerCase() || "zonas";
           if (!num) return;
@@ -946,9 +957,9 @@
           const horaRaw        = col("hora");
           const cancha         = col("cancha");
 
-          // Solo procesamos filas de la rama fija
+          // Solo procesamos filas de la rama seleccionada
           const categoriaCsv = normalizarCategoria(categoriaRaw);
-          if (categoriaCsv !== ramaFija) continue;
+          if (categoriaCsv !== selectedRama) continue;
 
           if (!localName && !visitanteName) continue;
 
@@ -963,7 +974,7 @@
           // 🔥 RESET de resultado y estado al importar
           const data = {
             numeroPartido: Number(numeroPartido),
-            categoria: ramaFija,
+            categoria: selectedRama,
             zona,
             zone: zona,
             localName,
@@ -1000,7 +1011,7 @@
           };
 
           const phase = "zonas";
-          const key = `${ramaFija}|${phase}|${numeroPartido}`;
+          const key = `${selectedRama}|${phase}|${numeroPartido}`;
 
           if (existing.has(key)) {
             const id = existing.get(key);
@@ -1011,7 +1022,7 @@
         }
 
         await Promise.all(promises);
-        alert(`Importación completada para rama ${ramaFija} (fixture y resultados reseteados para los partidos del CSV).`);
+        alert(`Importación completada para rama ${selectedRama} (fixture y resultados reseteados para los partidos del CSV).`);
         await loadZonesFromMatchesAndTeams();
       };
 
