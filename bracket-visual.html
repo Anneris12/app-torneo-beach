@@ -53,48 +53,38 @@
     color: #000;
   }
 
-  /* GRID DEL BRACKET */
-  .bracket-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 240px);
-    gap: 30px;
-    padding: 20px;
+  /* BRACKET AREA */
+  .bracket-area {
+    position: relative;
+    width: 2600px; 
+    height: 1400px;
+    margin: 0 auto;
     overflow-x: auto;
-  }
-
-  .round-title {
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 10px;
-    font-size: 17px;
+    padding-bottom: 40px;
   }
 
   .match {
+    position: absolute;
+    width: 210px;
     background: white;
     color: black;
     padding: 6px 10px;
     border-radius: 10px;
     border: 2px solid #ddd;
-    position: relative;
-    width: 210px;
-    min-height: 42px;
-    margin-bottom: 18px;
   }
 
   .match-num {
-    position: absolute;
-    top: -14px;
-    left: 10px;
     background: #ffe36a;
-    color: #000;
+    color: black;
+    font-weight: bold;
     padding: 2px 6px;
     border-radius: 6px;
     font-size: 12px;
-    font-weight: bold;
+    margin-bottom: 4px;
   }
 
   .team {
-    padding: 4px 0;
+    padding: 2px 0;
     display: flex;
     justify-content: space-between;
   }
@@ -103,13 +93,13 @@
     color: green;
     font-weight: bold;
   }
-
 </style>
+
 </head>
 
 <body>
 
-<!-- NAV superior -->
+<!-- NAV -->
 <div class="top-buttons">
   <a href="index.html" class="top-btn">Inicio</a>
   <a href="fixture.html" class="top-btn">Fixture</a>
@@ -117,23 +107,21 @@
 
 <h1>Cuadro Principal</h1>
 
-<!-- TABS M / F -->
+<!-- TABS -->
 <div class="tabs">
   <div class="tab active" data-rama="F">Femenino</div>
   <div class="tab" data-rama="M">Masculino</div>
 </div>
 
 <!-- BRACKET -->
-<div id="bracketGrid" class="bracket-grid">
-  <!-- Se rellena al cambiar de rama -->
-</div>
+<div id="bracketArea" class="bracket-area"></div>
+
 
 <script type="module">
 
-/* ───────────────────────────────────────────────
+/* --------------------------------------------------------------
    FIREBASE
-─────────────────────────────────────────────── */
-
+----------------------------------------------------------------*/
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
   getFirestore, collection, query, where,
@@ -152,154 +140,129 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 
-const bracketGrid = document.getElementById("bracketGrid");
-const tabs = document.querySelectorAll(".tab");
+const bracketArea = document.getElementById("bracketArea");
 
 
-/* ───────────────────────────────────────────────
-   LAYOUT FIJO DEL CUADRO FEMENINO
-─────────────────────────────────────────────── */
+/* --------------------------------------------------------------
+   POSICIONES EXACTAS DEL CUADRO FEMENINO
+----------------------------------------------------------------*/
 
-function renderFemeninoLayout() {
-  bracketGrid.innerHTML = `
+function renderLayoutFemenino() {
+  bracketArea.innerHTML = `
+    <!-- PRIMERA RONDA -->
+    <div class="match" id="m1"  style="top:20px; left:60px"></div>
+    <div class="match" id="m2"  style="top:90px; left:60px"></div>
 
-  <!-- COLUMNA 1 -->
-  <div>
-    <div class="round-title">1ra Ronda</div>
-    <div class="match" id="m1"><div class="match-num">1</div></div>
-    <div class="match" id="m2"><div class="match-num">2</div></div>
-    <div class="match" id="m3"><div class="match-num">3</div></div>
-    <div class="match" id="m4"><div class="match-num">4</div></div>
-    <div class="match" id="m5"><div class="match-num">5</div></div>
-    <div class="match" id="m6"><div class="match-num">6</div></div>
-    <div class="match" id="m7"><div class="match-num">7</div></div>
-    <div class="match" id="m8"><div class="match-num">8</div></div>
-  </div>
+    <div class="match" id="m3"  style="top:200px; left:60px"></div>
+    <div class="match" id="m4"  style="top:270px; left:60px"></div>
 
-  <!-- COLUMNA 2 -->
-  <div>
-    <div class="round-title">2da Ronda</div>
-    <div class="match" id="m9"><div class="match-num">9</div></div>
-    <div class="match" id="m10"><div class="match-num">10</div></div>
-    <div class="match" id="m11"><div class="match-num">11</div></div>
-    <div class="match" id="m12"><div class="match-num">12</div></div>
-  </div>
+    <div class="match" id="m5"  style="top:380px; left:60px"></div>
+    <div class="match" id="m6"  style="top:450px; left:60px"></div>
 
-  <!-- COLUMNA 3 -->
-  <div>
-    <div class="round-title">Pase a Semi</div>
-    <div class="match" id="m21"><div class="match-num">21</div></div>
-    <div class="match" id="m22"><div class="match-num">22</div></div>
-  </div>
+    <div class="match" id="m7"  style="top:560px; left:60px"></div>
+    <div class="match" id="m8"  style="top:630px; left:60px"></div>
 
-  <!-- COLUMNA 4 -->
-  <div>
-    <div class="round-title">Semifinal</div>
-    <div class="match" id="m27"><div class="match-num">27</div></div>
-    <div class="match" id="m28"><div class="match-num">28</div></div>
+    <!-- SEGUNDA RONDA (G1 vs G2, etc.) -->
+    <div class="match" id="m9"  style="top:55px; left:350px"></div>
+    <div class="match" id="m10" style="top:235px; left:350px"></div>
+    <div class="match" id="m11" style="top:415px; left:350px"></div>
+    <div class="match" id="m12" style="top:595px; left:350px"></div>
 
-    <div class="round-title">Final</div>
-    <div class="match" id="m30"><div class="match-num">30</div></div>
+    <!-- PASE A SEMI -->
+    <div class="match" id="m21" style="top:145px; left:650px"></div>
+    <div class="match" id="m22" style="top:505px; left:650px"></div>
 
-    <div class="round-title">3° Puesto</div>
-    <div class="match" id="m29"><div class="match-num">29</div></div>
-  </div>
+    <!-- SEMIFINALES / FINAL / TERCER PUESTO -->
+    <div class="match" id="m27" style="top:225px; left:950px"></div>
+    <div class="match" id="m28" style="top:425px; left:950px"></div>
 
-  <!-- COLUMNA 5 -->
-  <div>
-    <div class="round-title">Perdedores 1</div>
-    <div class="match" id="m13"><div class="match-num">13</div></div>
-    <div class="match" id="m14"><div class="match-num">14</div></div>
-    <div class="match" id="m15"><div class="match-num">15</div></div>
-    <div class="match" id="m16"><div class="match-num">16</div></div>
+    <div class="match" id="m30" style="top:325px; left:1200px; width:240px;"></div>
+    <div class="match" id="m29" style="top:425px; left:1200px; width:240px;"></div>
 
-    <div class="round-title">Perdedores 2</div>
-    <div class="match" id="m17"><div class="match-num">17</div></div>
-    <div class="match" id="m18"><div class="match-num">18</div></div>
-    <div class="match" id="m19"><div class="match-num">19</div></div>
-    <div class="match" id="m20"><div class="match-num">20</div></div>
-  </div>
+    <!-- PERDEDORES 1 -->
+    <div class="match" id="m13" style="top:20px; left:1500px"></div>
+    <div class="match" id="m14" style="top:100px; left:1500px"></div>
+    <div class="match" id="m15" style="top:200px; left:1500px"></div>
+    <div class="match" id="m16" style="top:280px; left:1500px"></div>
 
-  <!-- COLUMNA 6 -->
-  <div>
-    <div class="round-title">Perdedores 3</div>
-    <div class="match" id="m23"><div class="match-num">23</div></div>
-    <div class="match" id="m24"><div class="match-num">24</div></div>
+    <!-- PERDEDORES 2 -->
+    <div class="match" id="m17" style="top:60px; left:1750px"></div>
+    <div class="match" id="m18" style="top:220px; left:1750px"></div>
+    <div class="match" id="m19" style="top:360px; left:1750px"></div>
+    <div class="match" id="m20" style="top:500px; left:1750px"></div>
 
-    <div class="round-title">Pase a Semi (Losers)</div>
-    <div class="match" id="m25"><div class="match-num">25</div></div>
-    <div class="match" id="m26"><div class="match-num">26</div></div>
-  </div>
+    <!-- PERDEDORES 3 -->
+    <div class="match" id="m23" style="top:140px; left:2000px"></div>
+    <div class="match" id="m24" style="top:300px; left:2000px"></div>
+
+    <!-- PASE A SEMI (LOSERS) -->
+    <div class="match" id="m25" style="top:200px; left:2250px"></div>
+    <div class="match" id="m26" style="top:360px; left:2250px"></div>
   `;
 }
 
 
-/* ───────────────────────────────────────────────
-   RENDER dinámico desde Firebase
-─────────────────────────────────────────────── */
+/* --------------------------------------------------------------
+   RENDER DE PARTIDO
+----------------------------------------------------------------*/
 
-function renderMatch(box, matchData) {
+function renderMatchBox(box, m) {
   box.innerHTML = `
-    <div class="match-num">${matchData.drawMatchNumber}</div>
+    <div class="match-num">${m.drawMatchNumber}</div>
 
-    <div class="team ${matchData.winnerTeamId === matchData.team1Id ? "winner" : ""}">
-      ${matchData.team1Name || "---"}
+    <div class="team ${m.winnerTeamId === m.team1Id ? 'winner' : ''}">
+      ${m.team1Name || '---'}
     </div>
 
-    <div class="team ${matchData.winnerTeamId === matchData.team2Id ? "winner" : ""}">
-      ${matchData.team2Name || "---"}
+    <div class="team ${m.winnerTeamId === m.team2Id ? 'winner' : ''}">
+      ${m.team2Name || '---'}
     </div>
   `;
 }
 
 
-/* ───────────────────────────────────────────────
-   Cargar cuadro por rama CON onSnapshot
-─────────────────────────────────────────────── */
-
+/* --------------------------------------------------------------
+   CARGAR UNA RAMA
+----------------------------------------------------------------*/
 let unsubscribe = null;
 
 function loadBracket(rama) {
 
-  // cancela listener previo
   if (unsubscribe) unsubscribe();
 
-  // render estructura vacía
-  if (rama === "F") renderFemeninoLayout();
-  // cuando tengamos el masculino, hacemos renderMasculinoLayout()
+  if (rama === "F") renderLayoutFemenino();
+  else bracketArea.innerHTML = "<h2>Cuadro Masculino pronto…</h2>";
 
-  // listener en vivo
   const q = query(
     collection(db, "matches"),
     where("phase", "==", "maindraw"),
     where("rama", "==", rama)
   );
 
-  unsubscribe = onSnapshot(q, snapshot => {
-
-    snapshot.forEach(doc => {
+  unsubscribe = onSnapshot(q, snap => {
+    snap.forEach(doc => {
       const m = doc.data();
       const box = document.getElementById("m" + m.drawMatchNumber);
-      if (box) renderMatch(box, m);
+      if (box) renderMatchBox(box, m);
     });
-
   });
+
 }
 
 
-/* ───────────────────────────────────────────────
+/* --------------------------------------------------------------
    TABS
-─────────────────────────────────────────────── */
+----------------------------------------------------------------*/
+document.querySelectorAll(".tab").forEach(t => {
+  t.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+    t.classList.add("active");
+    loadBracket(t.dataset.rama);
+  });
+});
 
-tabs.forEach(tab => tab.addEventListener("click", () => {
-  tabs.forEach(t => t.classList.remove("active"));
-  tab.classList.add("active");
 
-  loadBracket(tab.dataset.rama);
-}));
-
-
-// cargar FEM al inicio
+/* Inicial: FEMENINO */
 loadBracket("F");
 
 </script>
