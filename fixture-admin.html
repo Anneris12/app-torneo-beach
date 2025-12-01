@@ -473,7 +473,7 @@
         const [cat, zona] = item.split("|");
         const label = `${cat} - Zona ${zona}`;
 
-        // Para el formulario solo necesitamos la letra de la zona
+        // Para el formulario sólo usamos la letra de zona
         const optForm = document.createElement("option");
         optForm.value = zona;
         optForm.textContent = label;
@@ -547,6 +547,8 @@
         const zona = normalizarZona(d.zona || d.zone);
         const cancha = d.cancha || "";
 
+        let estado = d.estado || "Pendiente";
+
         allMatches.push({
           id: docSnap.id,
           numeroPartido: d.numeroPartido,
@@ -557,7 +559,7 @@
           fecha: d.fecha,
           hora: d.hora,
           cancha,
-          estado: d.estado || "Pendiente"
+          estado
         });
       });
 
@@ -823,7 +825,7 @@
     function startEditMatch(p) {
       editingMatchId = p.id;
       selNewCat.value = p.categoria;
-      // zona en el form es solo la letra
+      // zona en el form es sólo la letra
       selNewZona.value = p.zona;
       refreshTeamSelects();
       selNewLocal.value = p.localName;
@@ -847,7 +849,7 @@
         "categoria",
         "zona",
         "localName",
-        "visitanteName",
+        "visitantename",
         "fecha",
         "hora",
         "cancha"
@@ -914,6 +916,7 @@
         const idx = {};
         headers.forEach((h,i) => idx[h] = i);
 
+        // Mapa de partidos existentes por clave: rama + fase + número
         const snap = await getDocs(collection(db, "matches"));
         const existing = new Map();
         snap.forEach(docSnap => {
@@ -961,6 +964,7 @@
             hora = txt.slice(0,2) + ":" + txt.slice(2);
           }
 
+          // 🔥 RESET de resultado y estado al importar
           const data = {
             numeroPartido: Number(numeroPartido),
             categoria,
@@ -971,7 +975,32 @@
             fecha,
             hora,
             cancha,
-            estado: "Pendiente"
+
+            // Estado / fase
+            estado: "Pendiente",
+            phase: "zonas",
+
+            // Reset de sets y puntos
+            setsData: [],
+            setsLocal: 0,
+            setsVisitante: 0,
+            totalPointsLocal: 0,
+            totalPointsVisitante: 0,
+            setActual: 1,
+            puntosLocal: 0,
+            puntosVisitante: 0,
+
+            // Saques / servidores
+            currentServerTeam: null,
+            currentServerPlayer: null,
+            localNextServer: null,
+            visitNextServer: null,
+            localFirstServer: null,
+            visitFirstServer: null,
+
+            // Ganador / perdedor de cuadro
+            winnerSide: null,
+            loserSide: null
           };
 
           const phase = "zonas";
@@ -986,7 +1015,7 @@
         }
 
         await Promise.all(promises);
-        alert("Importación completada.");
+        alert("Importación completada (fixture y resultados reseteados para los partidos del CSV).");
         await loadZonesFromMatchesAndTeams();
       };
 
