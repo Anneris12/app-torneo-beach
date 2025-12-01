@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cuadro Principal</title>
 
 <style>
   body {
-    margin: 0;
     background: #031926;
-    color: #fff;
+    color: white;
+    margin: 0;
     font-family: system-ui, sans-serif;
   }
 
-  /* TOP NAV */
   .top-buttons {
     display: flex;
     justify-content: space-between;
@@ -23,33 +22,28 @@
   .top-btn {
     background: #ffe36a;
     color: #000;
-    font-weight: bold;
     padding: 10px 16px;
     border-radius: 12px;
     text-decoration: none;
-    border: none;
-    font-size: 14px;
+    font-weight: bold;
   }
 
   h1 {
     text-align: center;
-    margin-top: 10px;
-    text-transform: uppercase;
+    margin: 5px 0;
   }
 
-  /* TABS */
   .tabs {
-    margin: 15px auto 0;
     display: flex;
     justify-content: center;
     gap: 12px;
+    margin-bottom: 10px;
   }
 
   .tab {
-    padding: 10px 20px;
-    border-radius: 12px;
     background: #07354b;
-    color: #fff;
+    padding: 10px 18px;
+    border-radius: 12px;
     cursor: pointer;
     font-weight: bold;
   }
@@ -59,51 +53,63 @@
     color: #000;
   }
 
-  /* BRACKET */
-  .bracket {
-    display: flex;
+  /* GRID DEL BRACKET */
+  .bracket-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 240px);
     gap: 30px;
     padding: 20px;
     overflow-x: auto;
-  }
-
-  .round {
-    min-width: 220px;
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
   }
 
   .round-title {
     font-weight: bold;
     text-align: center;
     margin-bottom: 10px;
-    font-size: 18px;
+    font-size: 17px;
   }
 
-  .match-box {
-    background: #fff;
+  .match {
+    background: white;
+    color: black;
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 2px solid #ddd;
+    position: relative;
+    width: 210px;
+    min-height: 42px;
+    margin-bottom: 18px;
+  }
+
+  .match-num {
+    position: absolute;
+    top: -14px;
+    left: 10px;
+    background: #ffe36a;
     color: #000;
-    padding: 8px;
-    border-radius: 12px;
-    min-height: 45px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
   }
 
   .team {
+    padding: 4px 0;
     display: flex;
     justify-content: space-between;
-    padding: 4px 0;
   }
 
   .winner {
     color: green;
     font-weight: bold;
   }
+
 </style>
 </head>
 
 <body>
 
+<!-- NAV superior -->
 <div class="top-buttons">
   <a href="index.html" class="top-btn">Inicio</a>
   <a href="fixture.html" class="top-btn">Fixture</a>
@@ -111,144 +117,191 @@
 
 <h1>Cuadro Principal</h1>
 
+<!-- TABS M / F -->
 <div class="tabs">
   <div class="tab active" data-rama="F">Femenino</div>
   <div class="tab" data-rama="M">Masculino</div>
 </div>
 
-<div id="bracketContainer" class="bracket"></div>
-
+<!-- BRACKET -->
+<div id="bracketGrid" class="bracket-grid">
+  <!-- Se rellena al cambiar de rama -->
+</div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-  import {
-    getFirestore,
-    collection,
-    query,
-    where,
-    getDocs
-  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
-    authDomain: "torneo-beach.firebaseapp.com",
-    projectId: "torneo-beach",
-    storageBucket: "torneo-beach.firebasestorage.app",
-    messagingSenderId: "21136645638",
-    appId: "1:21136645638:web:52c3b06affc2ee151eed87"
-  };
+/* ───────────────────────────────────────────────
+   FIREBASE
+─────────────────────────────────────────────── */
 
-  const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getFirestore, collection, query, where,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-  const bracketContainer = document.getElementById("bracketContainer");
+const firebaseConfig = {
+  apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
+  authDomain: "torneo-beach.firebaseapp.com",
+  projectId: "torneo-beach",
+  storageBucket: "torneo-beach.firebasestorage.app",
+  messagingSenderId: "21136645638",
+  appId: "1:21136645638:web:52c3b06affc2ee151eed87"
+};
 
-  // Tabs
-  const tabs = document.querySelectorAll(".tab");
-  tabs.forEach(tab => tab.addEventListener("click", () => {
-    tabs.forEach(t => t.classList.remove("active"));
-    tab.classList.add("active");
-    loadBracket(tab.dataset.rama);
-  }));
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
 
-  window.addEventListener("DOMContentLoaded", () => loadBracket("F"));
-
-  // ORDEN CORRECTO DEL CUADRO FEMENINO (VISUAL)
-  const FEM_ROUNDS = [
-    "1ra ronda",
-    "2da ronda",
-    "Pase a semi",
-    "Semi",
-    "Final",
-    "3er puesto",
-
-    // losers abajo
-    "1er ronda perd.",
-    "2da ronda perd.",
-    "3ra ronda perd.",
-    "Pase a semi perd."
-  ];
-
-  const MAS_ROUNDS = [
-    "1ra ronda",
-    "2da ronda",
-    "3ra ronda",
-    "Pase a semi",
-    "Semi",
-    "Final",
-    "3er puesto",
-    // losers…
-    "1er ronda perd.",
-    "2da ronda perd.",
-    "3ra ronda perd.",
-    "4ta ronda perd.",
-    "5ta ronda perd.",
-    "Pase a semi perd."
-  ];
+const bracketGrid = document.getElementById("bracketGrid");
+const tabs = document.querySelectorAll(".tab");
 
 
-  async function loadBracket(rama) {
-    bracketContainer.innerHTML = "Cargando...";
+/* ───────────────────────────────────────────────
+   LAYOUT FIJO DEL CUADRO FEMENINO
+─────────────────────────────────────────────── */
 
-    const snap = await getDocs(
-      query(
-        collection(db, "matches"),
-        where("phase", "==", "maindraw"),
-        where("rama", "==", rama)
-      )
-    );
+function renderFemeninoLayout() {
+  bracketGrid.innerHTML = `
 
-    const matches = snap.docs.map(d => d.data());
+  <!-- COLUMNA 1 -->
+  <div>
+    <div class="round-title">1ra Ronda</div>
+    <div class="match" id="m1"><div class="match-num">1</div></div>
+    <div class="match" id="m2"><div class="match-num">2</div></div>
+    <div class="match" id="m3"><div class="match-num">3</div></div>
+    <div class="match" id="m4"><div class="match-num">4</div></div>
+    <div class="match" id="m5"><div class="match-num">5</div></div>
+    <div class="match" id="m6"><div class="match-num">6</div></div>
+    <div class="match" id="m7"><div class="match-num">7</div></div>
+    <div class="match" id="m8"><div class="match-num">8</div></div>
+  </div>
 
-    if (!matches.length) {
-      bracketContainer.innerHTML = "<p>No hay cuadro cargado.</p>";
-      return;
-    }
+  <!-- COLUMNA 2 -->
+  <div>
+    <div class="round-title">2da Ronda</div>
+    <div class="match" id="m9"><div class="match-num">9</div></div>
+    <div class="match" id="m10"><div class="match-num">10</div></div>
+    <div class="match" id="m11"><div class="match-num">11</div></div>
+    <div class="match" id="m12"><div class="match-num">12</div></div>
+  </div>
 
-    // Elegir orden según rama
-    const order = rama === "F" ? FEM_ROUNDS : MAS_ROUNDS;
+  <!-- COLUMNA 3 -->
+  <div>
+    <div class="round-title">Pase a Semi</div>
+    <div class="match" id="m21"><div class="match-num">21</div></div>
+    <div class="match" id="m22"><div class="match-num">22</div></div>
+  </div>
 
-    // Agrupar por roundLabel
-    const grouped = {};
-    order.forEach(r => grouped[r] = []);
+  <!-- COLUMNA 4 -->
+  <div>
+    <div class="round-title">Semifinal</div>
+    <div class="match" id="m27"><div class="match-num">27</div></div>
+    <div class="match" id="m28"><div class="match-num">28</div></div>
 
-    matches.forEach(m => {
-      if (grouped[m.roundLabel]) grouped[m.roundLabel].push(m);
+    <div class="round-title">Final</div>
+    <div class="match" id="m30"><div class="match-num">30</div></div>
+
+    <div class="round-title">3° Puesto</div>
+    <div class="match" id="m29"><div class="match-num">29</div></div>
+  </div>
+
+  <!-- COLUMNA 5 -->
+  <div>
+    <div class="round-title">Perdedores 1</div>
+    <div class="match" id="m13"><div class="match-num">13</div></div>
+    <div class="match" id="m14"><div class="match-num">14</div></div>
+    <div class="match" id="m15"><div class="match-num">15</div></div>
+    <div class="match" id="m16"><div class="match-num">16</div></div>
+
+    <div class="round-title">Perdedores 2</div>
+    <div class="match" id="m17"><div class="match-num">17</div></div>
+    <div class="match" id="m18"><div class="match-num">18</div></div>
+    <div class="match" id="m19"><div class="match-num">19</div></div>
+    <div class="match" id="m20"><div class="match-num">20</div></div>
+  </div>
+
+  <!-- COLUMNA 6 -->
+  <div>
+    <div class="round-title">Perdedores 3</div>
+    <div class="match" id="m23"><div class="match-num">23</div></div>
+    <div class="match" id="m24"><div class="match-num">24</div></div>
+
+    <div class="round-title">Pase a Semi (Losers)</div>
+    <div class="match" id="m25"><div class="match-num">25</div></div>
+    <div class="match" id="m26"><div class="match-num">26</div></div>
+  </div>
+  `;
+}
+
+
+/* ───────────────────────────────────────────────
+   RENDER dinámico desde Firebase
+─────────────────────────────────────────────── */
+
+function renderMatch(box, matchData) {
+  box.innerHTML = `
+    <div class="match-num">${matchData.drawMatchNumber}</div>
+
+    <div class="team ${matchData.winnerTeamId === matchData.team1Id ? "winner" : ""}">
+      ${matchData.team1Name || "---"}
+    </div>
+
+    <div class="team ${matchData.winnerTeamId === matchData.team2Id ? "winner" : ""}">
+      ${matchData.team2Name || "---"}
+    </div>
+  `;
+}
+
+
+/* ───────────────────────────────────────────────
+   Cargar cuadro por rama CON onSnapshot
+─────────────────────────────────────────────── */
+
+let unsubscribe = null;
+
+function loadBracket(rama) {
+
+  // cancela listener previo
+  if (unsubscribe) unsubscribe();
+
+  // render estructura vacía
+  if (rama === "F") renderFemeninoLayout();
+  // cuando tengamos el masculino, hacemos renderMasculinoLayout()
+
+  // listener en vivo
+  const q = query(
+    collection(db, "matches"),
+    where("phase", "==", "maindraw"),
+    where("rama", "==", rama)
+  );
+
+  unsubscribe = onSnapshot(q, snapshot => {
+
+    snapshot.forEach(doc => {
+      const m = doc.data();
+      const box = document.getElementById("m" + m.drawMatchNumber);
+      if (box) renderMatch(box, m);
     });
 
-    // Ordenar
-    Object.values(grouped).forEach(list =>
-      list.sort((a,b)=> a.drawMatchNumber - b.drawMatchNumber)
-    );
+  });
+}
 
-    // Render
-    bracketContainer.innerHTML = "";
-    order.forEach(round => {
-      if (!grouped[round].length) return;
 
-      const col = document.createElement("div");
-      col.className = "round";
+/* ───────────────────────────────────────────────
+   TABS
+─────────────────────────────────────────────── */
 
-      col.innerHTML = `<div class="round-title">${round}</div>`;
+tabs.forEach(tab => tab.addEventListener("click", () => {
+  tabs.forEach(t => t.classList.remove("active"));
+  tab.classList.add("active");
 
-      grouped[round].forEach(m => {
-        const box = document.createElement("div");
-        box.className = "match-box";
+  loadBracket(tab.dataset.rama);
+}));
 
-        box.innerHTML = `
-          <div class="team ${m.winnerTeamId===m.team1Id ? "winner":""}">
-            ${m.team1Name || "---"}
-          </div>
-          <div class="team ${m.winnerTeamId===m.team2Id ? "winner":""}">
-            ${m.team2Name || "---"}
-          </div>
-        `;
-        col.appendChild(box);
-      });
 
-      bracketContainer.appendChild(col);
-    });
-  }
+// cargar FEM al inicio
+loadBracket("F");
+
 </script>
 
 </body>
