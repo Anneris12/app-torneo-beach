@@ -53,14 +53,14 @@
     color: #000;
   }
 
-  /* BRACKET AREA */
+  /* Área del bracket */
   .bracket-area {
     position: relative;
-    width: 2600px; 
-    height: 1400px;
+    width: 2600px;
+    height: 900px;
     margin: 0 auto;
     overflow-x: auto;
-    padding-bottom: 40px;
+    padding: 20px 0 40px;
   }
 
   .match {
@@ -94,7 +94,6 @@
     font-weight: bold;
   }
 </style>
-
 </head>
 
 <body>
@@ -116,9 +115,7 @@
 <!-- BRACKET -->
 <div id="bracketArea" class="bracket-area"></div>
 
-
 <script type="module">
-
 /* --------------------------------------------------------------
    FIREBASE
 ----------------------------------------------------------------*/
@@ -142,16 +139,16 @@ const db  = getFirestore(app);
 
 const bracketArea = document.getElementById("bracketArea");
 
-
 /* --------------------------------------------------------------
-   POSICIONES EXACTAS DEL CUADRO FEMENINO
+   LAYOUT FEMENINO – coordenadas fijas
 ----------------------------------------------------------------*/
-
 function renderLayoutFemenino() {
   bracketArea.innerHTML = `
-    <!-- PRIMERA RONDA -->
-    <div class="match" id="m1"  style="top:20px; left:60px"></div>
-    <div class="match" id="m2"  style="top:90px; left:60px"></div>
+    <!-- GANADORES – IZQUIERDA -->
+
+    <!-- 1ra RONDA (1–8) -->
+    <div class="match" id="m1"  style="top:20px;  left:60px"></div>
+    <div class="match" id="m2"  style="top:90px;  left:60px"></div>
 
     <div class="match" id="m3"  style="top:200px; left:60px"></div>
     <div class="match" id="m4"  style="top:270px; left:60px"></div>
@@ -162,76 +159,76 @@ function renderLayoutFemenino() {
     <div class="match" id="m7"  style="top:560px; left:60px"></div>
     <div class="match" id="m8"  style="top:630px; left:60px"></div>
 
-    <!-- SEGUNDA RONDA (G1 vs G2, etc.) -->
-    <div class="match" id="m9"  style="top:55px; left:350px"></div>
+    <!-- 2da RONDA (9–12) centred entre sus pares -->
+    <div class="match" id="m9"  style="top:55px;  left:350px"></div>
     <div class="match" id="m10" style="top:235px; left:350px"></div>
     <div class="match" id="m11" style="top:415px; left:350px"></div>
     <div class="match" id="m12" style="top:595px; left:350px"></div>
 
-    <!-- PASE A SEMI -->
+    <!-- PASE A SEMI GANADORES (21,22) -->
     <div class="match" id="m21" style="top:145px; left:650px"></div>
     <div class="match" id="m22" style="top:505px; left:650px"></div>
 
-    <!-- SEMIFINALES / FINAL / TERCER PUESTO -->
+    <!-- SEMIS (27, 28) + FINAL (30) + 3P (29) – centro -->
     <div class="match" id="m27" style="top:225px; left:950px"></div>
     <div class="match" id="m28" style="top:425px; left:950px"></div>
 
     <div class="match" id="m30" style="top:325px; left:1200px; width:240px;"></div>
     <div class="match" id="m29" style="top:425px; left:1200px; width:240px;"></div>
 
-    <!-- PERDEDORES 1 -->
-    <div class="match" id="m13" style="top:20px; left:1500px"></div>
-    <div class="match" id="m14" style="top:100px; left:1500px"></div>
-    <div class="match" id="m15" style="top:200px; left:1500px"></div>
-    <div class="match" id="m16" style="top:280px; left:1500px"></div>
+    <!-- PERDEDORES – DERECHA → IZQUIERDA -->
 
-    <!-- PERDEDORES 2 -->
-    <div class="match" id="m17" style="top:60px; left:1750px"></div>
-    <div class="match" id="m18" style="top:220px; left:1750px"></div>
-    <div class="match" id="m19" style="top:360px; left:1750px"></div>
-    <div class="match" id="m20" style="top:500px; left:1750px"></div>
+    <!-- 1ra RONDA PERD. (13–16) – más a la derecha -->
+    <div class="match" id="m13" style="top:40px;  left:2200px"></div>
+    <div class="match" id="m14" style="top:190px; left:2200px"></div>
+    <div class="match" id="m15" style="top:380px; left:2200px"></div>
+    <div class="match" id="m16" style="top:530px; left:2200px"></div>
 
-    <!-- PERDEDORES 3 -->
-    <div class="match" id="m23" style="top:140px; left:2000px"></div>
-    <div class="match" id="m24" style="top:300px; left:2000px"></div>
+    <!-- 2da RONDA PERD. (17–20) – un paso hacia el centro -->
+    <div class="match" id="m17" style="top:85px;  left:2000px"></div>
+    <div class="match" id="m18" style="top:235px; left:2000px"></div>
+    <div class="match" id="m19" style="top:425px; left:2000px"></div>
+    <div class="match" id="m20" style="top:575px; left:2000px"></div>
 
-    <!-- PASE A SEMI (LOSERS) -->
-    <div class="match" id="m25" style="top:200px; left:2250px"></div>
-    <div class="match" id="m26" style="top:360px; left:2250px"></div>
+    <!-- 3ra RONDA PERD. (23–24) – más cerca del centro -->
+    <div class="match" id="m23" style="top:160px; left:1800px"></div>
+    <div class="match" id="m24" style="top:505px; left:1800px"></div>
+
+    <!-- PASE A SEMI PERD. (25–26) – casi centro, rumbo a 27/28 -->
+    <div class="match" id="m25" style="top:230px; left:1600px"></div>
+    <div class="match" id="m26" style="top:575px; left:1600px"></div>
   `;
 }
 
-
 /* --------------------------------------------------------------
-   RENDER DE PARTIDO
+   Render de un partido dentro de su caja
 ----------------------------------------------------------------*/
-
 function renderMatchBox(box, m) {
   box.innerHTML = `
     <div class="match-num">${m.drawMatchNumber}</div>
-
     <div class="team ${m.winnerTeamId === m.team1Id ? 'winner' : ''}">
       ${m.team1Name || '---'}
     </div>
-
     <div class="team ${m.winnerTeamId === m.team2Id ? 'winner' : ''}">
       ${m.team2Name || '---'}
     </div>
   `;
 }
 
-
 /* --------------------------------------------------------------
-   CARGAR UNA RAMA
+   Cargar bracket por rama (usa onSnapshot)
 ----------------------------------------------------------------*/
 let unsubscribe = null;
 
 function loadBracket(rama) {
+  if (unsubscribe) unsubscribe?.();
 
-  if (unsubscribe) unsubscribe();
-
-  if (rama === "F") renderLayoutFemenino();
-  else bracketArea.innerHTML = "<h2>Cuadro Masculino pronto…</h2>";
+  if (rama === "F") {
+    renderLayoutFemenino();
+  } else {
+    bracketArea.innerHTML = "<h2 style='text-align:center'>Cuadro Masculino pronto…</h2>";
+    return;
+  }
 
   const q = query(
     collection(db, "matches"),
@@ -246,25 +243,21 @@ function loadBracket(rama) {
       if (box) renderMatchBox(box, m);
     });
   });
-
 }
 
-
 /* --------------------------------------------------------------
-   TABS
+   Tabs
 ----------------------------------------------------------------*/
-document.querySelectorAll(".tab").forEach(t => {
-  t.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
-    t.classList.add("active");
-    loadBracket(t.dataset.rama);
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    loadBracket(tab.dataset.rama);
   });
 });
 
-
-/* Inicial: FEMENINO */
+/* Inicial: FEM */
 loadBracket("F");
-
 </script>
 
 </body>
