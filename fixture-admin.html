@@ -20,7 +20,14 @@
 
     h1 {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 4px;
+    }
+
+    .rama-label {
+      text-align: center;
+      font-size: 14px;
+      margin-bottom: 16px;
+      opacity: 0.85;
     }
 
     .top-buttons {
@@ -247,6 +254,7 @@
 </head>
 <body>
   <h1>Fixture – Admin</h1>
+  <div class="rama-label" id="ramaLabel"></div>
 
   <div class="top-buttons">
     <a href="admin.html" class="top-btn">← Volver</a>
@@ -261,8 +269,7 @@
         <h3>Editar Partido</h3>
 
         <label>Rama</label>
-        <select id="newCat">
-          <option value="">-- Elegí rama --</option>
+        <select id="newCat" disabled>
           <option value="F">Femenino</option>
           <option value="M">Masculino</option>
         </select>
@@ -303,8 +310,8 @@
       <div class="card">
         <h3>Importar / Exportar CSV</h3>
         <p style="font-size: 13px; margin-top: 0;">
-          Exportá todos los partidos a CSV, o importalos desde un archivo (respetando que
-          Femenino y Masculino pueden compartir número de partido).
+          Esta pantalla administra solo la rama seleccionada (Femenino o Masculino).
+          Al importar, se reinician resultados de los partidos del CSV de <strong>esta rama</strong>.
         </p>
         <button id="btnExport">Exportar CSV</button>
         <button id="btnImport">Importar CSV</button>
@@ -317,12 +324,6 @@
         <h3>Listado de partidos</h3>
 
         <div class="filters-row">
-          <select id="filtroCat">
-            <option value="all">Rama: Todas</option>
-            <option value="F">Femenino</option>
-            <option value="M">Masculino</option>
-          </select>
-
           <select id="filtroZona">
             <option value="all">Zona: Todas</option>
           </select>
@@ -340,7 +341,7 @@
               <tr>
                 <th class="checkbox-cell">Sel</th>
                 <th data-field="numeroPartido" class="sortable">#</th>
-                <th data-field="categoria" class="sortable">Rama</th>
+                <th data-field="categoria">Rama</th>
                 <th data-field="zona" class="sortable">Zona</th>
                 <th data-field="localName" class="sortable">Local</th>
                 <th data-field="visitanteName" class="sortable">Visitante</th>
@@ -392,6 +393,16 @@
       if (!user) window.location.href = "login.html";
     });
 
+    // ========== RAMA FIJA POR URL ==========
+    const params = new URLSearchParams(window.location.search);
+    let ramaFija = (params.get("rama") || "").toUpperCase();
+    if (ramaFija !== "F" && ramaFija !== "M") {
+      ramaFija = "F"; // default
+    }
+
+    const ramaLabel = document.getElementById("ramaLabel");
+    ramaLabel.textContent = `Rama: ${ramaFija === "F" ? "Femenino" : "Masculino"}`;
+
     // ================= DOM =================
     const selNewCat       = document.getElementById("newCat");
     const selNewZona      = document.getElementById("newZona");
@@ -402,7 +413,6 @@
     const selNewCancha    = document.getElementById("newCancha");
     const btnCrear        = document.getElementById("btnCrear");
 
-    const filtroCat      = document.getElementById("filtroCat");
     const filtroZona     = document.getElementById("filtroZona");
     const filtroTexto    = document.getElementById("filtroTexto");
     const listaPartidos  = document.getElementById("listaPartidos");
@@ -414,6 +424,9 @@
     const btnToggleSelectAll = document.getElementById("btnToggleSelectAll");
     const btnDeleteSelected  = document.getElementById("btnDeleteSelected");
     const btnModoSeleccion   = document.getElementById("btnModoSeleccion");
+
+    // Rama fija en formulario
+    selNewCat.value = ramaFija;
 
     // ================= STATE =================
     let allMatches = [];
@@ -449,18 +462,14 @@
       snapMatches.forEach(docSnap => {
         const d = docSnap.data();
         const categoria = normalizarCategoria(d.categoria || d.category);
+        if (categoria !== ramaFija) return;
         const zona = normalizarZona(d.zona || d.zone);
         if (categoria && zona) {
-          zonasSet.add(`${categoria}|${zona}`);
+          zonasSet.add(zona);
         }
       });
 
-      zonasDisponibles = Array.from(zonasSet).sort((a, b) => {
-        const [c1, z1] = a.split("|");
-        const [c2, z2] = b.split("|");
-        if (c1 === c2) return z1.localeCompare(z2);
-        return c1.localeCompare(c2);
-      });
+      zonasDisponibles = Array.from(zonasSet).sort((a, b) => a.localeCompare(b));
 
       renderZonasSelect();
     }
@@ -469,19 +478,16 @@
       selNewZona.innerHTML = `<option value="">-- Elegí zona --</option>`;
       filtroZona.innerHTML = `<option value="all">Zona: Todas</option>`;
 
-      zonasDisponibles.forEach(item => {
-        const [cat, zona] = item.split("|");
-        const label = `${cat} - Zona ${zona}`;
+      zonasDisponibles.forEach(zona => {
+        const label = `Zona ${zona}`;
 
-        // Para el formulario sólo usamos la letra de zona
         const optForm = document.createElement("option");
         optForm.value = zona;
         optForm.textContent = label;
         selNewZona.appendChild(optForm);
 
-        // Para el filtro usamos cat|zona para no mezclar ramas
         const optFiltro = document.createElement("option");
-        optFiltro.value = `${cat}|${zona}`;
+        optFiltro.value = zona;
         optFiltro.textContent = label;
         filtroZona.appendChild(optFiltro);
       });
@@ -494,9 +500,11 @@
       snap.forEach(docSnap => {
         const t = docSnap.data();
         if (!t.name) return;
+        const cat = normalizarCategoria(t.category || t.categoria);
+        if (cat !== ramaFija) return;
         teams.push({
           name: t.name,
-          category: normalizarCategoria(t.category || t.categoria),
+          category: cat,
           zone: normalizarZona(t.zone || t.zona)
         });
       });
@@ -504,15 +512,14 @@
     }
 
     function refreshTeamSelects() {
-      const cat = selNewCat.value;
       const zona = selNewZona.value;
 
       selNewLocal.innerHTML = `<option value="">-- Elegí equipo local --</option>`;
       selNewVisitante.innerHTML = `<option value="">-- Elegí equipo visitante --</option>`;
 
-      if (!cat || !zona) return;
+      if (!zona) return;
 
-      const filtered = teams.filter(t => t.category === cat && t.zone === zona);
+      const filtered = teams.filter(t => t.zone === zona);
 
       filtered.forEach(t => {
         const o1 = document.createElement("option");
@@ -527,7 +534,6 @@
       });
     }
 
-    selNewCat.addEventListener("change", refreshTeamSelects);
     selNewZona.addEventListener("change", refreshTeamSelects);
 
     // ================= SNAPSHOT DE PARTIDOS =================
@@ -544,10 +550,11 @@
       snap.forEach(docSnap => {
         const d = docSnap.data();
         const categoria = normalizarCategoria(d.categoria || d.category);
+        if (categoria !== ramaFija) return; // 👈 Solo esta rama
+
         const zona = normalizarZona(d.zona || d.zone);
         const cancha = d.cancha || "";
-
-        let estado = d.estado || "Pendiente";
+        const estado = d.estado || "Pendiente";
 
         allMatches.push({
           id: docSnap.id,
@@ -588,15 +595,9 @@
 
       let lista = [...allMatches];
 
-      // Filtro rama
-      if (filtroCat.value !== "all") {
-        lista = lista.filter(p => p.categoria === filtroCat.value);
-      }
-
-      // Filtro zona (cat|zona)
+      // Filtro zona
       if (filtroZona.value !== "all") {
-        const [catZ, zonaZ] = filtroZona.value.split("|");
-        lista = lista.filter(p => p.categoria === catZ && p.zona === zonaZ);
+        lista = lista.filter(p => p.zona === filtroZona.value);
       }
 
       // Filtro texto
@@ -616,7 +617,6 @@
         if (valA == null) valA = "";
         if (valB == null) valB = "";
 
-        // numérico para numeroPartido
         if (sortField === "numeroPartido") {
           const nA = Number(valA) || 0;
           const nB = Number(valB) || 0;
@@ -624,7 +624,6 @@
           return sortDir === "asc" ? nA - nB : nB - nA;
         }
 
-        // string para el resto
         const sA = valA.toString().toLowerCase();
         const sB = valB.toString().toLowerCase();
         if (sA === sB) return 0;
@@ -704,12 +703,8 @@
     function getVisibleMatchIds() {
       let lista = [...allMatches];
 
-      if (filtroCat.value !== "all")
-        lista = lista.filter(p => p.categoria === filtroCat.value);
-
       if (filtroZona.value !== "all") {
-        const [catZ, zonaZ] = filtroZona.value.split("|");
-        lista = lista.filter(p => p.categoria === catZ && p.zona === zonaZ);
+        lista = lista.filter(p => p.zona === filtroZona.value);
       }
 
       const texto = filtroTexto.value.trim().toLowerCase();
@@ -774,13 +769,12 @@
 
     // ================= CREAR / EDITAR =================
     btnCrear.addEventListener("click", async () => {
-      // Solo edición
       if (!editingMatchId) {
         alert("Esta pantalla ahora solo permite editar partidos ya existentes.\n\nPara cargar nuevos partidos usá el archivo (CSV) o la herramienta externa que estés usando.");
         return;
       }
 
-      const categoria = selNewCat.value;
+      const categoria = ramaFija; // fija
       const zona = selNewZona.value;
       const localName = selNewLocal.value;
       const visitanteName = selNewVisitante.value;
@@ -788,7 +782,7 @@
       const hora = inpNewHora.value;
       const cancha = selNewCancha.value;
 
-      if (!categoria || !zona || !localName || !visitanteName || !fecha || !hora || !cancha) {
+      if (!zona || !localName || !visitanteName || !fecha || !hora || !cancha) {
         alert("Completá todos los datos.");
         return;
       }
@@ -812,7 +806,6 @@
 
     function resetForm() {
       editingMatchId = null;
-      selNewCat.value = "";
       selNewZona.value = "";
       selNewLocal.innerHTML = `<option value="">-- Elegí equipo local --</option>`;
       selNewVisitante.innerHTML = `<option value="">-- Elegí equipo visitante --</option>`;
@@ -824,8 +817,7 @@
 
     function startEditMatch(p) {
       editingMatchId = p.id;
-      selNewCat.value = p.categoria;
-      // zona en el form es sólo la letra
+      selNewCat.value = ramaFija;
       selNewZona.value = p.zona;
       refreshTeamSelects();
       selNewLocal.value = p.localName;
@@ -875,7 +867,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "partidos_fixture.csv";
+      a.download = `partidos_fixture_${ramaFija}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     });
@@ -921,8 +913,9 @@
         const existing = new Map();
         snap.forEach(docSnap => {
           const d = docSnap.data();
+          const cat  = normalizarCategoria(d.categoria || d.category);
+          if (cat !== ramaFija) return; // solo esta rama
           const num  = d.numeroPartido?.toString().trim();
-          const cat  = (d.categoria || d.category || "").toString().trim().toUpperCase();
           const phase = (d.phase || "").toString().trim().toLowerCase() || "zonas";
           if (!num) return;
           const key = `${cat}|${phase}|${num}`;
@@ -953,9 +946,12 @@
           const horaRaw        = col("hora");
           const cancha         = col("cancha");
 
+          // Solo procesamos filas de la rama fija
+          const categoriaCsv = normalizarCategoria(categoriaRaw);
+          if (categoriaCsv !== ramaFija) continue;
+
           if (!localName && !visitanteName) continue;
 
-          const categoria = normalizarCategoria(categoriaRaw);
           const zona      = normalizarZona(zonaRaw);
 
           let hora = horaRaw;
@@ -967,7 +963,7 @@
           // 🔥 RESET de resultado y estado al importar
           const data = {
             numeroPartido: Number(numeroPartido),
-            categoria,
+            categoria: ramaFija,
             zona,
             zone: zona,
             localName,
@@ -1004,7 +1000,7 @@
           };
 
           const phase = "zonas";
-          const key = `${categoria}|${phase}|${numeroPartido}`;
+          const key = `${ramaFija}|${phase}|${numeroPartido}`;
 
           if (existing.has(key)) {
             const id = existing.get(key);
@@ -1015,7 +1011,7 @@
         }
 
         await Promise.all(promises);
-        alert("Importación completada (fixture y resultados reseteados para los partidos del CSV).");
+        alert(`Importación completada para rama ${ramaFija} (fixture y resultados reseteados para los partidos del CSV).`);
         await loadZonesFromMatchesAndTeams();
       };
 
@@ -1033,7 +1029,6 @@
     }
 
     // Filtros → vuelven a renderizar
-    filtroCat.addEventListener("change", renderMatches);
     filtroZona.addEventListener("change", renderMatches);
     filtroTexto.addEventListener("input", renderMatches);
 
