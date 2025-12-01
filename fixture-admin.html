@@ -227,6 +227,22 @@
     .estado-col {
       text-align: center;
     }
+
+    /* --- Ordenamiento de columnas --- */
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th.sort-asc::after {
+      content: " ▲";
+      font-size: 10px;
+    }
+
+    th.sort-desc::after {
+      content: " ▼";
+      font-size: 10px;
+    }
   </style>
 </head>
 <body>
@@ -283,7 +299,7 @@
         <button id="btnCrear">Guardar cambios</button>
       </div>
 
-      <!-- ================= IMPORTAR / EXPORTAR (solo export + importar externo) ================= -->
+      <!-- ================= IMPORTAR / EXPORTAR ================= -->
       <div class="card">
         <h3>Importar / Exportar CSV</h3>
         <p style="font-size: 13px; margin-top: 0;">
@@ -323,15 +339,15 @@
             <thead>
               <tr>
                 <th class="checkbox-cell">Sel</th>
-                <th>#</th>
-                <th>Rama</th>
-                <th>Zona</th>
-                <th>Local</th>
-                <th>Visitante</th>
-                <th>Fecha</th>
-                <th>Hora</th>
-                <th>Cancha</th>
-                <th class="estado-col">Estado</th>
+                <th data-field="numeroPartido" class="sortable">#</th>
+                <th data-field="categoria" class="sortable">Rama</th>
+                <th data-field="zona" class="sortable">Zona</th>
+                <th data-field="localName" class="sortable">Local</th>
+                <th data-field="visitanteName" class="sortable">Visitante</th>
+                <th data-field="fecha" class="sortable">Fecha</th>
+                <th data-field="hora" class="sortable">Hora</th>
+                <th data-field="cancha" class="sortable">Cancha</th>
+                <th data-field="estado" class="sortable estado-col">Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -408,6 +424,10 @@
     let modoSeleccion = false;
     const selectedMatches = new Set();
 
+    // Ordenamiento
+    let sortField = "numeroPartido";
+    let sortDir   = "asc";
+
     // ================= HELPERS =================
     function normalizarCategoria(c) {
       if (!c) return "";
@@ -453,13 +473,15 @@
         const [cat, zona] = item.split("|");
         const label = `${cat} - Zona ${zona}`;
 
+        // Para el formulario solo necesitamos la letra de la zona
         const optForm = document.createElement("option");
         optForm.value = zona;
         optForm.textContent = label;
         selNewZona.appendChild(optForm);
 
+        // Para el filtro usamos cat|zona para no mezclar ramas
         const optFiltro = document.createElement("option");
-        optFiltro.value = zona;
+        optFiltro.value = `${cat}|${zona}`;
         optFiltro.textContent = label;
         filtroZona.appendChild(optFiltro);
       });
@@ -539,7 +561,7 @@
         });
       });
 
-      renderTable();
+      renderMatches();
     });
 
     function estadoClass(estado) {
@@ -549,22 +571,33 @@
     }
 
     // ================= TABLA =================
+    function updateHeaderSortClasses() {
+      const headers = document.querySelectorAll("th.sortable");
+      headers.forEach(th => {
+        th.classList.remove("sort-asc", "sort-desc");
+        if (th.dataset.field === sortField) {
+          th.classList.add(sortDir === "asc" ? "sort-asc" : "sort-desc");
+        }
+      });
+    }
+
     function renderTable() {
       listaPartidos.innerHTML = "";
 
       let lista = [...allMatches];
 
+      // Filtro rama
       if (filtroCat.value !== "all") {
         lista = lista.filter(p => p.categoria === filtroCat.value);
       }
 
+      // Filtro zona (cat|zona)
       if (filtroZona.value !== "all") {
         const [catZ, zonaZ] = filtroZona.value.split("|");
-        if (zonaZ) {
-          lista = lista.filter(p => p.zona === zonaZ && p.categoria === catZ);
-        }
+        lista = lista.filter(p => p.categoria === catZ && p.zona === zonaZ);
       }
 
+      // Filtro texto
       const texto = filtroTexto.value.trim().toLowerCase();
       if (texto) {
         lista = lista.filter(p =>
@@ -572,6 +605,33 @@
           (p.visitanteName || "").toLowerCase().includes(texto)
         );
       }
+
+      // Ordenamiento
+      lista.sort((a, b) => {
+        let valA = a[sortField];
+        let valB = b[sortField];
+
+        if (valA == null) valA = "";
+        if (valB == null) valB = "";
+
+        // numérico para numeroPartido
+        if (sortField === "numeroPartido") {
+          const nA = Number(valA) || 0;
+          const nB = Number(valB) || 0;
+          if (nA === nB) return 0;
+          return sortDir === "asc" ? nA - nB : nB - nA;
+        }
+
+        // string para el resto
+        const sA = valA.toString().toLowerCase();
+        const sB = valB.toString().toLowerCase();
+        if (sA === sB) return 0;
+        if (sortDir === "asc") {
+          return sA > sB ? 1 : -1;
+        } else {
+          return sA < sB ? 1 : -1;
+        }
+      });
 
       lista.forEach(p => {
         const tr = document.createElement("tr");
@@ -620,6 +680,7 @@
         listaPartidos.appendChild(tr);
       });
 
+      updateHeaderSortClasses();
       toggleBulkButtons();
     }
 
@@ -644,8 +705,18 @@
       if (filtroCat.value !== "all")
         lista = lista.filter(p => p.categoria === filtroCat.value);
 
-      if (filtroZona.value !== "all")
-        lista = lista.filter(p => p.zona === filtroZona.value);
+      if (filtroZona.value !== "all") {
+        const [catZ, zonaZ] = filtroZona.value.split("|");
+        lista = lista.filter(p => p.categoria === catZ && p.zona === zonaZ);
+      }
+
+      const texto = filtroTexto.value.trim().toLowerCase();
+      if (texto) {
+        lista = lista.filter(p =>
+          (p.localName || "").toLowerCase().includes(texto) ||
+          (p.visitanteName || "").toLowerCase().includes(texto)
+        );
+      }
 
       return lista.map(p => p.id);
     }
@@ -671,7 +742,7 @@
 
     btnToggleSelectAll.addEventListener("click", () => {
       const visible = getVisibleMatchIds();
-      let allSelected = visible.every(id => selectedMatches.has(id));
+      const allSelected = visible.every(id => selectedMatches.has(id));
 
       if (allSelected) {
         visible.forEach(id => selectedMatches.delete(id));
@@ -701,8 +772,7 @@
 
     // ================= CREAR / EDITAR =================
     btnCrear.addEventListener("click", async () => {
-      // Esta pantalla ahora se usa solo para EDITAR partidos existentes.
-      // Para crear nuevos partidos, los vas a cargar por archivo/CSV.
+      // Solo edición
       if (!editingMatchId) {
         alert("Esta pantalla ahora solo permite editar partidos ya existentes.\n\nPara cargar nuevos partidos usá el archivo (CSV) o la herramienta externa que estés usando.");
         return;
@@ -733,10 +803,8 @@
         estado: "Pendiente"
       };
 
-      // Siempre actualiza el partido en edición
       await updateDoc(doc(db, "matches", editingMatchId), data);
       alert("Partido actualizado.");
-
       resetForm();
     });
 
@@ -755,6 +823,7 @@
     function startEditMatch(p) {
       editingMatchId = p.id;
       selNewCat.value = p.categoria;
+      // zona en el form es solo la letra
       selNewZona.value = p.zona;
       refreshTeamSelects();
       selNewLocal.value = p.localName;
@@ -933,6 +1002,28 @@
     function renderMatches() {
       renderTable();
     }
+
+    // Filtros → vuelven a renderizar
+    filtroCat.addEventListener("change", renderMatches);
+    filtroZona.addEventListener("change", renderMatches);
+    filtroTexto.addEventListener("input", renderMatches);
+
+    // Click en encabezados para ordenar
+    const sortableHeaders = document.querySelectorAll("th.sortable");
+    sortableHeaders.forEach(th => {
+      th.addEventListener("click", () => {
+        const field = th.dataset.field;
+        if (!field) return;
+
+        if (sortField === field) {
+          sortDir = sortDir === "asc" ? "desc" : "asc";
+        } else {
+          sortField = field;
+          sortDir = "asc";
+        }
+        renderMatches();
+      });
+    });
   </script>
 </body>
 </html>
