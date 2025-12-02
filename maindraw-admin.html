@@ -667,9 +667,7 @@
         const matchNum = parseInt(numStr, 10);
         if (isNaN(matchNum)) continue;
 
-        const rondaCSV = idxRonda >= 0 ? (parts[idxRonda] || "") : "";
-
-        const cfg = getMainDrawConfig(rama)[matchNum] || {
+    const cfg = getMainDrawConfig(rama)[matchNum] || {
           roundLabel: rondaCSV || "",
           slot1SourceFrom: null,
           slot1SourceResult: null,
