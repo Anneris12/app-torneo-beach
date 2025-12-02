@@ -19,20 +19,19 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
       min-height: 100vh;
-      padding: 24px 16px;
+      padding: 20px 16px;
       gap: 20px;
     }
 
     h1 {
       font-size: 26px;
       font-weight: 700;
-      margin-bottom: 8px;
       text-align: center;
+      margin-bottom: 6px;
     }
 
-    /* GRID PRINCIPAL */
+    /* GRID */
     .grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -72,64 +71,65 @@
       font-size: 15px;
     }
 
-    /* LOGIN EN BARRITAS */
-    .login-bar {
+    /* LOGIN PEQUEÑO */
+    .login-box {
       width: 100%;
-      max-width: 500px;
+      max-width: 320px;
+      background: #f3f4f6;
+      padding: 14px;
+      border-radius: 12px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      margin-top: 8px;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .login-title {
+      font-size: 13px;
+      font-weight: bold;
+      text-align: center;
+      color: #444;
     }
 
     .login-row {
       display: flex;
-      gap: 8px;
-      width: 100%;
+      gap: 6px;
     }
 
     .login-row input {
       flex: 1;
-      padding: 8px 10px;
-      border-radius: 10px;
+      padding: 6px 8px;
+      border-radius: 8px;
       border: 1px solid #ccc;
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .login-row button {
-      padding: 8px 12px;
-      border-radius: 10px;
+      padding: 6px 10px;
+      border-radius: 8px;
       border: none;
       background: #ffb703;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
       white-space: nowrap;
     }
 
-    .login-row button:hover {
-      background: #f39c12;
-    }
-
-    .login-info {
-      font-size: 12px;
-      color: #555;
-      text-align: left;
-    }
-
     .login-error {
-      font-size: 12px;
+      font-size: 11px;
       color: #b00020;
-      text-align: left;
+      text-align: center;
       min-height: 14px;
     }
+
   </style>
 </head>
+
 <body>
 
   <h1>Torneo Beach Volley 2026</h1>
 
-  <div class="grid">
+  <div class="grid" id="gridMenu">
     <a class="card" href="live.html">
       <lottie-player src="assets/lottie/live.json" autoplay loop></lottie-player>
       <div class="label">En vivo</div>
@@ -154,21 +154,28 @@
       <lottie-player src="assets/lottie/cuadro.json" autoplay loop></lottie-player>
       <div class="label">Doble elim.</div>
     </a>
+
+    <!-- CARD ADMIN (se muestra solo si está logueada) -->
+    <a class="card" id="adminCard" href="admin.html" style="display:none;">
+      <lottie-player src="assets/lottie/admin.json" autoplay loop></lottie-player>
+      <div class="label">Admin</div>
+    </a>
   </div>
 
-  <!-- LOGIN ADMIN EN BARRITAS -->
-  <div class="login-bar">
+  <!-- LOGIN PEQUEÑITO -->
+  <div id="loginBox" class="login-box">
+    <div class="login-title">Acceso solo para administradores</div>
+
     <div class="login-row">
       <input type="email" id="email" placeholder="Email admin">
     </div>
+
     <div class="login-row">
       <input type="password" id="password" placeholder="Contraseña">
-      <button id="loginBtn">Ingresar</button>
+      <button id="loginBtn">OK</button>
     </div>
+
     <div id="loginError" class="login-error"></div>
-    <div class="login-info">
-      Acceso solo para administradores del torneo.
-    </div>
   </div>
 
   <script type="module">
@@ -191,15 +198,21 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
+    const loginBox  = document.getElementById("loginBox");
+    const adminCard = document.getElementById("adminCard");
     const emailInput = document.getElementById("email");
     const passInput  = document.getElementById("password");
     const loginBtn   = document.getElementById("loginBtn");
     const loginError = document.getElementById("loginError");
 
-    // Si ya está logueado, lo mando directo al admin
+    // CONTROL DE SESIÓN
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        window.location.href = "admin.html";
+        loginBox.style.display = "none";     // ocultar barritas
+        adminCard.style.display = "flex";    // mostrar tarjeta admin
+      } else {
+        loginBox.style.display = "flex";     // mostrar barritas
+        adminCard.style.display = "none";    // ocultar admin
       }
     });
 
@@ -216,7 +229,6 @@
 
       try {
         await signInWithEmailAndPassword(auth, email, password);
-        // onAuthStateChanged hará el redirect a admin.html
       } catch (err) {
         console.error(err);
         let msg = "Error al iniciar sesión.";
@@ -234,7 +246,6 @@
       doLogin();
     });
 
-    // Enter desde los campos también dispara login
     [emailInput, passInput].forEach(input => {
       input.addEventListener("keypress", (e) => {
         if (e.key === "Enter") {
