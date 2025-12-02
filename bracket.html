@@ -259,7 +259,18 @@ let canchas = new Set();
 
 /* ---------- Seeds ---------- */
 
-const FIRST_ROUND_SEED_MAP = [
+const FIRST_ROUND_SEED_MAP_16 = [
+  { match: 1, seed1: 1,  seed2: 16 },
+  { match: 2, seed1: 8,  seed2: 9 },
+  { match: 3, seed1: 5,  seed2: 12 },
+  { match: 4, seed1: 4,  seed2: 13 },
+  { match: 5, seed1: 3,  seed2: 14 },
+  { match: 6, seed1: 6,  seed2: 11 },
+  { match: 7, seed1: 7,  seed2: 10 },
+  { match: 8, seed1: 2,  seed2: 15 }
+];
+
+const FIRST_ROUND_SEED_MAP_32 = [
   { match: 1,  seed1: 1,  seed2: 32 },
   { match: 2,  seed1: 17, seed2: 16 },
   { match: 3,  seed1: 9,  seed2: 24 },
@@ -277,6 +288,10 @@ const FIRST_ROUND_SEED_MAP = [
   { match: 15, seed1: 15, seed2: 18 },
   { match: 16, seed1: 31, seed2: 2 }
 ];
+
+function getFirstRoundSeedMap(rama){
+  return rama === "F" ? FIRST_ROUND_SEED_MAP_16 : FIRST_ROUND_SEED_MAP_32;
+}
 
 /* ---------- Normalizadores ---------- */
 
@@ -359,7 +374,7 @@ function getCruceForMatch(m){
   if (m.cruce) return m.cruce;
 
   const num = m.numeroPartido || m.drawMatchNumber;
-  const found = FIRST_ROUND_SEED_MAP.find(x => x.match === num);
+  const found = getFirstRoundSeedMap(m.rama || currentRama).find(x => x.match === num);
   if (found) return `${found.seed1} vs ${found.seed2}`;
 
   return "";
