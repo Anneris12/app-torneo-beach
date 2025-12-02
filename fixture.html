@@ -1,3 +1,4 @@
+@ -0,0 +1,464 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -14,171 +15,112 @@ body {
   padding: 20px;
 }
 
+/* Botones superiores */
 .top-buttons {
   display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 
 .top-btn {
   background: #ffe36a;
   color: #000;
   font-weight: bold;
-  padding: 8px 12px;
-  border-radius: 10px;
+  padding: 10px 16px;
+  border-radius: 12px;
   text-decoration: none;
   border: none;
   font-size: 14px;
+  cursor: pointer;
 }
 
+/* Título */
 h1 {
   text-align: center;
-  margin: 0 0 10px;
-}
-
-/* Botones de rama */
-.rama-switch {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.rama-btn {
-  background: #ffe36a;
-  color: #000;
-  font-weight: 600;
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.rama-btn.active {
-  background: #7cffc1;
-}
-
-/* Ocultamos el combo de rama original */
-#filterCat {
-  display: none;
+  margin-top: 0;
+  text-transform: uppercase;
 }
 
 /* Filtros */
 .filters {
   display: flex;
+  gap: 10px;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 15px;
 }
 
 .filters select,
-.filters input {
-  padding: 6px 8px;
+.filters input[type="text"] {
+  padding: 10px;
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.2);
-  background: rgba(3,25,38,0.8);
+  background: rgba(255,255,255,0.1);
   color: white;
-  font-size: 13px;
-}
-
-.filters input {
-  flex: 1 1 150px;
-}
-
-/* Tabla */
-.fixture-wrapper {
-  border-radius: 10px;
   border: 1px solid rgba(255,255,255,0.2);
-  overflow: auto;
-  max-height: 75vh;
+  font-size: 14px;
 }
 
+.filters input::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
+/* CONTENEDOR TABLA */
+.fixture-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* TABLA */
 .fixture-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  margin-top: 10px;
+  font-size: 14px;
 }
 
 .fixture-table th,
 .fixture-table td {
   padding: 4px 6px;
   white-space: nowrap;
-  border-bottom: 1px solid rgba(255,255,255,0.15);
+  text-align: center;
 }
 
 .fixture-table th {
-  background: #02131f;
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: #eee;
+  background: rgba(255,255,255,0.1);
 }
 
-/* columnas */
-.col-num {
-  width: 40px;
-  text-align: center;
-}
-.col-cat {
-  width: 40px;
-  text-align: center;
-}
-.col-zona {
-  width: 50px;
-  text-align: center;
-}
-.col-cancha {
-  width: 50px;
-  text-align: center;
-}
-.col-hora {
-  width: 60px;
-  text-align: center;
-}
-.col-fecha {
-  width: 90px;
-}
-.col-eq1 {
-  min-width: 150px;
-}
-.col-res {
-  min-width: 80px;
-}
-.col-estado {
-  width: 90px;
-  text-align: center;
-}
-
-/* Eq2 debajo */
-.eq2 {
-  display: block;
-  font-size: 12px;
-  color: #d0d8e0;
-}
+/* Columna por columna */
+.col-num    { width: 32px; }
+.col-cat    { width: 32px; }
+.col-zona   { width: 40px; }
+.col-cancha { width: 45px; }
+.col-hora   { width: 55px; }
+.col-fecha  { width: 60px; }
+.col-eq1    { width: 140px; text-align:left; }
+.col-res    { width: 150px; text-align:left; }
+.col-estado { width: 80px; }
 
 /* Estado */
 .estado-pill {
-  display: inline-block;
   padding: 2px 6px;
-  border-radius: 999px;
+  border-radius: 6px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
-.estado-finalizado {
-  background: #7cffc1;
-  color: #000;
-}
-.estado-enjuego {
-  background: #ffe36a;
-  color: #000;
-}
-.estado-pendiente {
-  background: #aaaaaa;
-  color: #000;
+.estado-finalizado { background:#7cffc1; color:#000; }
+.estado-enjuego    { background:#ffe36a; color:#000; }
+.estado-pendiente  { background:#aaa; color:#000; }
+
+/* Eq1 + Eq2 en dos líneas, mismo tamaño */
+.eq2 {
+  display: block;
+  margin-top: 2px;
 }
 
-/* Resultado por sets */
+/* Resultado por equipo: solo números */
 .res-team-line {
   display: flex;
   align-items: center;
@@ -199,29 +141,15 @@ h1 {
   font-weight: 700;
 }
 
-/* Ordenable */
-th.sortable {
-  cursor: pointer;
-  user-select: none;
-}
-
-th.sort-asc::after {
-  content: " ▲";
-  font-size: 10px;
-}
-
-th.sort-desc::after {
-  content: " ▼";
-  font-size: 10px;
-}
-
 /* Celular */
 @media (max-width:480px){
   .fixture-table { font-size: 12px; }
   .fixture-table th { font-size: 11px; }
+  .set-num { font-size:10px; min-width:16px; }
 }
 </style>
 </head>
+
 <body>
 
 <div class="top-buttons">
@@ -230,12 +158,6 @@ th.sort-desc::after {
 </div>
 
 <h1>FIXTURE</h1>
-
-<!-- Botones Femenino / Masculino -->
-<div class="rama-switch">
-  <button id="btnRamaF" class="rama-btn active">Femenino</button>
-  <button id="btnRamaM" class="rama-btn">Masculino</button>
-</div>
 
 <!-- FILTROS -->
 <div class="filters">
@@ -264,15 +186,15 @@ th.sort-desc::after {
   <table class="fixture-table">
     <thead>
       <tr>
-        <th class="col-num sortable"   data-field="numeroPartido">#</th>
-        <th class="col-cat sortable"   data-field="categoria">F/M</th>
-        <th class="col-zona sortable"  data-field="zona">Z</th>
-        <th class="col-cancha sortable" data-field="cancha">C</th>
-        <th class="col-hora sortable"  data-field="hora">Hora</th>
-        <th class="col-fecha sortable" data-field="fecha">Fecha</th>
-        <th class="col-eq1 sortable"   data-field="localName">Eq1 / Eq2</th>
+        <th class="col-num">#</th>
+        <th class="col-cat">F/M</th>
+        <th class="col-zona">Z</th>
+        <th class="col-cancha">C</th>
+        <th class="col-hora">Hora</th>
+        <th class="col-fecha">Fecha</th>
+        <th class="col-eq1">Eq1 / Eq2</th>
         <th class="col-res">Resultado</th>
-        <th class="col-estado sortable" data-field="estado">Estado</th>
+        <th class="col-estado">Estado</th>
       </tr>
     </thead>
     <tbody id="fixtureBody"></tbody>
@@ -283,6 +205,7 @@ th.sort-desc::after {
 <!-- FIREBASE + SCRIPT -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
   getFirestore,
   collection,
@@ -299,25 +222,22 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-/* DOM */
-const btnRamaF     = document.getElementById("btnRamaF");
-const btnRamaM     = document.getElementById("btnRamaM");
+// proteger acceso
+onAuthStateChanged(auth, u => { if(!u) location.href="login.html"; });
+
 const filterCat    = document.getElementById("filterCat");
 const filterZone   = document.getElementById("filterZone");
 const filterCourt  = document.getElementById("filterCourt");
 const filterStatus = document.getElementById("filterStatus");
 const filterSearch = document.getElementById("filterSearch");
 const fixtureBody  = document.getElementById("fixtureBody");
-const sortableHeaders = document.querySelectorAll(".fixture-table th.sortable");
 
 let allMatches = [];
 let zonas = new Set();
 let canchas = new Set();
-
-let sortField = "fecha";
-let sortDir   = "asc";
 
 /* ---------------- Normalizadores ---------------- */
 
@@ -330,36 +250,44 @@ function normalizeCategoria(c){
 }
 
 function normalizeZona(z){
-  return (z||"").toString().trim().toUpperCase();
+  return (z || "").toString().trim().toUpperCase();
 }
 
-function normalizeHora(hora){
-  if(!hora) return "";
-  let clean = hora.toString().trim();
-  if(clean.includes(":")) return clean;
-  clean = clean.replace(/\D/g,"");
-  if(clean.length===3) clean="0"+clean;
-  if(clean.length!==4) return hora;
-  return clean.slice(0,2)+":"+clean.slice(2);
+function normalizeHora(h){
+  if(!h) return "";
+  let s = String(h);
+
+  if(/^\d{1,2}:\d{2}$/.test(s)) return s; 
+  const dig = s.replace(/\D/g,"");
+  if(dig.length===3) return dig[0]+":"+dig.substring(1).padEnd(2,"0");
+  if(dig.length===4) return dig.substring(0,2)+":"+dig.substring(2);
+  return s;
 }
 
-function formatFecha(fechaStr){
-  if(!fechaStr) return "";
-  if(fechaStr.includes("/")) return fechaStr;
-  const parts=fechaStr.split("-");
-  if(parts.length!==3) return fechaStr;
-  const [y,m,d]=parts;
-  return `${d}/${m}/${y}`;
+function formatFecha(f){
+  if(!f) return "";
+  const s = String(f);
+
+  if(/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)){
+    const [y,m,d]=s.split("-");
+    return `${d}/${m}/${y.slice(-2)}`;
+  }
+  if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)){
+    const [d,m,y]=s.split("/");
+    return `${d}/${m}/${y.slice(-2)}`;
+  }
+  return s;
 }
 
-/* Resultado HTML */
+/* ---------------- Resultado: solo números, por equipo ---------------- */
+
 function buildResultadoHTML(match){
   if(match.estado!=="Finalizado" || !match.setsData || match.setsData.length===0)
     return "—";
 
   const sets  = match.setsData;
   const localNums=[];
-  const visitNums[];
+  const visitNums=[];
 
   sets.forEach(s=>{
     const pl=s.puntosLocal??0;
@@ -382,21 +310,16 @@ function buildResultadoHTML(match){
   `;
 }
 
-/* Estado visual */
+/* ---------------- Estado visual ---------------- */
+
 function estClass(e){
   if(e==="Finalizado") return "estado-finalizado";
   if(e==="En juego") return "estado-enjuego";
   return "estado-pendiente";
 }
 
-/* Botones rama */
-function updateRamaButtons(){
-  const val = filterCat.value;
-  btnRamaF.classList.toggle("active", val==="F");
-  btnRamaM.classList.toggle("active", val==="M");
-}
+/* ---------------- Render filtros dinámicos ---------------- */
 
-/* Filtros dinámicos */
 function renderFilterOptions(){
   filterZone.innerHTML = `<option value="all">Zona: Todas</option>`;
   [...zonas].sort().forEach(z=>{
@@ -410,24 +333,14 @@ function renderFilterOptions(){
     });
 }
 
-/* Orden headers */
-function updateHeaderSortClasses(){
-  sortableHeaders.forEach(th=>{
-    th.classList.remove("sort-asc","sort-desc");
-    if(th.dataset.field === sortField){
-      th.classList.add(sortDir==="asc" ? "sort-asc" : "sort-desc");
-    }
-  });
-}
+/* ---------------- Render tabla ---------------- */
 
-/* Render tabla */
 function renderTable(){
   let list=[...allMatches];
 
-  // Rama F/M (nunca mostramos todas)
-  if(filterCat.value!=="all"){
+  // filtros
+  if(filterCat.value!=="all")
     list=list.filter(m=>m.categoria===filterCat.value);
-  }
 
   if(filterZone.value!=="all")
     list=list.filter(m=>m.zona===filterZone.value);
@@ -447,47 +360,22 @@ function renderTable(){
     });
   }
 
-  // Orden
+  // orden
   list.sort((a,b)=>{
-    let valA = a[sortField];
-    let valB = b[sortField];
+    if(a.fecha<b.fecha) return -1;
+    if(a.fecha>b.fecha) return 1;
 
-    if(valA==null) valA="";
-    if(valB==null) valB="";
+    const ha=normalizeHora(a.hora||"");
+    const hb=normalizeHora(b.hora||"");
+    if(ha<hb) return -1;
+    if(ha>hb) return 1;
 
-    if(sortField==="numeroPartido"){
-      const nA = Number(valA) || 0;
-      const nB = Number(valB) || 0;
-      return sortDir==="asc" ? nA-nB : nB-nA;
-    }
-
-    if(sortField==="fecha"){
-      const fA = a.fecha || "";
-      const fB = b.fecha || "";
-      if(fA===fB) return 0;
-      if(sortDir==="asc") return fA>fB ? 1 : -1;
-      return fA<fB ? 1 : -1;
-    }
-
-    if(sortField==="hora"){
-      const hA = normalizeHora(a.hora||"");
-      const hB = normalizeHora(b.hora||"");
-      if(hA===hB) return 0;
-      if(sortDir==="asc") return hA>hB ? 1 : -1;
-      return hA<hB ? 1 : -1;
-    }
-
-    const sA = valA.toString().toLowerCase();
-    const sB = valB.toString().toLowerCase();
-    if(sA===sB) return 0;
-    if(sortDir==="asc") return sA>sB ? 1 : -1;
-    return sA<sB ? 1 : -1;
+    return (a.numeroPartido||9999)-(b.numeroPartido||9999);
   });
 
   if(list.length===0){
     fixtureBody.innerHTML =
       `<tr><td colspan="9">No hay partidos con estos filtros.</td></tr>`;
-    updateHeaderSortClasses();
     return;
   }
 
@@ -526,44 +414,38 @@ function renderTable(){
 
     fixtureBody.appendChild(tr);
   });
-
-  updateHeaderSortClasses();
 }
 
-/* Escuchar cambios en matches */
+/* ---------------- Escuchar cambios en matches ---------------- */
+
 onSnapshot(collection(db,"matches"), snap=>{
   allMatches=[];
   zonas.clear();
   canchas.clear();
 
   snap.forEach(docSnap=>{
-    const d = docSnap.data();
-
-    // Solo fase de zonas
-    const phase = d.phase || "zonas";
-    if (phase !== "zonas") return;
+    const d=docSnap.data();
 
     const categoria = normalizeCategoria(d.categoria || d.category);
     const zona      = normalizeZona(d.zona || d.zone);
     const cancha    = d.cancha || "";
-    const estado    = d.estado || "Pendiente";
+
+    if(zona) zonas.add(zona);
+    if(cancha!=="") canchas.add(String(cancha));
 
     allMatches.push({
       id: docSnap.id,
       numeroPartido: d.numeroPartido,
+      localName: d.localName,
+      visitanteName: d.visitanteName,
       categoria,
       zona,
       cancha,
-      hora: d.hora || "",
-      fecha: d.fecha || "",
-      localName: d.localName || "",
-      visitanteName: d.visitanteName || "",
-      estado,
+      fecha: d.fecha,
+      hora: d.hora,
+      estado: d.estado || "Pendiente",
       setsData: d.setsData || []
     });
-
-    if(zona) zonas.add(zona);
-    if(cancha) canchas.add(String(cancha));
   });
 
   renderFilterOptions();
@@ -571,42 +453,12 @@ onSnapshot(collection(db,"matches"), snap=>{
 });
 
 /* Eventos filtros */
-filterCat.onchange    = ()=>{ updateRamaButtons(); renderTable(); };
+filterCat.onchange    = renderTable;
 filterZone.onchange   = renderTable;
 filterCourt.onchange  = renderTable;
 filterStatus.onchange = renderTable;
 filterSearch.addEventListener("input", renderTable);
 
-/* Eventos botones rama */
-btnRamaF.addEventListener("click", ()=>{
-  filterCat.value="F";
-  updateRamaButtons();
-  renderTable();
-});
-btnRamaM.addEventListener("click", ()=>{
-  filterCat.value="M";
-  updateRamaButtons();
-  renderTable();
-});
-
-/* Eventos orden encabezados */
-sortableHeaders.forEach(th=>{
-  th.addEventListener("click", ()=>{
-    const field = th.dataset.field;
-    if(!field) return;
-    if(sortField===field){
-      sortDir = (sortDir==="asc") ? "desc" : "asc";
-    } else {
-      sortField = field;
-      sortDir = "asc";
-    }
-    renderTable();
-  });
-});
-
-/* Estado inicial rama */
-filterCat.value = "F";
-updateRamaButtons();
 </script>
 
 </body>
