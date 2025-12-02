@@ -1033,8 +1033,8 @@ async function fetchRankingForRama(rama) {
       return;
     }
 
-    // Antes exigíamos 32, ahora usamos hasta 32, pero puede haber 16, 20, etc.
-    const maxSeeds = Math.min(ranking.length, 32);
+    // Limitamos a los 16 mejores equipos del ranking
+    const maxSeeds = Math.min(ranking.length, 16);
     const seedByNumber = {};
 
     for (let idx = 0; idx < maxSeeds; idx++) {
