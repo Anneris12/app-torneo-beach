@@ -114,6 +114,71 @@
       white-space: pre-line;
     }
 
+    /* Preview card */
+    .preview-card {
+      margin-top: 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .preview-header h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .preview-sub {
+      margin: 4px 0 0 0;
+      color: #d0d0d0;
+      font-size: 13px;
+    }
+
+    .preview-meta {
+      font-size: 13px;
+      color: #ffe36a;
+      font-weight: 700;
+    }
+
+    .preview-table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .preview-table th,
+    .preview-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .preview-table th {
+      color: #ffe36a;
+      font-weight: 700;
+    }
+
+    .preview-empty {
+      text-align: center;
+      color: #b0b0b0;
+      padding: 10px 0;
+    }
+
     @media (max-width: 480px) {
       .panel {
         padding: 15px;
@@ -176,6 +241,35 @@
 
     <div id="mainDrawStatus"></div>
 
+    <div id="previewCard" class="preview-card" style="display:none;">
+      <div class="preview-header">
+        <div>
+          <h3>Previsualización de partidos</h3>
+          <p class="preview-sub">
+            Estos son los partidos detectados en el CSV antes de subirlos. Una vez creados
+            podrás verlos también en <strong>/bracket</strong>.
+          </p>
+        </div>
+        <div class="preview-meta" id="previewMeta"></div>
+      </div>
+
+      <div class="preview-table-wrapper">
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Ronda</th>
+              <th>Cruce</th>
+              <th>Fecha</th>
+              <th>Hora</th>
+              <th>Cancha</th>
+            </tr>
+          </thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- input de archivo oculto -->
     <input type="file" id="fileInput" accept=".csv" style="display:none" />
   </div>
@@ -221,6 +315,9 @@
   const btnAssignFromRanking = document.getElementById("btnAssignFromRanking");
   const mainDrawStatus       = document.getElementById("mainDrawStatus");
   const fileInput            = document.getElementById("fileInput");
+  const previewCard          = document.getElementById("previewCard");
+  const previewBody          = document.getElementById("previewBody");
+  const previewMeta          = document.getElementById("previewMeta");
 
   btnCheckMainDraw.addEventListener("click", () => {
     const rama = mainDrawRamaSelect.value;
@@ -274,6 +371,45 @@
 
     // Si es raro, lo dejamos como vino
     return s;
+  }
+
+  function renderPreview(matches, rama){
+    if(!matches || matches.length === 0){
+      previewCard.style.display = "none";
+      previewBody.innerHTML = "";
+      previewMeta.textContent = "";
+      return;
+    }
+
+    previewCard.style.display = "block";
+    previewBody.innerHTML = "";
+    previewMeta.textContent = `${matches.length} partidos - Rama ${rama === "F" ? "Femenino" : "Masculino"}`;
+
+    matches
+      .slice()
+      .sort((a,b) => (a.matchNum||0) - (b.matchNum||0))
+      .forEach(m => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${m.matchNum ?? ""}</td>
+          <td>${m.roundLabel || ""}</td>
+          <td>${m.cruce || ""}</td>
+          <td>${m.fecha || ""}</td>
+          <td>${m.hora || ""}</td>
+          <td>${m.cancha || ""}</td>
+        `;
+        previewBody.appendChild(tr);
+      });
+
+    if(previewBody.children.length === 0){
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 6;
+      td.className = "preview-empty";
+      td.textContent = "No se detectaron partidos válidos en el CSV.";
+      tr.appendChild(td);
+      previewBody.appendChild(tr);
+    }
   }
 
   /* ============================
@@ -404,6 +540,7 @@
   async function importMainDrawFromFile(file, rama) {
     try {
       mainDrawStatus.textContent = "Leyendo archivo CSV...";
+      renderPreview([], rama);
       const text = await file.text();
       const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
       if (lines.length < 2) {
@@ -462,13 +599,9 @@
         await batchDel.commit();
       }
 
-      // crear nuevos
-      mainDrawStatus.textContent = "Creando partidos del cuadro a partir del CSV...";
+      mainDrawStatus.textContent = "Validando partidos y armando la previsualización...";
 
-      const matchesCol = collection(db, "matches");
-      const batch = writeBatch(db);
-
-      let totalRows = 0;
+      const parsedMatches = [];
 
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -500,18 +633,9 @@
           }
         }
 
-        const docRef = doc(matchesCol);
-        const baseData = {
-          phase: "maindraw",
-          rama,
-          drawMatchNumber: matchNum,
-          numeroPartido: matchNum,
-          roundLabel: cfg.roundLabel,
-          status: "pending",
-          team1Id: null,
-          team1Name: null,
-          team2Id: null,
-          team2Name: null,
+        parsedMatches.push({
+          matchNum,
+          roundLabel: rondaCSV || cfg.roundLabel,
           cruce: cruceFinal || null,
           cancha: canchaVal || null,
           fecha: fechaVal || null,
@@ -519,24 +643,63 @@
           slot1SourceFrom: cfg.slot1SourceFrom ?? null,
           slot1SourceResult: cfg.slot1SourceResult ?? null,
           slot2SourceFrom: cfg.slot2SourceFrom ?? null,
-          slot2SourceResult: cfg.slot2SourceResult ?? null,
-          setsData: []
+          slot2SourceResult: cfg.slot2SourceResult ?? null
+        });
+      }
+
+      renderPreview(parsedMatches, rama);
+
+      if(parsedMatches.length === 0){
+        mainDrawStatus.textContent = "No se encontraron partidos válidos en el CSV para crear.";
+        return;
+      }
+
+      mainDrawStatus.textContent = "Creando partidos del cuadro a partir del CSV...";
+
+      const matchesCol = collection(db, "matches");
+      const batch = writeBatch(db);
+      let totalRows = 0;
+
+      parsedMatches.forEach(m => {
+        const docRef = doc(matchesCol);
+        const baseData = {
+          phase: "maindraw",
+          rama,
+          categoria: rama,
+          drawMatchNumber: m.matchNum,
+          numeroPartido: m.matchNum,
+          roundLabel: m.roundLabel,
+          status: "pending",
+          team1Id: null,
+          team1Name: null,
+          team2Id: null,
+          team2Name: null,
+          cruce: m.cruce,
+          cancha: m.cancha,
+          fecha: m.fecha,
+          hora: m.hora,
+          slot1SourceFrom: m.slot1SourceFrom,
+          slot1SourceResult: m.slot1SourceResult,
+          slot2SourceFrom: m.slot2SourceFrom,
+          slot2SourceResult: m.slot2SourceResult,
+          setsData: [],
+          zona: null
         };
 
-        if (rondaCSV) {
-          baseData.roundLabelCSV = rondaCSV;
+        if (m.roundLabel && m.roundLabel !== MAIN_DRAW_CONFIG_32[m.matchNum]?.roundLabel) {
+          baseData.roundLabelCSV = m.roundLabel;
         }
 
         batch.set(docRef, baseData);
         totalRows++;
-      }
+      });
 
       await batch.commit();
 
       mainDrawStatus.textContent =
-        `✅ Importación completa. Se crearon ${totalRows} partidos de cuadro para ` +
-        `${rama === "F" ? "Femenino" : "Masculino"}.\n` +
-        "Ahora podés asignar los equipos de la 1ra ronda según el ranking.";
+        `✅ Partidos del cuadro creados para ${rama === "F" ? "Femenino" : "Masculino"}.\n` +
+        `Filas importadas: ${totalRows}.\n` +
+        `Ya podés revisarlos en /bracket y asignar equipos de 1ra ronda.`;
 
     } catch (err) {
       console.error(err);
