@@ -95,7 +95,7 @@
       padding: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       max-width: 1100px;
-      margin: 0 auto;
+      margin: 0 auto 12px;
     }
 
     .fixture-wrapper {
@@ -199,6 +199,113 @@
       opacity: 0.75;
     }
 
+    .col-select  { width: 48px; text-align: center; }
+    .col-actions { width: 150px; text-align: center; }
+
+    .row-btn {
+      background: #ffe36a;
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      margin: 2px;
+    }
+
+    .row-btn.delete {
+      background: #ff9c9c;
+    }
+
+    .selection-hidden .col-select,
+    .selection-hidden .cell-select {
+      display: none;
+    }
+
+    .manage-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-start;
+      margin: 10px 0;
+    }
+
+    .bulk-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .bulk-btn {
+      background: #7cffc1;
+      color: #000;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .edit-form {
+      flex: 1 1 340px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      padding: 10px;
+      min-width: 320px;
+    }
+
+    .edit-form h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .edit-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+    }
+
+    .edit-form label {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .edit-form input,
+    .edit-form select {
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(3,25,38,0.85);
+      color: white;
+      font-size: 13px;
+    }
+
+    .edit-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .edit-actions button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .btn-save { background:#7cffc1; color:#000; }
+    .btn-cancel { background:#ffe36a; color:#000; }
+
     .admin-actions {
       display: flex;
       flex-wrap: wrap;
@@ -247,11 +354,11 @@
     <input type="file" id="fileCsv" accept=".csv" style="display:none;" />
   </div>
 
-  <div class="card">
-    <div class="filters-row">
-      <select id="filterZone">
-        <option value="all">Zona: Todas</option>
-      </select>
+    <div class="card">
+      <div class="filters-row">
+        <select id="filterZone">
+          <option value="all">Zona: Todas</option>
+        </select>
 
       <select id="filterCourt">
         <option value="all">Cancha: Todas</option>
@@ -264,28 +371,88 @@
         <option value="Finalizado">Finalizado</option>
       </select>
 
-      <input type="text" id="filterSearch" placeholder="Buscar equipo..." />
-    </div>
+        <input type="text" id="filterSearch" placeholder="Buscar equipo..." />
+      </div>
 
-    <div class="fixture-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th class="col-num sortable"   data-field="numeroPartido">#</th>
-            <th class="col-fecha sortable" data-field="fecha">Fecha</th>
-            <th class="col-hora sortable"  data-field="hora">Hora</th>
-            <th class="col-cancha sortable" data-field="cancha">Cancha</th>
-            <th class="col-zona sortable"  data-field="zona">Zona</th>
-            <th class="col-team sortable"  data-field="localName">Eq1 / Eq2</th>
-            <th class="col-res">Resultado</th>
-            <th class="col-estado sortable" data-field="estado">Estado</th>
-          </tr>
-        </thead>
-        <tbody id="fixtureBody">
-          <tr><td colspan="8" class="no-data">Cargando partidos...</td></tr>
-        </tbody>
-      </table>
-    </div>
+      <div class="manage-row">
+        <div class="bulk-actions">
+          <button id="btnSelectionMode" class="bulk-btn">Modo selección</button>
+          <button id="btnSelectVisible" class="bulk-btn" style="display:none;">Seleccionar visibles</button>
+          <button id="btnDeleteSelected" class="bulk-btn" style="display:none;">Eliminar seleccionados</button>
+        </div>
+
+        <div class="edit-form">
+          <h3>Editar partido</h3>
+          <div class="edit-grid">
+            <div>
+              <label for="editNumero"># Partido</label>
+              <input type="number" id="editNumero" min="1" />
+            </div>
+            <div>
+              <label for="editZona">Zona</label>
+              <select id="editZona">
+                <option value="">Zona</option>
+              </select>
+            </div>
+            <div>
+              <label for="editFecha">Fecha</label>
+              <input type="date" id="editFecha" />
+            </div>
+            <div>
+              <label for="editHora">Hora</label>
+              <input type="time" id="editHora" />
+            </div>
+            <div>
+              <label for="editCancha">Cancha</label>
+              <select id="editCancha">
+                <option value="">Cancha</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </div>
+            <div>
+              <label for="editLocal">Equipo local</label>
+              <select id="editLocal">
+                <option value="">Equipo local</option>
+              </select>
+            </div>
+            <div>
+              <label for="editVisitante">Equipo visitante</label>
+              <select id="editVisitante">
+                <option value="">Equipo visitante</option>
+              </select>
+            </div>
+          </div>
+          <div class="edit-actions">
+            <button id="btnSaveMatch" class="btn-save">Guardar cambios</button>
+            <button id="btnCancelEdit" class="btn-cancel" type="button">Cancelar</button>
+          </div>
+          <p style="font-size:12px; opacity:0.8; margin:8px 0 0;">Seleccioná un partido para editarlo. Los campos usan formato de fecha y hora, y la cancha solo admite 1, 2 o 3.</p>
+        </div>
+      </div>
+
+      <div class="fixture-wrapper">
+        <table id="fixtureTable" class="selection-hidden">
+          <thead>
+            <tr>
+              <th class="col-select">Sel</th>
+              <th class="col-num sortable"   data-field="numeroPartido">#</th>
+              <th class="col-fecha sortable" data-field="fecha">Fecha</th>
+              <th class="col-hora sortable"  data-field="hora">Hora</th>
+              <th class="col-cancha sortable" data-field="cancha">Cancha</th>
+              <th class="col-zona sortable"  data-field="zona">Zona</th>
+              <th class="col-team sortable"  data-field="localName">Eq1 / Eq2</th>
+              <th class="col-res">Resultado</th>
+              <th class="col-estado sortable" data-field="estado">Estado</th>
+              <th class="col-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="fixtureBody">
+          <tr><td colspan="10" class="no-data">Cargando partidos...</td></tr>
+          </tbody>
+        </table>
+      </div>
   </div>
 
   <script type="module">
@@ -297,6 +464,7 @@
       getDocs,
       addDoc,
       updateDoc,
+      deleteDoc,
       doc
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
@@ -324,8 +492,30 @@
     const btnImport    = document.getElementById("btnImport");
     const fileCsv      = document.getElementById("fileCsv");
 
+    const btnSelectionMode = document.getElementById("btnSelectionMode");
+    const btnSelectVisible = document.getElementById("btnSelectVisible");
+    const btnDeleteSelected = document.getElementById("btnDeleteSelected");
+    const tableEl = document.getElementById("fixtureTable");
+
+    const editNumero = document.getElementById("editNumero");
+    const editZona = document.getElementById("editZona");
+    const editFecha = document.getElementById("editFecha");
+    const editHora = document.getElementById("editHora");
+    const editCancha = document.getElementById("editCancha");
+    const editLocal = document.getElementById("editLocal");
+    const editVisitante = document.getElementById("editVisitante");
+    const btnSaveMatch = document.getElementById("btnSaveMatch");
+    const btnCancelEdit = document.getElementById("btnCancelEdit");
+
     let allMatches   = [];
     let selectedRama = "F";
+
+    let teams = [];
+    let zonasDisponibles = [];
+
+    let editingMatchId = null;
+    let modoSeleccion = false;
+    const selectedMatches = new Set();
 
     let sortField = "numeroPartido";
     let sortDir   = "asc";
@@ -368,6 +558,99 @@
       return "estado-pendiente";
     }
 
+    function toInputDate(fecha) {
+      if (!fecha) return "";
+      if (fecha.includes("/")) {
+        const [d,m,y] = fecha.split("/");
+        if (d && m && y) return `${y.padStart(4,"0")}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`;
+      }
+      return fecha;
+    }
+
+    function renderEditZonaOptions() {
+      editZona.innerHTML = '<option value="">Zona</option>';
+      zonasDisponibles.forEach(z => {
+        const opt = document.createElement("option");
+        opt.value = z;
+        opt.textContent = `Zona ${z}`;
+        editZona.appendChild(opt);
+      });
+      refreshTeamSelects();
+    }
+
+    function refreshTeamSelects() {
+      const zona = editZona.value;
+      editLocal.innerHTML = '<option value="">Equipo local</option>';
+      editVisitante.innerHTML = '<option value="">Equipo visitante</option>';
+
+      if (!zona) return;
+
+      const filtered = teams.filter(t => t.zone === zona);
+      filtered.forEach(t => {
+        const o1 = document.createElement("option");
+        o1.value = t.name;
+        o1.textContent = t.name;
+        editLocal.appendChild(o1);
+
+        const o2 = document.createElement("option");
+        o2.value = t.name;
+        o2.textContent = t.name;
+        editVisitante.appendChild(o2);
+      });
+    }
+
+    async function loadTeams() {
+      teams = [];
+      const snap = await getDocs(collection(db, "teams"));
+      snap.forEach(docSnap => {
+        const t = docSnap.data();
+        if (!t.name) return;
+        const cat = normalizeCategoria(t.category || t.categoria);
+        if (cat !== selectedRama) return;
+        teams.push({
+          name: t.name,
+          category: cat,
+          zone: normalizeZona(t.zone || t.zona)
+        });
+      });
+      refreshTeamSelects();
+    }
+
+    function getFilteredMatches() {
+      let list = allMatches.filter(m => m.categoria === selectedRama);
+
+      if (filterZone.value !== "all") {
+        list = list.filter(m => m.zona === filterZone.value);
+      }
+      if (filterCourt.value !== "all") {
+        list = list.filter(m => m.cancha.toString() === filterCourt.value);
+      }
+      if (filterStatus.value !== "all") {
+        list = list.filter(m => (m.estado || "Pendiente") === filterStatus.value);
+      }
+
+      const texto = filterSearch.value.trim().toLowerCase();
+      if (texto) {
+        list = list.filter(m =>
+          (m.localName || "").toLowerCase().includes(texto) ||
+          (m.visitanteName || "").toLowerCase().includes(texto)
+        );
+      }
+
+      return list;
+    }
+
+    function updateSelectionUI() {
+      btnSelectionMode.textContent = modoSeleccion ? "Salir de selección" : "Modo selección";
+      btnSelectVisible.style.display = modoSeleccion ? "inline-block" : "none";
+      btnDeleteSelected.style.display = modoSeleccion ? "inline-block" : "none";
+      if (modoSeleccion) {
+        tableEl.classList.remove("selection-hidden");
+      } else {
+        tableEl.classList.add("selection-hidden");
+      }
+    }
+
     // Arma la columna Resultado a partir de setsData
     function buildResultadoHTML(m) {
       if (m.estado !== "Finalizado" || !m.setsData || m.setsData.length === 0) {
@@ -406,6 +689,8 @@
           if (m.cancha) canchas.add(m.cancha.toString());
         });
 
+      zonasDisponibles = Array.from(zonas).sort();
+
       filterZone.innerHTML = '<option value="all">Zona: Todas</option>';
       Array.from(zonas).sort().forEach(z => {
         const opt = document.createElement("option");
@@ -413,6 +698,8 @@
         opt.textContent = "Zona " + z;
         filterZone.appendChild(opt);
       });
+
+      renderEditZonaOptions();
 
       filterCourt.innerHTML = '<option value="all">Cancha: Todas</option>';
       Array.from(canchas).sort((a,b)=>a.localeCompare(b, "es", {numeric:true})).forEach(c => {
@@ -435,25 +722,7 @@
     function renderTable() {
       updateRamaButtons();
 
-      let list = allMatches.filter(m => m.categoria === selectedRama);
-
-      if (filterZone.value !== "all") {
-        list = list.filter(m => m.zona === filterZone.value);
-      }
-      if (filterCourt.value !== "all") {
-        list = list.filter(m => m.cancha.toString() === filterCourt.value);
-      }
-      if (filterStatus.value !== "all") {
-        list = list.filter(m => (m.estado || "Pendiente") === filterStatus.value);
-      }
-
-      const texto = filterSearch.value.trim().toLowerCase();
-      if (texto) {
-        list = list.filter(m =>
-          (m.localName || "").toLowerCase().includes(texto) ||
-          (m.visitanteName || "").toLowerCase().includes(texto)
-        );
-      }
+      const list = getFilteredMatches();
 
       // orden
       list.sort((a,b) => {
@@ -493,7 +762,7 @@
 
       if (list.length === 0) {
         const tr = document.createElement("tr");
-        tr.innerHTML = '<td colspan="8" class="no-data">No hay partidos para los filtros seleccionados.</td>';
+        tr.innerHTML = '<td colspan="10" class="no-data">No hay partidos para los filtros seleccionados.</td>';
         fixtureBody.appendChild(tr);
         updateHeaderSortClasses();
         return;
@@ -504,7 +773,11 @@
         const horaFmt  = normalizeHora(m.hora);
         const fechaFmt = formatFecha(m.fecha);
         const clsEst   = estadoClass(m.estado || "Pendiente");
+        const checked = selectedMatches.has(m.id);
         tr.innerHTML = `
+          <td class="col-select cell-select">
+            <input type="checkbox" data-id="${m.id}" ${checked ? "checked" : ""} />
+          </td>
           <td class="col-num">${m.numeroPartido ?? ""}</td>
           <td class="col-fecha">${fechaFmt}</td>
           <td class="col-hora">${horaFmt}</td>
@@ -522,16 +795,109 @@
               ${m.estado || "Pendiente"}
             </span>
           </td>
+          <td class="col-actions">
+            <button class="row-btn edit" data-id="${m.id}">Editar</button>
+            <button class="row-btn delete" data-id="${m.id}">Borrar</button>
+          </td>
         `;
         fixtureBody.appendChild(tr);
+
+        const chk = tr.querySelector("input[type='checkbox']");
+        chk.disabled = !modoSeleccion;
+        chk.addEventListener("change", () => {
+          if (chk.checked) selectedMatches.add(m.id);
+          else selectedMatches.delete(m.id);
+        });
+
+        tr.querySelector(".row-btn.edit").addEventListener("click", () => startEditMatch(m));
+
+        tr.querySelector(".row-btn.delete").addEventListener("click", async () => {
+          if (confirm(`¿Eliminar el partido #${m.numeroPartido}?`)) {
+            await deleteDoc(doc(db, "matches", m.id));
+            selectedMatches.delete(m.id);
+          }
+        });
       });
 
       updateHeaderSortClasses();
+      updateSelectionUI();
+    }
+
+    function resetEditForm() {
+      editingMatchId = null;
+      editNumero.value = "";
+      editZona.value = "";
+      editFecha.value = "";
+      editHora.value = "";
+      editCancha.value = "";
+      refreshTeamSelects();
+      editLocal.value = "";
+      editVisitante.value = "";
+    }
+
+    function startEditMatch(m) {
+      editingMatchId = m.id;
+      editNumero.value = m.numeroPartido ?? "";
+      editZona.value = m.zona || "";
+      refreshTeamSelects();
+      editLocal.value = m.localName || "";
+      editVisitante.value = m.visitanteName || "";
+      editFecha.value = toInputDate(m.fecha);
+      editHora.value = normalizeHora(m.hora);
+      editCancha.value = m.cancha || "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function saveCurrentMatch() {
+      if (!editingMatchId) {
+        alert("Seleccioná un partido para editar.");
+        return;
+      }
+
+      const numeroPartido = Number(editNumero.value || 0);
+      const zona = editZona.value;
+      const fecha = editFecha.value;
+      const hora = editHora.value;
+      const cancha = editCancha.value;
+      const localName = editLocal.value;
+      const visitanteName = editVisitante.value;
+
+      if (!numeroPartido || !zona || !fecha || !hora || !cancha || !localName || !visitanteName) {
+        alert("Completá todos los datos para guardar.");
+        return;
+      }
+
+      const match = allMatches.find(m => m.id === editingMatchId);
+      const estadoActual = match?.estado || "Pendiente";
+
+      const data = {
+        numeroPartido,
+        categoria: selectedRama,
+        zona,
+        zone: zona,
+        localName,
+        visitanteName,
+        fecha,
+        hora,
+        cancha,
+        estado: estadoActual,
+        phase: "zonas"
+      };
+
+      await updateDoc(doc(db, "matches", editingMatchId), data);
+      alert("Partido actualizado.");
+      resetEditForm();
+    }
+
+    function getVisibleMatchIds() {
+      return getFilteredMatches().map(m => m.id);
     }
 
     // Trae solo partidos de fase "zonas"
     onSnapshot(collection(db, "matches"), snap => {
       allMatches = [];
+      selectedMatches.clear();
+      resetEditForm();
       snap.forEach(docSnap => {
         const d = docSnap.data();
 
@@ -559,7 +925,9 @@
       });
 
       rebuildFilterOptions();
+      updateSelectionUI();
       renderTable();
+      loadTeams();
     });
 
     // ================= EXPORTAR CSV =================
@@ -751,12 +1119,18 @@
     btnRamaF.addEventListener("click", () => {
       selectedRama = "F";
       rebuildFilterOptions();
+      loadTeams();
+      selectedMatches.clear();
+      resetEditForm();
       renderTable();
     });
 
     btnRamaM.addEventListener("click", () => {
       selectedRama = "M";
       rebuildFilterOptions();
+      loadTeams();
+      selectedMatches.clear();
+      resetEditForm();
       renderTable();
     });
 
@@ -764,6 +1138,42 @@
     filterCourt.addEventListener("change", renderTable);
     filterStatus.addEventListener("change", renderTable);
     filterSearch.addEventListener("input", renderTable);
+
+    editZona.addEventListener("change", refreshTeamSelects);
+
+    btnSaveMatch.addEventListener("click", saveCurrentMatch);
+    btnCancelEdit.addEventListener("click", resetEditForm);
+
+    btnSelectionMode.addEventListener("click", () => {
+      modoSeleccion = !modoSeleccion;
+      if (!modoSeleccion) selectedMatches.clear();
+      updateSelectionUI();
+      renderTable();
+    });
+
+    btnSelectVisible.addEventListener("click", () => {
+      const visibles = getVisibleMatchIds();
+      const allSelected = visibles.every(id => selectedMatches.has(id));
+      if (allSelected) {
+        visibles.forEach(id => selectedMatches.delete(id));
+      } else {
+        visibles.forEach(id => selectedMatches.add(id));
+      }
+      renderTable();
+    });
+
+    btnDeleteSelected.addEventListener("click", async () => {
+      if (selectedMatches.size === 0) return;
+      if (!confirm(`¿Eliminar ${selectedMatches.size} partidos seleccionados?`)) return;
+      const promises = [];
+      selectedMatches.forEach(id => {
+        promises.push(deleteDoc(doc(db, "matches", id)));
+      });
+      await Promise.all(promises);
+      selectedMatches.clear();
+      alert("Partidos eliminados.");
+      renderTable();
+    });
 
     headerCells.forEach(th => {
       th.addEventListener("click", () => {
