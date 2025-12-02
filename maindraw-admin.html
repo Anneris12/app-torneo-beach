@@ -667,6 +667,9 @@
         const matchNum = parseInt(numStr, 10);
         if (isNaN(matchNum)) continue;
 
+        const rondaCSV = idxRonda >= 0 ? (parts[idxRonda] || "") : "";
+
+        const cfg = getMainDrawConfig(rama)[matchNum] || {
     const cfg = getMainDrawConfig(rama)[matchNum] || {
           roundLabel: rondaCSV || "",
           slot1SourceFrom: null,
@@ -1068,6 +1071,9 @@ async function assignTeamsFromRanking(rama) {
       matches.push({ ref: docSnap.ref, data, matchNum: num });
     });
 
+    const validMatches = matches.filter(m => m && m.data && typeof m.data === "object");
+    const firstRoundLimit = rama === "F" ? 8 : 16;
+    const firstRoundMatches = validMatches.filter(m =>
     const firstRoundLimit = rama === "F" ? 8 : 16;
     const firstRoundMatches = matches.filter(m =>
       (m.data.slot1SourceFrom ?? null) === null &&
