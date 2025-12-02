@@ -667,8 +667,13 @@
         const matchNum = parseInt(numStr, 10);
         if (isNaN(matchNum)) continue;
 
-    const cfg = getMainDrawConfig(rama)[matchNum];
-        if (!cfg) continue;
+    const cfg = getMainDrawConfig(rama)[matchNum] || {
+          roundLabel: rondaCSV || "",
+          slot1SourceFrom: null,
+          slot1SourceResult: null,
+          slot2SourceFrom: null,
+          slot2SourceResult: null
+        };
 
         const cruceVal = parts[idxCruce] || "";
         const fechaVal = parts[idxFecha] || "";
@@ -1064,8 +1069,11 @@ async function assignTeamsFromRanking(rama) {
       matches.push({ ref: docSnap.ref, data, matchNum: num });
     });
 
+    const firstRoundLimit = rama === "F" ? 8 : 16;
     const firstRoundMatches = matches.filter(m =>
-      (m.data.slot1SourceFrom ?? null) === null && (m.data.slot2SourceFrom ?? null) === null
+      (m.data.slot1SourceFrom ?? null) === null &&
+      (m.data.slot2SourceFrom ?? null) === null &&
+      m.matchNum <= firstRoundLimit
     );
 
     if (firstRoundMatches.length === 0) {
@@ -1084,8 +1092,8 @@ async function assignTeamsFromRanking(rama) {
       return;
     }
 
-    // Limitamos a los 16 mejores equipos del ranking
-    const maxSeeds = Math.min(ranking.length, 16);
+    const seedsNeeded = rama === "F" ? 16 : 32;
+    const maxSeeds = Math.min(ranking.length, seedsNeeded);
     const seedByNumber = {};
 
     for (let idx = 0; idx < maxSeeds; idx++) {
