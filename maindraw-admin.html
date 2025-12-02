@@ -679,7 +679,6 @@
         const fechaVal = parts[idxFecha] || "";
         const horaVal  = parts[idxHora]  || "";
         const canchaVal= parts[idxCancha] || "";
-        const rondaCSV = idxRonda >= 0 ? (parts[idxRonda] || "") : "";
 
         let cruceFinal = cruceVal;
         if (!cruceFinal) {
@@ -1105,16 +1104,22 @@ async function assignTeamsFromRanking(rama) {
       };
     }
 
-    const seedMap = getFirstRoundSeedMap(rama);
+    const seedMap = getFirstRoundSeedMap(rama) || [];
     mainDrawStatus.textContent =
       `Asignando equipos de la 1ra ronda según el ranking (${maxSeeds} equipos disponibles)...`;
 
     const batch = writeBatch(db);
     let partidosActualizados = 0;
 
-    firstRoundMatches.forEach(match => {
+    // Procesar siempre en orden numérico para que el cruce se mantenga estable
+    firstRoundMatches
+      .slice()
+      .sort((a, b) => Number(a.matchNum) - Number(b.matchNum))
+      .forEach(match => {
       const parsedCruce = parseSeedsFromCruce(match.data.cruce);
-      const predefined = seedMap.find(m => m.match === match.matchNum);
+      const predefined = Array.isArray(seedMap)
+        ? seedMap.find(m => Number(m.match) === Number(match.matchNum))
+        : null;
 
       const seedNums = parsedCruce
         ? [parsedCruce.seed1, parsedCruce.seed2]
