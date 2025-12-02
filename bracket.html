@@ -461,7 +461,8 @@ onSnapshot(collection(db,"matches"), snap=>{
   snap.forEach(docSnap=>{
     const d = docSnap.data();
 
-    if (d.phase !== "maindraw") return;
+    const phase = (d.phase || "").toString().toLowerCase();
+    if (phase !== "maindraw" && phase !== "main_draw" && phase !== "main draw") return;
 
     const categoria = normalizeCategoria(d.categoria || d.category || d.rama);
     const fase      = (d.roundLabel || "").toString();
