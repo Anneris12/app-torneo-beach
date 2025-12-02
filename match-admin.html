@@ -717,6 +717,12 @@
     return [parts[0].trim(), parts[1].trim()];
   }
 
+  function normalizeZone(z) {
+    if (!z) return "";
+    const str = z.toString().trim().toUpperCase();
+    return str.replace(/^ZONA\s+/, "");
+  }
+
   function getRadioValue(name) {
     const radios = document.querySelectorAll(`input[name="${name}"]`);
     for (const r of radios) {
@@ -1081,7 +1087,7 @@
         categoria,
         phase,          
         roundLabel: roundLabelVal,
-        zona: d.zona || "",
+        zona: normalizeZone(d.zona),
         cancha: d.cancha || "",
         fecha: d.fecha || "",
         hora: d.hora || "",
@@ -1104,6 +1110,7 @@
     });
 
     buildRoundOptions();
+    buildZoneOptions();
     updatePhaseUI();
   }
 
@@ -1129,6 +1136,31 @@
       opt.textContent = r;
       selRound.appendChild(opt);
     });
+  }
+
+  function buildZoneOptions() {
+    const prev = selZone.value;
+    selZone.innerHTML = `<option value="all">Todas</option>`;
+
+    const zonesSet = new Set();
+
+    allMatches
+      .filter(m => !isMainDraw(m))
+      .forEach(m => {
+        const z = normalizeZone(m.zona);
+        if (z) zonesSet.add(z);
+      });
+
+    Array.from(zonesSet).sort().forEach(z => {
+      const opt = document.createElement("option");
+      opt.value = z;
+      opt.textContent = `Zona ${z}`;
+      selZone.appendChild(opt);
+    });
+
+    if (prev && zonesSet.has(prev)) {
+      selZone.value = prev;
+    }
   }
 
   function updatePhaseUI() {
