@@ -416,7 +416,18 @@
    * 1) CONFIG ESTRUCTURAL DEL CUADRO
    * ============================ */
 
-  const FIRST_ROUND_SEED_MAP = [
+  const FIRST_ROUND_SEED_MAP_16 = [
+    { match: 1, seed1: 1,  seed2: 16 },
+    { match: 2, seed1: 8,  seed2: 9 },
+    { match: 3, seed1: 5,  seed2: 12 },
+    { match: 4, seed1: 4,  seed2: 13 },
+    { match: 5, seed1: 3,  seed2: 14 },
+    { match: 6, seed1: 6,  seed2: 11 },
+    { match: 7, seed1: 7,  seed2: 10 },
+    { match: 8, seed1: 2,  seed2: 15 }
+  ];
+
+  const FIRST_ROUND_SEED_MAP_32 = [
     { match: 1,  seed1: 1,  seed2: 32 },
     { match: 2,  seed1: 17, seed2: 16 },
     { match: 3,  seed1: 9,  seed2: 24 },
@@ -434,6 +445,28 @@
     { match: 15, seed1: 15, seed2: 18 },
     { match: 16, seed1: 31, seed2: 2 }
   ];
+
+  const MAIN_DRAW_CONFIG_16 = {
+    1:  { roundLabel: "1ra ronda",  slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
+    2:  { roundLabel: "1ra ronda",  slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
+    3:  { roundLabel: "1ra ronda",  slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
+    4:  { roundLabel: "1ra ronda",  slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
+    5:  { roundLabel: "1ra ronda",  slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
+    6:  { roundLabel: "1ra ronda",  slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
+    7:  { roundLabel: "1ra ronda",  slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
+    8:  { roundLabel: "1ra ronda",  slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
+
+    9:  { roundLabel: "2da ronda",  slot1SourceFrom: 1, slot1SourceResult: "winner", slot2SourceFrom: 2, slot2SourceResult: "winner" },
+    10: { roundLabel: "2da ronda",  slot1SourceFrom: 3, slot1SourceResult: "winner", slot2SourceFrom: 4, slot2SourceResult: "winner" },
+    11: { roundLabel: "2da ronda",  slot1SourceFrom: 5, slot1SourceResult: "winner", slot2SourceFrom: 6, slot2SourceResult: "winner" },
+    12: { roundLabel: "2da ronda",  slot1SourceFrom: 7, slot1SourceResult: "winner", slot2SourceFrom: 8, slot2SourceResult: "winner" },
+
+    13: { roundLabel: "Semifinal", slot1SourceFrom: 9,  slot1SourceResult: "winner", slot2SourceFrom: 10, slot2SourceResult: "winner" },
+    14: { roundLabel: "Semifinal", slot1SourceFrom: 11, slot1SourceResult: "winner", slot2SourceFrom: 12, slot2SourceResult: "winner" },
+
+    15: { roundLabel: "Final",     slot1SourceFrom: 13, slot1SourceResult: "winner", slot2SourceFrom: 14, slot2SourceResult: "winner" },
+    16: { roundLabel: "3er puesto", slot1SourceFrom: 13, slot1SourceResult: "loser",  slot2SourceFrom: 14, slot2SourceResult: "loser" }
+  };
 
   const MAIN_DRAW_CONFIG_32 = {
     1:  { roundLabel: "1ra ronda",        slot1SourceFrom: null, slot1SourceResult: null,  slot2SourceFrom: null, slot2SourceResult: null },
@@ -510,6 +543,24 @@
     61: { roundLabel: "3er puesto",       slot1SourceFrom: 59, slot1SourceResult: "loser",  slot2SourceFrom: 60, slot2SourceResult: "loser" },
     62: { roundLabel: "Final",            slot1SourceFrom: 59, slot1SourceResult: "winner", slot2SourceFrom: 60, slot2SourceResult: "winner" }
   };
+
+  function getMainDrawConfig(rama) {
+    return rama === "F" ? MAIN_DRAW_CONFIG_16 : MAIN_DRAW_CONFIG_32;
+  }
+
+  function getFirstRoundSeedMap(rama) {
+    return rama === "F" ? FIRST_ROUND_SEED_MAP_16 : FIRST_ROUND_SEED_MAP_32;
+  }
+
+  function parseSeedsFromCruce(cruce) {
+    if (!cruce) return null;
+    const match = cruce.toString().match(/(\d+)\s*vs\s*(\d+)/i);
+    if (!match) return null;
+    return {
+      seed1: parseInt(match[1], 10),
+      seed2: parseInt(match[2], 10)
+    };
+  }
 
   /* ============================
    * 2) ESTADO DEL CUADRO
@@ -616,8 +667,13 @@
         const matchNum = parseInt(numStr, 10);
         if (isNaN(matchNum)) continue;
 
-        const cfg = MAIN_DRAW_CONFIG_32[matchNum];
-        if (!cfg) continue;
+    const cfg = getMainDrawConfig(rama)[matchNum] || {
+          roundLabel: rondaCSV || "",
+          slot1SourceFrom: null,
+          slot1SourceResult: null,
+          slot2SourceFrom: null,
+          slot2SourceResult: null
+        };
 
         const cruceVal = parts[idxCruce] || "";
         const fechaVal = parts[idxFecha] || "";
@@ -627,7 +683,7 @@
 
         let cruceFinal = cruceVal;
         if (!cruceFinal) {
-          const seedMap = FIRST_ROUND_SEED_MAP.find(m => m.match === matchNum);
+          const seedMap = getFirstRoundSeedMap(rama).find(m => m.match === matchNum);
           if (seedMap) {
             cruceFinal = `${seedMap.seed1} vs ${seedMap.seed2}`;
           }
@@ -686,7 +742,8 @@
           zona: null
         };
 
-        if (m.roundLabel && m.roundLabel !== MAIN_DRAW_CONFIG_32[m.matchNum]?.roundLabel) {
+        const defaultRoundLabel = getMainDrawConfig(rama)[m.matchNum]?.roundLabel;
+        if (m.roundLabel && defaultRoundLabel && m.roundLabel !== defaultRoundLabel) {
           baseData.roundLabelCSV = m.roundLabel;
         }
 
@@ -987,7 +1044,7 @@ async function fetchRankingForRama(rama) {
    * 6) ASIGNAR EQUIPOS EN 1RA RONDA
    * ============================ */
 
- async function assignTeamsFromRanking(rama) {
+async function assignTeamsFromRanking(rama) {
   try {
     mainDrawStatus.textContent = "Verificando que existan partidos de cuadro...";
 
@@ -1004,22 +1061,24 @@ async function fetchRankingForRama(rama) {
       return;
     }
 
-    const matchByNumber = {};
+    const matches = [];
     snap.forEach(docSnap => {
       const data = docSnap.data();
       const num = data.drawMatchNumber || data.numeroPartido;
       if (!num) return;
-      matchByNumber[num] = docSnap.ref;
+      matches.push({ ref: docSnap.ref, data, matchNum: num });
     });
 
-    const missingFirstRound = FIRST_ROUND_SEED_MAP
-      .filter(m => !matchByNumber[m.match])
-      .map(m => m.match);
+    const firstRoundLimit = rama === "F" ? 8 : 16;
+    const firstRoundMatches = matches.filter(m =>
+      (m.data.slot1SourceFrom ?? null) === null &&
+      (m.data.slot2SourceFrom ?? null) === null &&
+      m.matchNum <= firstRoundLimit
+    );
 
-    if (missingFirstRound.length > 0) {
+    if (firstRoundMatches.length === 0) {
       mainDrawStatus.textContent =
-        "❌ Faltan algunos partidos de 1ra ronda en el cuadro importado.\n" +
-        "No se encontraron estos números de partido: " + missingFirstRound.join(", ");
+        "❌ No se detectaron partidos de 1ra ronda con slots libres para asignar equipos.";
       return;
     }
 
@@ -1033,8 +1092,8 @@ async function fetchRankingForRama(rama) {
       return;
     }
 
-    // Antes exigíamos 32, ahora usamos hasta 32, pero puede haber 16, 20, etc.
-    const maxSeeds = Math.min(ranking.length, 32);
+    const seedsNeeded = rama === "F" ? 16 : 32;
+    const maxSeeds = Math.min(ranking.length, seedsNeeded);
     const seedByNumber = {};
 
     for (let idx = 0; idx < maxSeeds; idx++) {
@@ -1046,20 +1105,32 @@ async function fetchRankingForRama(rama) {
       };
     }
 
+    const seedMap = getFirstRoundSeedMap(rama) || [];
     mainDrawStatus.textContent =
       `Asignando equipos de la 1ra ronda según el ranking (${maxSeeds} equipos disponibles)...`;
 
     const batch = writeBatch(db);
     let partidosActualizados = 0;
 
-    FIRST_ROUND_SEED_MAP.forEach(map => {
-      const ref = matchByNumber[map.match];
-      if (!ref) return;
+    // Procesar siempre en orden numérico para que el cruce se mantenga estable
+    firstRoundMatches
+      .slice()
+      .sort((a, b) => Number(a.matchNum) - Number(b.matchNum))
+      .forEach(match => {
+      const parsedCruce = parseSeedsFromCruce(match.data.cruce);
+      const predefined = Array.isArray(seedMap)
+        ? seedMap.find(m => Number(m.match) === Number(match.matchNum))
+        : null;
 
-      const s1 = seedByNumber[map.seed1];
-      const s2 = seedByNumber[map.seed2];
+      const seedNums = parsedCruce
+        ? [parsedCruce.seed1, parsedCruce.seed2]
+        : predefined
+          ? [predefined.seed1, predefined.seed2]
+          : [null, null];
 
-      // Si para este cruce no tenemos ningún seed, lo salteamos
+      const s1 = seedNums[0] ? seedByNumber[seedNums[0]] : null;
+      const s2 = seedNums[1] ? seedByNumber[seedNums[1]] : null;
+
       if (!s1 && !s2) return;
 
       const updateData = {};
@@ -1082,7 +1153,7 @@ async function fetchRankingForRama(rama) {
 
       updateData.status = "pending";
 
-      batch.update(ref, updateData);
+      batch.update(match.ref, updateData);
       partidosActualizados++;
     });
 
