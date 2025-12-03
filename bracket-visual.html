@@ -231,8 +231,15 @@ const bracketArea = document.getElementById("bracketArea");
    Render de un partido dentro de su caja
 ----------------------------------------------------------------*/
 function renderMatchBox(box, m) {
+  const specialLabel = {
+    27: 'Semi 1',
+    28: 'Semi 2',
+    29: '3er Puesto',
+    30: 'Final'
+  }[m.drawMatchNumber] || '';
+
   box.innerHTML = `
-    <div class="match-num">${m.drawMatchNumber}</div>
+    <div class="match-num">${m.drawMatchNumber}${specialLabel ? ' ' + specialLabel : ''}</div>
     <div class="team ${m.winnerTeamId === m.team1Id ? 'winner' : ''}">
       ${m.team1Name || '---'}
     </div>
