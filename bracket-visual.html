@@ -148,83 +148,152 @@ const db  = getFirestore(app);
 const bracketArea = document.getElementById("bracketArea");
 
 /* --------------------------------------------------------------
-   LAYOUT FEMENINO – coordenadas fijas
+   LAYOUT GANADORES/PERDEDORES – coordenadas fijas
 ----------------------------------------------------------------*/
-  function renderLayoutFemenino() {
-    bracketArea.innerHTML = `
-      <!-- GANADORES – IZQUIERDA -->
+const bracketLayoutHTMLFemenino = `
+  <!-- GANADORES – IZQUIERDA -->
 
-      <!-- Etiquetas de columnas ganadores -->
-      <div class="column-label" style="top:0px; left:60px">Ronda 1</div>
-      <div class="column-label" style="top:0px; left:350px">Ronda 2</div>
-      <div class="column-label" style="top:0px; left:650px">Cuartos</div>
+  <!-- Etiquetas de columnas ganadores -->
+  <div class="column-label" style="top:0px; left:60px">Ronda 1</div>
+  <div class="column-label" style="top:0px; left:350px">Ronda 2</div>
+  <div class="column-label" style="top:0px; left:650px">Cuartos</div>
 
-      <!-- 1ra RONDA (1–8) -->
-      <div class="match" id="m1"  style="top:20px;  left:60px"></div>
-    <div class="match" id="m2"  style="top:100px; left:60px"></div>
+  <!-- 1ra RONDA (1–8) -->
+  <div class="match" id="m1"  style="top:20px;  left:60px"></div>
+  <div class="match" id="m2"  style="top:100px; left:60px"></div>
 
-    <div class="match" id="m3"  style="top:230px; left:60px"></div>
-    <div class="match" id="m4"  style="top:310px; left:60px"></div>
+  <div class="match" id="m3"  style="top:230px; left:60px"></div>
+  <div class="match" id="m4"  style="top:310px; left:60px"></div>
 
-    <div class="match" id="m5"  style="top:440px; left:60px"></div>
-    <div class="match" id="m6"  style="top:520px; left:60px"></div>
+  <div class="match" id="m5"  style="top:440px; left:60px"></div>
+  <div class="match" id="m6"  style="top:520px; left:60px"></div>
 
-    <div class="match" id="m7"  style="top:650px; left:60px"></div>
-    <div class="match" id="m8"  style="top:730px; left:60px"></div>
+  <div class="match" id="m7"  style="top:650px; left:60px"></div>
+  <div class="match" id="m8"  style="top:730px; left:60px"></div>
 
-    <!-- 2da RONDA (9–12) centrados entre sus pares -->
-    <div class="match" id="m9"  style="top:60px;  left:350px"></div>
-    <div class="match" id="m10" style="top:270px; left:350px"></div>
-    <div class="match" id="m11" style="top:480px; left:350px"></div>
-    <div class="match" id="m12" style="top:690px; left:350px"></div>
+  <!-- 2da RONDA (9–12) centrados entre sus pares -->
+  <div class="match" id="m9"  style="top:60px;  left:350px"></div>
+  <div class="match" id="m10" style="top:270px; left:350px"></div>
+  <div class="match" id="m11" style="top:480px; left:350px"></div>
+  <div class="match" id="m12" style="top:690px; left:350px"></div>
 
-    <!-- PASE A SEMI GANADORES (21,22) -->
-    <!-- 21 alineado con 27 y 25 -->
-    <div class="match" id="m21" style="top:260px; left:650px"></div>
-    <!-- 22 alineado con 28 y 26 -->
-    <div class="match" id="m22" style="top:600px; left:650px"></div>
+  <!-- PASE A SEMI GANADORES (21,22) -->
+  <!-- 21 alineado con 27 y 25 -->
+  <div class="match" id="m21" style="top:260px; left:650px"></div>
+  <!-- 22 alineado con 28 y 26 -->
+  <div class="match" id="m22" style="top:600px; left:650px"></div>
 
-    <!-- SEMIS (27, 28) + FINAL (30) + 3P (29) – centro -->
-    <!-- 27 alineado con 21–25 -->
-    <div class="match" id="m27" style="top:260px; left:950px"></div>
-    <!-- 28 alineado con 22–26 -->
-    <div class="match" id="m28" style="top:600px; left:950px"></div>
+  <!-- SEMIS (27, 28) + FINAL (30) + 3P (29) – centro -->
+  <!-- 27 alineado con 21–25 -->
+  <div class="match" id="m27" style="top:260px; left:950px"></div>
+  <!-- 28 alineado con 22–26 -->
+  <div class="match" id="m28" style="top:600px; left:950px"></div>
 
-    <!-- Final arriba de 27 (misma columna que 27/28) -->
-    <div class="match" id="m30" style="top:150px; left:950px; width:240px;"></div>
-    <!-- 3° puesto abajo de 28 (misma columna que 27/28) -->
-    <div class="match" id="m29" style="top:710px; left:950px; width:240px;"></div>
+  <!-- Final arriba de 27 (misma columna que 27/28) -->
+  <div class="match" id="m30" style="top:150px; left:950px; width:240px;"></div>
+  <!-- 3° puesto abajo de 28 (misma columna que 27/28) -->
+  <div class="match" id="m29" style="top:710px; left:950px; width:240px;"></div>
 
-    <!-- PERDEDORES – DERECHA → IZQUIERDA -->
+  <!-- PERDEDORES – DERECHA → IZQUIERDA -->
 
-    <!-- Etiquetas de columnas perdedores -->
-    <div class="column-label" style="top:0px; left:2060px">Perdedores R1</div>
-    <div class="column-label" style="top:0px; left:1790px">Perdedores R2</div>
-    <div class="column-label" style="top:0px; left:1520px">Perdedores R3</div>
-    <div class="column-label" style="top:0px; left:1250px">Perdedores pase a semi</div>
+  <!-- Etiquetas de columnas perdedores -->
+  <div class="column-label" style="top:0px; left:2060px">Perdedores R1</div>
+  <div class="column-label" style="top:0px; left:1790px">Perdedores R2</div>
+  <div class="column-label" style="top:0px; left:1520px">Perdedores R3</div>
+  <div class="column-label" style="top:0px; left:1250px">Perdedores pase a semi</div>
 
-    <!-- 1ra RONDA PERD. (13–16) – más a la derecha -->
-    <div class="match" id="m13" style="top:60px;  left:2060px"></div>
-    <div class="match" id="m14" style="top:230px; left:2060px"></div>
-    <div class="match" id="m15" style="top:460px; left:2060px"></div>
-    <div class="match" id="m16" style="top:630px; left:2060px"></div>
+  <!-- 1ra RONDA PERD. (13–16) – más a la derecha -->
+  <div class="match" id="m13" style="top:60px;  left:2060px"></div>
+  <div class="match" id="m14" style="top:230px; left:2060px"></div>
+  <div class="match" id="m15" style="top:460px; left:2060px"></div>
+  <div class="match" id="m16" style="top:630px; left:2060px"></div>
 
-    <!-- 2da RONDA PERD. (17–20) – un paso hacia el centro -->
-    <div class="match" id="m17" style="top:110px; left:1790px"></div>
-    <div class="match" id="m18" style="top:280px; left:1790px"></div>
-    <div class="match" id="m19" style="top:510px; left:1790px"></div>
-    <div class="match" id="m20" style="top:680px; left:1790px"></div>
+  <!-- 2da RONDA PERD. (17–20) – un paso hacia el centro -->
+  <div class="match" id="m17" style="top:110px; left:1790px"></div>
+  <div class="match" id="m18" style="top:280px; left:1790px"></div>
+  <div class="match" id="m19" style="top:510px; left:1790px"></div>
+  <div class="match" id="m20" style="top:680px; left:1790px"></div>
 
-    <!-- 3ra RONDA PERD. (23–24) – más cerca del centro -->
-    <div class="match" id="m23" style="top:200px; left:1520px"></div>
-    <div class="match" id="m24" style="top:600px; left:1520px"></div>
+  <!-- 3ra RONDA PERD. (23–24) – más cerca del centro -->
+  <div class="match" id="m23" style="top:200px; left:1520px"></div>
+  <div class="match" id="m24" style="top:600px; left:1520px"></div>
 
-    <!-- PASE A SEMI PERD. (25–26) – casi centro, rumbo a 27/28 -->
-    <!-- 25 alineado con 21 y 27 -->
-    <div class="match" id="m25" style="top:260px; left:1250px"></div>
-    <!-- 26 alineado con 22 y 28 -->
-    <div class="match" id="m26" style="top:600px; left:1250px"></div>
-  `;
+  <!-- PASE A SEMI PERD. (25–26) – casi centro, rumbo a 27/28 -->
+  <!-- 25 alineado con 21 y 27 -->
+  <div class="match" id="m25" style="top:260px; left:1250px"></div>
+  <!-- 26 alineado con 22 y 28 -->
+  <div class="match" id="m26" style="top:600px; left:1250px"></div>
+`;
+
+const bracketLayoutHTMLMasculino = `
+  <!-- GANADORES – 16 llaves con cruce mostrado en la imagen -->
+
+  <!-- Etiquetas -->
+  <div class="column-label" style="top:0px; left:60px">Ronda 1</div>
+  <div class="column-label" style="top:0px; left:330px">Ronda 2</div>
+  <div class="column-label" style="top:0px; left:600px">Cuartos</div>
+  <div class="column-label" style="top:0px; left:870px">Semis</div>
+  <div class="column-label" style="top:0px; left:1140px">Final</div>
+
+  <!-- RONDA 1 (1–16) -->
+  <div class="match" id="m1"  style="top:20px;  left:60px"></div>
+  <div class="match" id="m2"  style="top:90px;  left:60px"></div>
+
+  <div class="match" id="m3"  style="top:200px; left:60px"></div>
+  <div class="match" id="m4"  style="top:270px; left:60px"></div>
+
+  <div class="match" id="m5"  style="top:420px; left:60px"></div>
+  <div class="match" id="m6"  style="top:490px; left:60px"></div>
+
+  <div class="match" id="m7"  style="top:640px; left:60px"></div>
+  <div class="match" id="m8"  style="top:710px; left:60px"></div>
+
+  <div class="match" id="m9"  style="top:860px; left:60px"></div>
+  <div class="match" id="m10" style="top:930px; left:60px"></div>
+
+  <div class="match" id="m11" style="top:1080px; left:60px"></div>
+  <div class="match" id="m12" style="top:1150px; left:60px"></div>
+
+  <div class="match" id="m13" style="top:1300px; left:60px"></div>
+  <div class="match" id="m14" style="top:1370px; left:60px"></div>
+
+  <div class="match" id="m15" style="top:1520px; left:60px"></div>
+  <div class="match" id="m16" style="top:1590px; left:60px"></div>
+
+  <!-- RONDA 2 (17–24) -->
+  <div class="match" id="m17" style="top:55px;  left:330px"></div>
+  <div class="match" id="m18" style="top:235px; left:330px"></div>
+  <div class="match" id="m19" style="top:455px; left:330px"></div>
+  <div class="match" id="m20" style="top:675px; left:330px"></div>
+  <div class="match" id="m21" style="top:895px; left:330px"></div>
+  <div class="match" id="m22" style="top:1115px; left:330px"></div>
+  <div class="match" id="m23" style="top:1335px; left:330px"></div>
+  <div class="match" id="m24" style="top:1555px; left:330px"></div>
+
+  <!-- CUARTOS (25–28) -->
+  <div class="match" id="m25" style="top:145px; left:600px"></div>
+  <div class="match" id="m26" style="top:565px; left:600px"></div>
+  <div class="match" id="m27" style="top:1005px; left:600px"></div>
+  <div class="match" id="m28" style="top:1445px; left:600px"></div>
+
+  <!-- SEMIS (29–30) -->
+  <div class="match" id="m29" style="top:355px; left:870px"></div>
+  <div class="match" id="m30" style="top:1225px; left:870px"></div>
+
+  <!-- FINAL (31) -->
+  <div class="match" id="m31" style="top:790px; left:1140px; width:240px;"></div>
+`;
+
+function renderLayoutFemenino() {
+  bracketArea.style.width = "2600px";
+  bracketArea.style.height = "950px";
+  bracketArea.innerHTML = bracketLayoutHTMLFemenino;
+}
+
+function renderLayoutMasculino() {
+  bracketArea.style.width = "1500px";
+  bracketArea.style.height = "1750px";
+  bracketArea.innerHTML = bracketLayoutHTMLMasculino;
 }
 
 /* --------------------------------------------------------------
@@ -235,7 +304,8 @@ function renderMatchBox(box, m) {
     27: 'Semi 1',
     28: 'Semi 2',
     29: '3er Puesto',
-    30: 'Final'
+    30: 'Final',
+    31: 'Final'
   }[m.drawMatchNumber] || '';
 
   box.innerHTML = `
@@ -260,8 +330,7 @@ function loadBracket(rama) {
   if (rama === "F") {
     renderLayoutFemenino();
   } else {
-    bracketArea.innerHTML = "<h2 style='text-align:center'>Cuadro Masculino pronto…</h2>";
-    return;
+    renderLayoutMasculino();
   }
 
   const q = query(
