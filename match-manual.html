@@ -262,23 +262,11 @@
   </div>
 
   <div class="card">
-    <label>Rama</label>
-    <select id="filterCat">
-      <option value="F" selected>Femenino</option>
-      <option value="M">Masculino</option>
-    </select>
-
     <label style="margin-top:10px;">Equipo local (jugadora/o1 - jugadora/o2)</label>
     <input type="text" id="localTeamInput" placeholder="Apellido 1 - Apellido 2" />
 
     <label style="margin-top:10px;">Equipo visitante (jugadora/o1 - jugadora/o2)</label>
     <input type="text" id="visitTeamInput" placeholder="Apellido 1 - Apellido 2" />
-
-    <label style="margin-top:10px;">Cancha</label>
-    <input type="text" id="courtInput" placeholder="Ej: 1" />
-
-    <label style="margin-top:10px;">Hora</label>
-    <input type="text" id="timeInput" placeholder="HH:MM" />
 
     <button class="top-btn" style="margin-top:16px; width:100%;" onclick="startManualMatch()">Crear partido manual</button>
   </div>
@@ -286,7 +274,6 @@
   <div id="matchPanel" style="display:none;">
     <div class="card">
       <div class="estado-label" id="matchNumberLabel">Partido manual</div>
-      <div class="estado-label" id="infoExtraLabel">Cancha: — · Hora: —</div>
       <div class="estado-label" id="estadoLabel">Estado: Pendiente</div>
 
       <div class="config-panel">
@@ -489,8 +476,6 @@
       document.getElementById('localPoints').textContent = currentMatchData.puntosLocal ?? 0;
       document.getElementById('visitPoints').textContent = currentMatchData.puntosVisitante ?? 0;
       document.getElementById('estadoLabel').textContent = `Estado: ${currentMatchData.estado}`;
-      document.getElementById('infoExtraLabel').textContent = `Cancha: ${currentMatchData.cancha || '—'} · Hora: ${currentMatchData.hora || '—'}`;
-
       const setsMode = currentMatchData.setsMode || 'ONE';
       setSetsModeInputs(setsMode);
       setRadioValue('localStarter', currentMatchData.localFirstServer || 1);
@@ -515,11 +500,8 @@
       const visitFirstServer = getRadioValue('visitStarter') || 1;
 
       currentMatchData = {
-        rama: document.getElementById('filterCat').value || 'F',
         localName: localTeam,
         visitanteName: visitTeam,
-        cancha: document.getElementById('courtInput').value.trim(),
-        hora: document.getElementById('timeInput').value.trim(),
         puntosLocal: 0,
         puntosVisitante: 0,
         setsLocal: 0,
