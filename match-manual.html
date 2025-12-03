@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel de Partido – Manual</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      background: #031926;
+      color: white;
+      font-family: system-ui, sans-serif;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+
+    .top-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .top-btn {
+      background: #ffe36a;
+      color: #000;
+      font-weight: bold;
+      padding: 10px 16px;
+      border-radius: 12px;
+      text-decoration: none;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.15);
+      padding: 20px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.25);
+      margin-bottom: 22px;
+      backdrop-filter: blur(14px);
+    }
+
+    label {
+      font-size: 14px;
+      opacity: 0.9;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 12px;
+      border: none;
+      background: rgba(0,0,0,0.28);
+      color: white;
+      box-sizing: border-box;
+    }
+
+    .state-btn-top {
+      width: 100%;
+      padding: 16px 0;
+      border-radius: 12px;
+      margin: 18px 0;
+      border: none;
+      font-size: 18px;
+      font-weight: bold;
+      background: #ffe36a;
+      color:black;
+      cursor: pointer;
+    }
+
+    .state-btn-top[disabled] {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .estado-label {
+      font-size: 14px;
+      opacity: 0.85;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .config-panel {
+      margin-top: 10px;
+      margin-bottom: 4px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.35);
+    }
+
+    .first-serve-panel {
+      margin-top: 10px;
+      margin-bottom: 4px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.35);
+    }
+
+    .first-serve-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 4px 0;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+
+    .first-serve-team-label {
+      min-width: 70px;
+      font-weight: 600;
+    }
+
+    .starter-label {
+      font-size: 12px;
+      opacity: 0.9;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .starter-label input {
+      transform: scale(0.9);
+    }
+
+    .small-edit-btn {
+      margin-top: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .sets-info {
+      margin-top: 10px;
+      margin-bottom: 4px;
+    }
+
+    .sets-current {
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0.9;
+    }
+
+    .sets-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .set-chip {
+      padding: 4px 8px;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.4);
+      font-size: 13px;
+    }
+
+    .set-chip span.winner {
+      color: #7cffc1;
+      font-weight: 700;
+    }
+
+    .team-block {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      padding: 20px;
+      background: rgba(0,0,0,0.35);
+      border-radius: 16px;
+      gap: 16px;
+    }
+
+    .team-info {
+      flex: 1 1 auto;
+    }
+
+    .players {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .player-line {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .player-name {
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    .serve-icon {
+      width: 28px;
+      font-size: 26px;
+      text-align: center;
+    }
+
+    .score {
+      font-size: 40px;
+      font-weight: bold;
+      width: 60px;
+      text-align: center;
+    }
+
+    .btns {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .big-btn {
+      padding: 12px 0;
+      font-size: 22px;
+      border-radius: 12px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      background: #ffe36a;
+      color: black;
+    }
+
+    .minus { background: #ff6b6b; }
+
+    .set-btn {
+      width: 100%;
+      padding: 16px 0;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      background: #6be0ff;
+      border: none;
+      color: black;
+      margin-top: 16px;
+      cursor: pointer;
+    }
+
+    .undo-btn {
+      background: #b3b3b3;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+  <h1>Panel del Partido Manual</h1>
+  <div class="top-buttons">
+    <a class="top-btn" href="admin.html">← Volver</a>
+    <a class="top-btn" href="index.html">🏠 Home</a>
+  </div>
+
+  <div class="card">
+    <label style="margin-top:10px;">Equipo local (jugadora/o1 - jugadora/o2)</label>
+    <input type="text" id="localTeamInput" placeholder="Apellido 1 - Apellido 2" />
+
+    <label style="margin-top:10px;">Equipo visitante (jugadora/o1 - jugadora/o2)</label>
+    <input type="text" id="visitTeamInput" placeholder="Apellido 1 - Apellido 2" />
+
+    <button class="top-btn" style="margin-top:16px; width:100%;" onclick="startManualMatch()">Crear partido manual</button>
+  </div>
+
+  <div id="matchPanel" style="display:none;">
+    <div class="card">
+      <div class="estado-label" id="matchNumberLabel">Partido manual</div>
+      <div class="estado-label" id="estadoLabel">Estado: Pendiente</div>
+
+      <div class="config-panel">
+        <div class="estado-label" style="margin-bottom:6px;">Formato del partido</div>
+        <div class="first-serve-row">
+          <label class="starter-label">
+            <input type="radio" name="setsMode" value="ONE"> 1 set
+          </label>
+          <label class="starter-label">
+            <input type="radio" name="setsMode" value="BEST_OF_3" checked> Mejor de 3
+          </label>
+        </div>
+      </div>
+
+      <div class="sets-info">
+        <div class="sets-current" id="setsCurrentLabel">Set actual: — / —</div>
+        <div class="sets-chips" id="setsChips"></div>
+      </div>
+
+      <div class="first-serve-panel">
+        <div class="estado-label" style="margin-bottom:6px;">Configurar 1er saque</div>
+        <div class="first-serve-row">
+          <span class="first-serve-team-label">Local:</span>
+          <label class="starter-label">
+            <input type="radio" name="localStarter" value="1" checked>
+            <span id="localStarterName1">Jugador 1</span>
+          </label>
+          <label class="starter-label">
+            <input type="radio" name="localStarter" value="2">
+            <span id="localStarterName2">Jugador 2</span>
+          </label>
+        </div>
+        <div class="first-serve-row">
+          <span class="first-serve-team-label">Visitante:</span>
+          <label class="starter-label">
+            <input type="radio" name="visitStarter" value="1" checked>
+            <span id="visitStarterName1">Jugador 1</span>
+          </label>
+          <label class="starter-label">
+            <input type="radio" name="visitStarter" value="2">
+            <span id="visitStarterName2">Jugador 2</span>
+          </label>
+        </div>
+        <button type="button" id="btnEditFirstServe" class="top-btn small-edit-btn" onclick="applyFirstServeSelection()">
+          Editar 1er saque
+        </button>
+      </div>
+
+      <button class="state-btn-top" id="btnSetPlaying" onclick="setPlaying()">🔥 Marcar en juego</button>
+
+      <div class="team-block">
+        <div class="team-info">
+          <div class="players">
+            <div class="player-line">
+              <span id="localPlayer1ServeIcon" class="serve-icon"></span>
+              <span id="localPlayer1Name" class="player-name">Jugador 1</span>
+            </div>
+            <div class="player-line">
+              <span id="localPlayer2ServeIcon" class="serve-icon"></span>
+              <span id="localPlayer2Name" class="player-name">Jugador 2</span>
+            </div>
+          </div>
+        </div>
+        <div class="score" id="localPoints">0</div>
+        <div class="btns">
+          <button class="big-btn" onclick="addPoint('local')">+1</button>
+          <button class="big-btn minus" onclick="subPoint('local')">-1</button>
+        </div>
+      </div>
+
+      <div class="team-block">
+        <div class="team-info">
+          <div class="players">
+            <div class="player-line">
+              <span id="visitPlayer1ServeIcon" class="serve-icon"></span>
+              <span id="visitPlayer1Name" class="player-name">Jugador 1</span>
+            </div>
+            <div class="player-line">
+              <span id="visitPlayer2ServeIcon" class="serve-icon"></span>
+              <span id="visitPlayer2Name" class="player-name">Jugador 2</span>
+            </div>
+          </div>
+        </div>
+        <div class="score" id="visitPoints">0</div>
+        <div class="btns">
+          <button class="big-btn" onclick="addPoint('visit')">+1</button>
+          <button class="big-btn minus" onclick="subPoint('visit')">-1</button>
+        </div>
+      </div>
+
+      <button class="set-btn undo-btn" onclick="undoLast()">Deshacer último</button>
+    </div>
+  </div>
+
+  <script>
+    let currentMatchData = null;
+    const stateHistory = [];
+
+    function splitPlayers(teamName) {
+      if (!teamName) return ["Jugador 1", "Jugador 2"];
+      const parts = teamName.split("-");
+      if (parts.length < 2) return [teamName.trim(), "Jugador 2"];
+      return [parts[0].trim(), parts[1].trim()];
+    }
+
+    function getRadioValue(name) {
+      const radios = document.querySelectorAll(`input[name="${name}"]`);
+      for (const r of radios) {
+        if (r.checked) return Number(r.value);
+      }
+      return null;
+    }
+
+    function setRadioValue(name, value) {
+      const radios = document.querySelectorAll(`input[name="${name}"]`);
+      radios.forEach(r => {
+        r.checked = Number(r.value) === Number(value);
+      });
+    }
+
+    function setSetsModeInputs(mode) {
+      const radios = document.querySelectorAll('input[name="setsMode"]');
+      radios.forEach(r => {
+        r.checked = r.value === mode;
+      });
+    }
+
+    function saveLastState() {
+      if (currentMatchData) {
+        stateHistory.push(JSON.parse(JSON.stringify(currentMatchData)));
+      }
+    }
+
+    function renderServeIcons() {
+      const localP1Icon = document.getElementById("localPlayer1ServeIcon");
+      const localP2Icon = document.getElementById("localPlayer2ServeIcon");
+      const visitP1Icon = document.getElementById("visitPlayer1ServeIcon");
+      const visitP2Icon = document.getElementById("visitPlayer2ServeIcon");
+
+      localP1Icon.textContent = "";
+      localP2Icon.textContent = "";
+      visitP1Icon.textContent = "";
+      visitP2Icon.textContent = "";
+
+      const team = currentMatchData?.currentServerTeam;
+      const player = currentMatchData?.currentServerPlayer;
+      if (!team || !player) return;
+
+      if (team === "local") {
+        if (player === 1) localP1Icon.textContent = "🏐";
+        if (player === 2) localP2Icon.textContent = "🏐";
+      } else if (team === "visit") {
+        if (player === 1) visitP1Icon.textContent = "🏐";
+        if (player === 2) visitP2Icon.textContent = "🏐";
+      }
+    }
+
+    function renderSetsInfo() {
+      const setsChips = document.getElementById("setsChips");
+      const setsCurrentLabel = document.getElementById("setsCurrentLabel");
+
+      const setsData = currentMatchData?.setsData || [];
+      const setActual = currentMatchData?.setActual || 1;
+      const setsMode = currentMatchData?.setsMode || 'ONE';
+      const totalSets = setsMode === 'BEST_OF_3' ? 3 : 1;
+
+      setsCurrentLabel.textContent = `Set actual: ${Math.min(setActual, totalSets)} / ${totalSets}`;
+      setsChips.innerHTML = '';
+
+      setsData.forEach((set, index) => {
+        const chip = document.createElement('div');
+        chip.className = 'set-chip';
+        const winner = set.local > set.visitante ? 'L' : 'V';
+        chip.innerHTML = `Set ${index + 1}: <span class="winner">${winner}</span> (${set.local} - ${set.visitante})`;
+        setsChips.appendChild(chip);
+      });
+    }
+
+    function renderPlayersNames() {
+      const localTeam = currentMatchData?.localName || '';
+      const visitTeam = currentMatchData?.visitanteName || '';
+      const [local1, local2] = splitPlayers(localTeam);
+      const [visit1, visit2] = splitPlayers(visitTeam);
+
+      document.getElementById('localPlayer1Name').textContent = local1 || 'Jugador 1';
+      document.getElementById('localPlayer2Name').textContent = local2 || 'Jugador 2';
+      document.getElementById('visitPlayer1Name').textContent = visit1 || 'Jugador 1';
+      document.getElementById('visitPlayer2Name').textContent = visit2 || 'Jugador 2';
+
+      document.getElementById('localStarterName1').textContent = local1 || 'Jugador 1';
+      document.getElementById('localStarterName2').textContent = local2 || 'Jugador 2';
+      document.getElementById('visitStarterName1').textContent = visit1 || 'Jugador 1';
+      document.getElementById('visitStarterName2').textContent = visit2 || 'Jugador 2';
+    }
+
+    function renderMatchPanel() {
+      if (!currentMatchData) return;
+
+      document.getElementById('matchPanel').style.display = 'block';
+      document.getElementById('localPoints').textContent = currentMatchData.puntosLocal ?? 0;
+      document.getElementById('visitPoints').textContent = currentMatchData.puntosVisitante ?? 0;
+      document.getElementById('estadoLabel').textContent = `Estado: ${currentMatchData.estado}`;
+      const setsMode = currentMatchData.setsMode || 'ONE';
+      setSetsModeInputs(setsMode);
+      setRadioValue('localStarter', currentMatchData.localFirstServer || 1);
+      setRadioValue('visitStarter', currentMatchData.visitFirstServer || 1);
+
+      renderPlayersNames();
+      renderServeIcons();
+      renderSetsInfo();
+    }
+
+    function startManualMatch() {
+      const localTeam = document.getElementById('localTeamInput').value.trim();
+      const visitTeam = document.getElementById('visitTeamInput').value.trim();
+
+      if (!localTeam || !visitTeam) {
+        alert('Ingresá el nombre de ambos equipos (separá las jugadoras/es con un guion).');
+        return;
+      }
+
+      const setsMode = document.querySelector('input[name="setsMode"]:checked')?.value || 'BEST_OF_3';
+      const localFirstServer = getRadioValue('localStarter') || 1;
+      const visitFirstServer = getRadioValue('visitStarter') || 1;
+
+      currentMatchData = {
+        localName: localTeam,
+        visitanteName: visitTeam,
+        puntosLocal: 0,
+        puntosVisitante: 0,
+        setsLocal: 0,
+        setsVisitante: 0,
+        setsData: [],
+        setActual: 1,
+        setsMode,
+        estado: 'Pendiente',
+        localFirstServer,
+        visitFirstServer,
+        localNextServer: localFirstServer,
+        visitNextServer: visitFirstServer,
+        currentServerTeam: null,
+        currentServerPlayer: null,
+      };
+
+      stateHistory.length = 0;
+      renderMatchPanel();
+    }
+
+    function setPlaying() {
+      if (!currentMatchData) return;
+      if (currentMatchData.estado === 'En juego') return;
+
+      currentMatchData.estado = 'En juego';
+      currentMatchData.setsMode = document.querySelector('input[name="setsMode"]:checked')?.value || 'BEST_OF_3';
+      currentMatchData.localFirstServer = getRadioValue('localStarter') || 1;
+      currentMatchData.visitFirstServer = getRadioValue('visitStarter') || 1;
+      currentMatchData.localNextServer = currentMatchData.localFirstServer;
+      currentMatchData.visitNextServer = currentMatchData.visitFirstServer;
+      currentMatchData.currentServerTeam = null;
+      currentMatchData.currentServerPlayer = null;
+
+      renderMatchPanel();
+    }
+
+    function applyFirstServeSelection() {
+      if (!currentMatchData) return;
+      currentMatchData.localFirstServer = getRadioValue('localStarter') || 1;
+      currentMatchData.visitFirstServer = getRadioValue('visitStarter') || 1;
+      currentMatchData.localNextServer = currentMatchData.localFirstServer;
+      currentMatchData.visitNextServer = currentMatchData.visitFirstServer;
+      currentMatchData.currentServerTeam = null;
+      currentMatchData.currentServerPlayer = null;
+      renderServeIcons();
+    }
+
+    function updateServe(pointWinner) {
+      if (!currentMatchData) return;
+
+      let { currentServerTeam, currentServerPlayer, localNextServer, visitNextServer, localFirstServer, visitFirstServer } = currentMatchData;
+
+      if (!localFirstServer) localFirstServer = 1;
+      if (!visitFirstServer) visitFirstServer = 1;
+      if (!localNextServer) localNextServer = localFirstServer;
+      if (!visitNextServer) visitNextServer = visitFirstServer;
+
+      if (!currentServerTeam) {
+        currentServerTeam = pointWinner;
+        currentServerPlayer = pointWinner === 'local' ? localNextServer : visitNextServer;
+        if (pointWinner === 'local') {
+          localNextServer = localNextServer === 1 ? 2 : 1;
+        } else {
+          visitNextServer = visitNextServer === 1 ? 2 : 1;
+        }
+      } else if (pointWinner !== currentServerTeam) {
+        if (pointWinner === 'local') {
+          currentServerTeam = 'local';
+          currentServerPlayer = localNextServer;
+          localNextServer = localNextServer === 1 ? 2 : 1;
+        } else {
+          currentServerTeam = 'visit';
+          currentServerPlayer = visitNextServer;
+          visitNextServer = visitNextServer === 1 ? 2 : 1;
+        }
+      }
+
+      currentMatchData.currentServerTeam = currentServerTeam;
+      currentMatchData.currentServerPlayer = currentServerPlayer;
+      currentMatchData.localNextServer = localNextServer;
+      currentMatchData.visitNextServer = visitNextServer;
+      renderServeIcons();
+    }
+
+    function maybeAutoCloseSet() {
+      if (!currentMatchData) return;
+
+      const { puntosLocal, puntosVisitante, setActual, setsMode } = currentMatchData;
+      const goal = (setsMode === 'BEST_OF_3' && setActual === 3) ? 15 : 21;
+
+      if (puntosLocal < goal && puntosVisitante < goal) return;
+      if (Math.abs(puntosLocal - puntosVisitante) < 2) return;
+
+      const setData = {
+        local: puntosLocal,
+        visitante: puntosVisitante,
+      };
+
+      currentMatchData.setsData = [...(currentMatchData.setsData || []), setData];
+      if (puntosLocal > puntosVisitante) {
+        currentMatchData.setsLocal = (currentMatchData.setsLocal || 0) + 1;
+      } else {
+        currentMatchData.setsVisitante = (currentMatchData.setsVisitante || 0) + 1;
+      }
+
+      const setsToWin = setsMode === 'BEST_OF_3' ? 2 : 1;
+      if (currentMatchData.setsLocal === setsToWin || currentMatchData.setsVisitante === setsToWin) {
+        currentMatchData.estado = 'Finalizado';
+      }
+
+      currentMatchData.puntosLocal = 0;
+      currentMatchData.puntosVisitante = 0;
+      currentMatchData.setActual = (currentMatchData.setActual || 1) + 1;
+      currentMatchData.currentServerTeam = null;
+      currentMatchData.currentServerPlayer = null;
+      currentMatchData.localNextServer = currentMatchData.localFirstServer;
+      currentMatchData.visitNextServer = currentMatchData.visitFirstServer;
+      renderMatchPanel();
+    }
+
+    window.addPoint = side => {
+      if (!currentMatchData) return;
+      if (currentMatchData.estado !== 'En juego') {
+        alert('El partido debe estar EN JUEGO para modificar el marcador.');
+        return;
+      }
+
+      saveLastState();
+      if (side === 'local') {
+        currentMatchData.puntosLocal = (currentMatchData.puntosLocal || 0) + 1;
+      } else {
+        currentMatchData.puntosVisitante = (currentMatchData.puntosVisitante || 0) + 1;
+      }
+
+      updateServe(side);
+      maybeAutoCloseSet();
+      renderMatchPanel();
+    };
+
+    window.subPoint = side => {
+      if (!currentMatchData) return;
+      if (currentMatchData.estado !== 'En juego') {
+        alert('El partido debe estar EN JUEGO para modificar el marcador.');
+        return;
+      }
+
+      saveLastState();
+      const key = side === 'local' ? 'puntosLocal' : 'puntosVisitante';
+      currentMatchData[key] = Math.max(0, (currentMatchData[key] || 0) - 1);
+      renderMatchPanel();
+    };
+
+    window.undoLast = () => {
+      const previous = stateHistory.pop();
+      if (!previous) return;
+      currentMatchData = previous;
+      renderMatchPanel();
+    };
+  </script>
+</body>
+</html>
