@@ -633,23 +633,6 @@
         return;
       }
 
-      // borrar partidos previos de esta rama
-      mainDrawStatus.textContent = "Eliminando partidos anteriores del cuadro para esta rama...";
-      const existingQ = query(
-        collection(db, "matches"),
-        where("phase", "==", "maindraw"),
-        where("rama", "==", rama)
-      );
-      const existingSnap = await getDocs(existingQ);
-
-      if (!existingSnap.empty) {
-        const batchDel = writeBatch(db);
-        existingSnap.forEach(docSnap => {
-          batchDel.delete(docSnap.ref);
-        });
-        await batchDel.commit();
-      }
-
       mainDrawStatus.textContent = "Validando partidos y armando la previsualización...";
 
       const parsedMatches = [];
@@ -669,14 +652,12 @@
 
         const rondaCSV = idxRonda >= 0 ? (parts[idxRonda] || "") : "";
 
-        const cfg = getMainDrawConfig(rama)[matchNum] || {
-    const cfg = getMainDrawConfig(rama)[matchNum] || {
-          roundLabel: rondaCSV || "",
-          slot1SourceFrom: null,
-          slot1SourceResult: null,
-          slot2SourceFrom: null,
-          slot2SourceResult: null
-        };
+        const cfg = getMainDrawConfig(rama)[matchNum] || {};
+        const roundLabel = rondaCSV || cfg.roundLabel || "";
+        const slot1SourceFrom = cfg.slot1SourceFrom ?? null;
+        const slot1SourceResult = cfg.slot1SourceResult ?? null;
+        const slot2SourceFrom = cfg.slot2SourceFrom ?? null;
+        const slot2SourceResult = cfg.slot2SourceResult ?? null;
 
         const cruceVal = parts[idxCruce] || "";
         const fechaVal = parts[idxFecha] || "";
@@ -693,15 +674,15 @@
 
         parsedMatches.push({
           matchNum,
-          roundLabel: rondaCSV || cfg.roundLabel,
+          roundLabel,
           cruce: cruceFinal || null,
           cancha: canchaVal || null,
           fecha: fechaVal || null,
           hora: normalizeHoraImport(horaVal) || null,
-          slot1SourceFrom: cfg.slot1SourceFrom ?? null,
-          slot1SourceResult: cfg.slot1SourceResult ?? null,
-          slot2SourceFrom: cfg.slot2SourceFrom ?? null,
-          slot2SourceResult: cfg.slot2SourceResult ?? null
+          slot1SourceFrom,
+          slot1SourceResult,
+          slot2SourceFrom,
+          slot2SourceResult
         });
       }
 
@@ -710,6 +691,23 @@
       if(parsedMatches.length === 0){
         mainDrawStatus.textContent = "No se encontraron partidos válidos en el CSV para crear.";
         return;
+      }
+
+      // borrar partidos previos de esta rama recién cuando sabemos que hay datos válidos
+      mainDrawStatus.textContent = "Eliminando partidos anteriores del cuadro para esta rama...";
+      const existingQ = query(
+        collection(db, "matches"),
+        where("phase", "==", "maindraw"),
+        where("rama", "==", rama)
+      );
+      const existingSnap = await getDocs(existingQ);
+
+      if (!existingSnap.empty) {
+        const batchDel = writeBatch(db);
+        existingSnap.forEach(docSnap => {
+          batchDel.delete(docSnap.ref);
+        });
+        await batchDel.commit();
       }
 
       mainDrawStatus.textContent = "Creando partidos del cuadro a partir del CSV...";
@@ -1074,8 +1072,6 @@ async function assignTeamsFromRanking(rama) {
     const validMatches = matches.filter(m => m && m.data && typeof m.data === "object");
     const firstRoundLimit = rama === "F" ? 8 : 16;
     const firstRoundMatches = validMatches.filter(m =>
-    const firstRoundLimit = rama === "F" ? 8 : 16;
-    const firstRoundMatches = matches.filter(m =>
       (m.data.slot1SourceFrom ?? null) === null &&
       (m.data.slot2SourceFrom ?? null) === null &&
       m.matchNum <= firstRoundLimit
