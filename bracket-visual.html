@@ -93,6 +93,14 @@
     color: green;
     font-weight: bold;
   }
+
+  .column-label {
+    position: absolute;
+    color: #ffe36a;
+    font-weight: bold;
+    text-align: center;
+    width: 220px;
+  }
 </style>
 </head>
 
@@ -142,12 +150,17 @@ const bracketArea = document.getElementById("bracketArea");
 /* --------------------------------------------------------------
    LAYOUT FEMENINO – coordenadas fijas
 ----------------------------------------------------------------*/
-function renderLayoutFemenino() {
-  bracketArea.innerHTML = `
-    <!-- GANADORES – IZQUIERDA -->
+  function renderLayoutFemenino() {
+    bracketArea.innerHTML = `
+      <!-- GANADORES – IZQUIERDA -->
 
-    <!-- 1ra RONDA (1–8) -->
-    <div class="match" id="m1"  style="top:20px;  left:60px"></div>
+      <!-- Etiquetas de columnas ganadores -->
+      <div class="column-label" style="top:0px; left:60px">Ronda 1</div>
+      <div class="column-label" style="top:0px; left:350px">Ronda 2</div>
+      <div class="column-label" style="top:0px; left:650px">Pase a Semi</div>
+
+      <!-- 1ra RONDA (1–8) -->
+      <div class="match" id="m1"  style="top:20px;  left:60px"></div>
     <div class="match" id="m2"  style="top:100px; left:60px"></div>
 
     <div class="match" id="m3"  style="top:230px; left:60px"></div>
@@ -184,6 +197,12 @@ function renderLayoutFemenino() {
 
     <!-- PERDEDORES – DERECHA → IZQUIERDA -->
 
+    <!-- Etiquetas de columnas perdedores -->
+    <div class="column-label" style="top:0px; left:2300px">1ra Ronda Perd</div>
+    <div class="column-label" style="top:0px; left:2040px">2da Ronda Perd</div>
+    <div class="column-label" style="top:0px; left:1780px">3ra Ronda Perd</div>
+    <div class="column-label" style="top:0px; left:1250px">Perd. pase a semi</div>
+
     <!-- 1ra RONDA PERD. (13–16) – más a la derecha -->
     <div class="match" id="m13" style="top:60px;  left:2300px"></div>
     <div class="match" id="m14" style="top:230px; left:2300px"></div>
@@ -202,9 +221,9 @@ function renderLayoutFemenino() {
 
     <!-- PASE A SEMI PERD. (25–26) – casi centro, rumbo a 27/28 -->
     <!-- 25 alineado con 21 y 27 -->
-    <div class="match" id="m25" style="top:260px; left:1520px"></div>
+    <div class="match" id="m25" style="top:260px; left:1250px"></div>
     <!-- 26 alineado con 22 y 28 -->
-    <div class="match" id="m26" style="top:600px; left:1520px"></div>
+    <div class="match" id="m26" style="top:600px; left:1250px"></div>
   `;
 }
 
