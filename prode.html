@@ -571,18 +571,25 @@
     const usersCollection = collection(db, 'prodeUsers');
 
     let authReady = false;
+    let authUnavailable = false;
 
     let stageStatus = {
       etapa1: 'bloqueada',
       etapa2: 'bloqueada'
     };
 
-    function ensureAuth() {
-      if (authReady && auth.currentUser) return Promise.resolve(auth.currentUser);
-      return signInAnonymously(auth).then(user => {
+    async function ensureAuth() {
+      if (authUnavailable) return null;
+      if (authReady && auth.currentUser) return auth.currentUser;
+      try {
+        const user = await signInAnonymously(auth);
         authReady = true;
         return user;
-      });
+      } catch (error) {
+        authUnavailable = true;
+        console.warn('No se pudo autenticar de forma anónima, se continúa sin login.', error);
+        return null;
+      }
     }
 
     onAuthStateChanged(auth, user => {
