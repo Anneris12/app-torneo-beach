@@ -8,6 +8,24 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+      .top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .top-bar .btn-secondary {
+        padding: 8px 12px;
+      }
+
+      .top-bar-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
     :root {
       --bg: #0e1f3b;
       --card: #0f2446;
@@ -381,7 +399,8 @@
       font-size: 14px;
     }
 
-    .helper { color: var(--muted); font-size: 13px; }
+      .helper { color: var(--muted); font-size: 13px; }
+      .saved-label { color: var(--accent-2); font-weight: 700; font-size: 13px; }
 
     .hidden { display: none !important; }
 
@@ -392,7 +411,17 @@
     }
   </style>
 </head>
-<body>
+  <body>
+    <div class="top-bar">
+      <div class="top-bar-group">
+        <button id="btnGoInicio" class="btn btn-secondary">Inicio</button>
+        <button id="btnGoBack" class="btn btn-secondary">Volver</button>
+      </div>
+      <div class="top-bar-group">
+        <button id="btnLogout" class="btn btn-secondary">Cerrar sesión</button>
+      </div>
+    </div>
+
   <h1>Prode – Beach Volley 2026</h1>
   <p class="page-description">Registra tu alias, cargá pronósticos y seguí tu puntaje por etapas.</p>
 
@@ -466,14 +495,15 @@
         </div>
       </div>
 
-      <div class="list" id="stage1List"></div>
-      <div class="notice">Las modificaciones son posibles antes del inicio de cada partido.</div>
-      <div class="section-actions" style="margin-top: 14px;">
-        <button id="saveStage1" class="btn">Guardar pronósticos de esta rama</button>
-        <button class="btn btn-secondary" data-target="home">Volver al home</button>
+        <div class="list" id="stage1List"></div>
+        <div class="notice">Las modificaciones son posibles antes del inicio de cada partido.</div>
+        <div class="section-actions" style="margin-top: 14px;">
+          <button id="editStage1" class="btn btn-secondary hidden">Editar pronósticos de esta rama</button>
+          <button id="saveStage1" class="btn">Guardar pronósticos de esta rama</button>
+          <button class="btn btn-secondary" data-target="home">Volver al home</button>
+        </div>
       </div>
     </div>
-  </div>
 
   <div id="stage2" class="section hidden">
     <div class="card">
@@ -487,14 +517,15 @@
           <div id="stage2State" class="status-chip"></div>
         </div>
       </div>
-      <div id="stage2Content" class="list"></div>
-      <div class="notice">Mientras los partidos no hayan comenzado, podés volver atrás y editar.</div>
-      <div class="section-actions" style="margin-top: 14px;">
-        <button id="saveStage2" class="btn">Guardar llaves</button>
-        <button class="btn btn-secondary" data-target="home">Volver al home</button>
+        <div id="stage2Content" class="list"></div>
+        <div class="notice">Mientras los partidos no hayan comenzado, podés volver atrás y editar.</div>
+        <div class="section-actions" style="margin-top: 14px;">
+          <button id="editStage2" class="btn btn-secondary hidden">Editar pronósticos de esta rama</button>
+          <button id="saveStage2" class="btn">Guardar llaves</button>
+          <button class="btn btn-secondary" data-target="home">Volver al home</button>
+        </div>
       </div>
     </div>
-  </div>
 
   <div id="scores" class="section hidden">
     <div class="card">
@@ -554,10 +585,11 @@
       orderBy
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
     import {
-      getAuth,
-      signInAnonymously,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+        getAuth,
+        signInAnonymously,
+        onAuthStateChanged,
+        signOut
+      } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
@@ -578,10 +610,25 @@
     let authReady = false;
     let authUnavailable = false;
 
-    let stageStatus = {
-      etapa1: 'bloqueada',
-      etapa2: 'bloqueada'
-    };
+      let stageStatus = {
+        etapa1: 'bloqueada',
+        etapa2: 'bloqueada'
+      };
+
+      let branchLocks = {
+        stage1: { FEM: false, MASC: false },
+        stage2: { FEM: false, MASC: false }
+      };
+
+      let editingState = {
+        stage1: { FEM: true, MASC: true },
+        stage2: { FEM: true, MASC: true }
+      };
+
+      let lastMatchState = {
+        stage1: {},
+        stage2: {}
+      };
 
     async function ensureAuth() {
       if (authUnavailable) return null;
@@ -654,10 +701,10 @@
       return 'R1';
     }
 
-    function computeWinnerFromSets(data) {
-      const sets = Array.isArray(data.setsData) ? data.setsData : [];
-      let wins1 = 0;
-      let wins2 = 0;
+      function computeWinnerFromSets(data) {
+        const sets = Array.isArray(data.setsData) ? data.setsData : [];
+        let wins1 = 0;
+        let wins2 = 0;
 
       sets.forEach(set => {
         const a = Number(set.local);
@@ -667,10 +714,67 @@
       });
 
       if (wins1 === wins2) return null;
-      return wins1 > wins2
-        ? (data.team1Name || data.localName || '')
-        : (data.team2Name || data.visitanteName || '');
-    }
+        return wins1 > wins2
+          ? (data.team1Name || data.localName || '')
+          : (data.team2Name || data.visitanteName || '');
+      }
+
+      function getPointsForMatch(match, etapa) {
+        if (etapa === 1) return 3;
+        const roundKey = (match.ronda || '').toString().toLowerCase();
+        if (roundKey.includes('final')) return 20;
+        if (roundKey.includes('semi')) return 15;
+        if (roundKey.includes('r2') || roundKey.includes('cuarto') || roundKey.includes('2')) return 10;
+        return 7;
+      }
+
+      async function updateRankingForUser(userId) {
+        await ensureAuth();
+        const predsQ = query(predictionsCollection, where('userId', '==', userId));
+        const snap = await getDocs(predsQ);
+        let puntosEtapa1 = 0;
+        let puntosEtapa2 = 0;
+        snap.forEach(docSnap => {
+          const data = docSnap.data();
+          const pts = Number(data.puntosObtenidos) || 0;
+          if (data.etapa === 1) puntosEtapa1 += pts;
+          if (data.etapa === 2) puntosEtapa2 += pts;
+        });
+        const total = puntosEtapa1 + puntosEtapa2;
+        const userRef = doc(usersCollection, userId);
+        const userSnap = await getDoc(userRef);
+        const alias = userSnap.exists() ? userSnap.data().alias : '';
+        await setDoc(doc(rankingCollection, userId), {
+          userId,
+          alias,
+          puntosEtapa1,
+          puntosEtapa2,
+          puntosTotales: total,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      }
+
+      async function updateProdeForMatch(match, etapa) {
+        if (!match.resultadoReal) return;
+        await ensureAuth();
+        const q = query(predictionsCollection, where('matchId', '==', match.matchId));
+        const snap = await getDocs(q);
+        const impactedUsers = new Set();
+        const pointsValue = getPointsForMatch(match, etapa);
+
+        const ops = snap.docs.map(docSnap => {
+          const data = docSnap.data();
+          const acertado = data.equipoPronosticadoGanador === match.resultadoReal;
+          const puntosObtenidos = acertado ? pointsValue : 0;
+          impactedUsers.add(data.userId);
+          return setDoc(docSnap.ref, { ...data, puntosObtenidos }, { merge: true });
+        });
+
+        await Promise.all(ops);
+        for (const userId of impactedUsers) {
+          await updateRankingForUser(userId);
+        }
+      }
 
     function updateStageStatusFromGroups() {
       const anyEditable = stage1Matches.some(m => m.estado !== 'finalizado');
@@ -681,59 +785,86 @@
       renderStage2();
     }
 
-    function attachStage1Listener() {
-      const q = query(collection(db, 'matches'), where('phase', '==', 'zonas'));
-      onSnapshot(q, snap => {
-        stage1Matches = [];
-        snap.forEach(docSnap => {
-          const d = docSnap.data();
-          const rama = normalizeRama(d.categoria || d.category || d.rama);
-          const estado = normalizeEstado(d.estado, d.status);
-          stage1Matches.push({
-            matchId: docSnap.id,
-            rama,
-            ronda: d.roundLabel || d.ronda || '',
-            zona: d.zona || d.zone || '',
-            cancha: d.cancha || '',
-            hora: d.hora || '',
-            equipo1: d.localName || d.team1Name || '',
-            equipo2: d.visitanteName || d.team2Name || '',
-            estado,
-            resultadoReal: d.winnerName || d.resultadoReal || computeWinnerFromSets(d) || null
+      function attachStage1Listener() {
+        const q = query(collection(db, 'matches'), where('phase', '==', 'zonas'));
+        onSnapshot(q, snap => {
+          stage1Matches = [];
+          const newState = {};
+          snap.forEach(docSnap => {
+            const d = docSnap.data();
+            const rama = normalizeRama(d.categoria || d.category || d.rama);
+            const estado = normalizeEstado(d.estado, d.status);
+            stage1Matches.push({
+              matchId: docSnap.id,
+              rama,
+              ronda: d.roundLabel || d.ronda || '',
+              zona: d.zona || d.zone || '',
+              cancha: d.cancha || '',
+              hora: d.hora || '',
+              equipo1: d.localName || d.team1Name || '',
+              equipo2: d.visitanteName || d.team2Name || '',
+              estado,
+              resultadoReal: d.winnerName || d.resultadoReal || computeWinnerFromSets(d) || null
+            });
+            newState[docSnap.id] = estado;
           });
+          Object.entries(newState).forEach(([matchId, estado]) => {
+            const prev = lastMatchState.stage1[matchId];
+            if (prev !== 'finalizado' && estado === 'finalizado') {
+              const match = stage1Matches.find(m => m.matchId === matchId);
+              if (match) updateProdeForMatch(match, 1);
+            }
+          });
+          lastMatchState.stage1 = newState;
+          updateStageStatusFromGroups();
+          renderStage1();
+          renderScores();
         });
-        updateStageStatusFromGroups();
-        renderStage1();
-        renderScores();
-      });
-    }
+      }
 
     function attachStage2Listener() {
       const q = query(collection(db, 'matches'), where('phase', '==', 'maindraw'));
       onSnapshot(q, snap => {
-        stage2Rounds = { FEM: {}, MASC: {} };
-        snap.forEach(docSnap => {
-          const d = docSnap.data();
-          const rama = normalizeRama(d.categoria || d.category || d.rama);
-          const roundKey = mapRoundKey(d.roundLabel || d.fase || '');
-          if (!stage2Rounds[rama][roundKey]) stage2Rounds[rama][roundKey] = [];
-          const estado = normalizeEstado(d.estado, d.status);
-          const resultadoReal = d.winnerName || d.resultadoReal || computeWinnerFromSets(d) || null;
+          stage2Rounds = { FEM: {}, MASC: {} };
+          const newState = {};
+          snap.forEach(docSnap => {
+            const d = docSnap.data();
+            const rama = normalizeRama(d.categoria || d.category || d.rama);
+            const roundKey = mapRoundKey(d.roundLabel || d.fase || '');
+            if (!stage2Rounds[rama][roundKey]) stage2Rounds[rama][roundKey] = [];
+            const estado = normalizeEstado(d.estado, d.status);
+            const resultadoReal = d.winnerName || d.resultadoReal || computeWinnerFromSets(d) || null;
 
-          stage2Rounds[rama][roundKey].push({
-            matchId: docSnap.id,
-            ronda: roundKey,
-            label: d.drawMatchNumber ? `P${d.drawMatchNumber}` : (d.roundLabel || 'Partido'),
-            equipo1: d.team1Name || d.localName || buildSlotLabel(d.slot1SourceFrom, d.slot1SourceResult),
-            equipo2: d.team2Name || d.visitanteName || buildSlotLabel(d.slot2SourceFrom, d.slot2SourceResult),
-            estado,
-            resultadoReal
+            stage2Rounds[rama][roundKey].push({
+              matchId: docSnap.id,
+              ronda: roundKey,
+              label: d.drawMatchNumber ? `P${d.drawMatchNumber}` : (d.roundLabel || 'Partido'),
+              equipo1: d.team1Name || d.localName || buildSlotLabel(d.slot1SourceFrom, d.slot1SourceResult),
+              equipo2: d.team2Name || d.visitanteName || buildSlotLabel(d.slot2SourceFrom, d.slot2SourceResult),
+              estado,
+              resultadoReal,
+              rama
+            });
+            newState[docSnap.id] = estado;
           });
+          Object.entries(newState).forEach(([matchId, estado]) => {
+            const prev = lastMatchState.stage2[matchId];
+            if (prev !== 'finalizado' && estado === 'finalizado') {
+              let targetMatch;
+              Object.values(stage2Rounds).forEach(rounds => {
+                Object.values(rounds).forEach(list => {
+                  const found = list.find(m => m.matchId === matchId);
+                  if (found) targetMatch = found;
+                });
+              });
+              if (targetMatch) updateProdeForMatch(targetMatch, 2);
+            }
+          });
+          lastMatchState.stage2 = newState;
+          renderStage2();
+          renderScores();
         });
-        renderStage2();
-        renderScores();
-      });
-    }
+      }
 
     function saveUser(user) {
       localStorage.setItem('prodeUser', JSON.stringify(user));
@@ -791,14 +922,59 @@
       localStorage.setItem('prodePredictions', JSON.stringify(stored));
     }
 
-    function loadPredictions() {
-      if (Object.keys(predictionsCache).length) return predictionsCache;
-      const raw = localStorage.getItem('prodePredictions');
-      if (!raw || !currentUser) return {};
-      const stored = JSON.parse(raw);
-      predictionsCache = stored[currentUser.userId] || {};
-      return predictionsCache;
-    }
+      function loadPredictions() {
+        if (Object.keys(predictionsCache).length) return predictionsCache;
+        const raw = localStorage.getItem('prodePredictions');
+        if (!raw || !currentUser) return {};
+        const stored = JSON.parse(raw);
+        predictionsCache = stored[currentUser.userId] || {};
+        return predictionsCache;
+      }
+
+      function loadBranchLocks() {
+        if (!currentUser) return;
+        const raw = localStorage.getItem('prodeBranchLocks');
+        const stored = raw ? JSON.parse(raw) : {};
+        const userLocks = stored[currentUser.userId];
+        const defaults = { stage1: { FEM: false, MASC: false }, stage2: { FEM: false, MASC: false } };
+        branchLocks = userLocks ? {
+          stage1: {
+            FEM: !!(userLocks.stage1 && userLocks.stage1.FEM),
+            MASC: !!(userLocks.stage1 && userLocks.stage1.MASC)
+          },
+          stage2: {
+            FEM: !!(userLocks.stage2 && userLocks.stage2.FEM),
+            MASC: !!(userLocks.stage2 && userLocks.stage2.MASC)
+          }
+        } : defaults;
+        editingState = {
+          stage1: {
+            FEM: !branchLocks.stage1.FEM,
+            MASC: !branchLocks.stage1.MASC
+          },
+          stage2: {
+            FEM: !branchLocks.stage2.FEM,
+            MASC: !branchLocks.stage2.MASC
+          }
+        };
+      }
+
+      function persistBranchLocks() {
+        if (!currentUser) return;
+        const raw = localStorage.getItem('prodeBranchLocks');
+        const stored = raw ? JSON.parse(raw) : {};
+        stored[currentUser.userId] = branchLocks;
+        localStorage.setItem('prodeBranchLocks', JSON.stringify(stored));
+      }
+
+      function resetLocalCaches() {
+        predictionsCache = {};
+        localStorage.removeItem('prodeUser');
+        localStorage.removeItem('prodePredictions');
+        localStorage.removeItem('prodeBranchLocks');
+        branchLocks = { stage1: { FEM: false, MASC: false }, stage2: { FEM: false, MASC: false } };
+        editingState = { stage1: { FEM: true, MASC: true }, stage2: { FEM: true, MASC: true } };
+      }
 
     async function loadUserPredictionsFromDb() {
       if (!currentUser) return {};
@@ -899,60 +1075,69 @@
       });
     }
 
-    function renderStage1() {
-      buildBranchSwitch(document.getElementById('branchSwitch1'), currentBranch1, val => {
-        currentBranch1 = val;
-        renderStage1();
-      });
-
-      stage1List.innerHTML = '';
-      const predictions = loadPredictions();
-      const branchMatches = stage1Matches.filter(m => m.rama === currentBranch1);
-      const stageOpen = stageStatus.etapa1 === 'abierta';
-
-      branchMatches.forEach(match => {
-        const card = document.createElement('div');
-        card.className = 'match-card';
-        const locked = !stageOpen || match.estado !== 'pendiente';
-        if (locked) card.classList.add('locked');
-
-        card.innerHTML = `
-          <div class="match-top">
-            <div>${match.zona} · ${match.cancha} · ${match.hora}</div>
-            <span class="ribbon">${match.estado}</span>
-          </div>
-          <div class="team-row">
-            <span class="team-name">${match.equipo1}</span>
-            <button class="select-btn" data-team="${match.equipo1}" ${locked ? 'disabled' : ''}>Elegir</button>
-          </div>
-          <div class="team-row">
-            <span class="team-name">${match.equipo2}</span>
-            <button class="select-btn" data-team="${match.equipo2}" ${locked ? 'disabled' : ''}>Elegir</button>
-          </div>
-          <div class="helper">${locked ? '<span class="locked-label">🔒 No se puede modificar</span>' : 'Seleccioná el ganador antes del inicio del partido.'}</div>
-        `;
-
-        const buttons = card.querySelectorAll('.select-btn');
-        buttons.forEach(btn => {
-          btn.addEventListener('click', async () => {
-            predictions[match.matchId] = { rama: match.rama, etapa: 1, equipoPronosticadoGanador: btn.dataset.team };
-            buttons.forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            await persistPrediction(match.matchId, predictions[match.matchId]);
-            renderScores();
-          });
+      function renderStage1() {
+        buildBranchSwitch(document.getElementById('branchSwitch1'), currentBranch1, val => {
+          currentBranch1 = val;
+          renderStage1();
         });
 
-        const selected = predictions[match.matchId]?.equipoPronosticadoGanador;
-        if (selected) {
-          buttons.forEach(b => {
-            if (b.dataset.team === selected) b.classList.add('selected');
-          });
-        }
+        stage1List.innerHTML = '';
+        const predictions = loadPredictions();
+        const branchMatches = stage1Matches.filter(m => m.rama === currentBranch1);
+        const stageOpen = stageStatus.etapa1 === 'abierta';
+        const branchLocked = branchLocks.stage1[currentBranch1];
+        const editing = editingState.stage1[currentBranch1];
+        const viewLocked = branchLocked && !editing;
 
-        stage1List.appendChild(card);
-      });
-    }
+        const saveBtn = document.getElementById('saveStage1');
+        const editBtn = document.getElementById('editStage1');
+        saveBtn.textContent = branchLocked ? (editing ? 'Guardar cambios de esta rama' : 'Pronósticos guardados') : 'Guardar pronósticos de esta rama';
+        saveBtn.disabled = !editing || !stageOpen;
+        editBtn.classList.toggle('hidden', !branchLocked);
+        editBtn.disabled = !stageOpen;
+
+        branchMatches.forEach(match => {
+          const card = document.createElement('div');
+          card.className = 'match-card';
+          const locked = viewLocked || !stageOpen || match.estado !== 'pendiente';
+          if (locked) card.classList.add('locked');
+
+          card.innerHTML = `
+            <div class="match-top">
+              <div>${match.zona} · ${match.cancha} · ${match.hora}</div>
+              <span class="ribbon">${match.estado}</span>
+            </div>
+            <div class="team-row">
+              <span class="team-name">${match.equipo1}</span>
+              <button class="select-btn" data-team="${match.equipo1}" ${locked ? 'disabled' : ''}>Elegir</button>
+            </div>
+            <div class="team-row">
+              <span class="team-name">${match.equipo2}</span>
+              <button class="select-btn" data-team="${match.equipo2}" ${locked ? 'disabled' : ''}>Elegir</button>
+            </div>
+            <div class="helper">${viewLocked && predictions[match.matchId] ? '<span class="saved-label">Pronóstico guardado</span>' : (locked ? '<span class="locked-label">🔒 No se puede modificar</span>' : 'Seleccioná el ganador antes del inicio del partido.')}</div>
+          `;
+
+          const buttons = card.querySelectorAll('.select-btn');
+          buttons.forEach(btn => {
+            btn.addEventListener('click', async () => {
+              predictions[match.matchId] = { rama: match.rama, etapa: 1, equipoPronosticadoGanador: btn.dataset.team };
+              buttons.forEach(b => b.classList.remove('selected'));
+              btn.classList.add('selected');
+              savePredictions(predictions);
+            });
+          });
+
+          const selected = predictions[match.matchId]?.equipoPronosticadoGanador;
+          if (selected) {
+            buttons.forEach(b => {
+              if (b.dataset.team === selected) b.classList.add('selected');
+            });
+          }
+
+          stage1List.appendChild(card);
+        });
+      }
 
     function resolveTeamName(ref, rama) {
       if (!ref) return '';
@@ -969,70 +1154,78 @@
       return ref;
     }
 
-    function renderStage2() {
-      buildBranchSwitch(document.getElementById('branchSwitch2'), currentBranch2, val => {
-        currentBranch2 = val;
-        renderStage2();
-      });
+      function renderStage2() {
+        buildBranchSwitch(document.getElementById('branchSwitch2'), currentBranch2, val => {
+          currentBranch2 = val;
+          renderStage2();
+        });
 
-      stage2Content.innerHTML = '';
-      const status = stageStatus.etapa2;
-      if (status === 'bloqueada') {
-        const notice = document.createElement('p');
-        notice.className = 'notice';
-        notice.textContent = 'Se habilita cuando termine la fase de grupos.';
-        stage2Content.appendChild(notice);
-        return;
-      }
+        stage2Content.innerHTML = '';
+        const status = stageStatus.etapa2;
+        if (status === 'bloqueada') {
+          const notice = document.createElement('p');
+          notice.className = 'notice';
+          notice.textContent = 'Se habilita cuando termine la fase de grupos.';
+          stage2Content.appendChild(notice);
+          return;
+        }
 
-      const predictions = loadPredictions();
-      const rounds = stage2Rounds[currentBranch2];
-      Object.entries(rounds).forEach(([roundKey, matches]) => {
-        if (!matches.length) return;
-        const block = document.createElement('div');
-        block.className = 'list';
-        const title = document.createElement('h3');
-        title.textContent = roundKey === 'Final' ? 'Final' : `Ronda ${roundKey}`;
-        title.style.margin = '8px 0';
-        stage2Content.appendChild(title);
-        stage2Content.appendChild(block);
+        const predictions = loadPredictions();
+        const rounds = stage2Rounds[currentBranch2];
+        const branchLocked = branchLocks.stage2[currentBranch2];
+        const editing = editingState.stage2[currentBranch2];
+        const viewLocked = branchLocked && !editing;
+        const saveBtn = document.getElementById('saveStage2');
+        const editBtn = document.getElementById('editStage2');
+        saveBtn.textContent = branchLocked ? (editing ? 'Guardar cambios de esta rama' : 'Pronósticos guardados') : 'Guardar llaves';
+        saveBtn.disabled = !editing || status !== 'abierta';
+        editBtn.classList.toggle('hidden', !branchLocked);
+        editBtn.disabled = status !== 'abierta';
 
-        matches.forEach(match => {
-          const card = document.createElement('div');
-          card.className = 'match-card';
-          const editable = status === 'abierta' && match.estado === 'pendiente';
-          if (!editable) card.classList.add('locked');
+        Object.entries(rounds).forEach(([roundKey, matches]) => {
+          if (!matches.length) return;
+          const block = document.createElement('div');
+          block.className = 'list';
+          const title = document.createElement('h3');
+          title.textContent = roundKey === 'Final' ? 'Final' : `Ronda ${roundKey}`;
+          title.style.margin = '8px 0';
+          stage2Content.appendChild(title);
+          stage2Content.appendChild(block);
 
-          const equipo1 = match.equipo1Ref ? resolveTeamName(match.equipo1Ref, currentBranch2) : match.equipo1;
-          const equipo2 = match.equipo2Ref ? resolveTeamName(match.equipo2Ref, currentBranch2) : match.equipo2;
+          matches.forEach(match => {
+            const card = document.createElement('div');
+            card.className = 'match-card';
+            const editable = status === 'abierta' && match.estado === 'pendiente' && !viewLocked;
+            if (!editable) card.classList.add('locked');
 
-          card.innerHTML = `
-            <div class="match-top">
-              <div>${match.label} · ${branchLabels[currentBranch2]}</div>
-              <span class="ribbon">${match.estado}</span>
-            </div>
-            <div class="team-row">
-              <span class="team-name">${equipo1}</span>
-              <button class="select-btn" data-team="${equipo1}" ${editable ? '' : 'disabled'}>Gana</button>
-            </div>
-            <div class="team-row">
-              <span class="team-name">${equipo2}</span>
-              <button class="select-btn" data-team="${equipo2}" ${editable ? '' : 'disabled'}>Gana</button>
-            </div>
-            <div class="helper">${editable ? 'Elegí tu ganador para avanzar en el bracket.' : '<span class="locked-label">🔒 No se puede modificar</span>'}</div>
-          `;
+            const equipo1 = match.equipo1Ref ? resolveTeamName(match.equipo1Ref, currentBranch2) : match.equipo1;
+            const equipo2 = match.equipo2Ref ? resolveTeamName(match.equipo2Ref, currentBranch2) : match.equipo2;
 
-          const buttons = card.querySelectorAll('.select-btn');
-          buttons.forEach(btn => {
-            btn.addEventListener('click', async () => {
-              predictions[match.matchId] = { rama: currentBranch2, etapa: 2, ronda: match.ronda, equipoPronosticadoGanador: btn.dataset.team };
-              buttons.forEach(b => b.classList.remove('selected'));
-              btn.classList.add('selected');
-              await persistPrediction(match.matchId, predictions[match.matchId]);
-              renderStage2();
-              renderScores();
+            card.innerHTML = `
+              <div class="match-top">
+                <div>${match.label} · ${branchLabels[currentBranch2]}</div>
+                <span class="ribbon">${match.estado}</span>
+              </div>
+              <div class="team-row">
+                <span class="team-name">${equipo1}</span>
+                <button class="select-btn" data-team="${equipo1}" ${editable ? '' : 'disabled'}>Gana</button>
+              </div>
+              <div class="team-row">
+                <span class="team-name">${equipo2}</span>
+                <button class="select-btn" data-team="${equipo2}" ${editable ? '' : 'disabled'}>Gana</button>
+              </div>
+              <div class="helper">${viewLocked && predictions[match.matchId] ? '<span class="saved-label">Pronóstico guardado</span>' : (editable ? 'Elegí tu ganador para avanzar en el bracket.' : '<span class="locked-label">🔒 No se puede modificar</span>')}</div>
+            `;
+
+            const buttons = card.querySelectorAll('.select-btn');
+            buttons.forEach(btn => {
+              btn.addEventListener('click', async () => {
+                predictions[match.matchId] = { rama: currentBranch2, etapa: 2, ronda: match.ronda, equipoPronosticadoGanador: btn.dataset.team };
+                buttons.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                savePredictions(predictions);
+              });
             });
-          });
 
           const selected = predictions[match.matchId]?.equipoPronosticadoGanador;
           if (selected) {
@@ -1058,11 +1251,11 @@
       renderRanking();
     }
 
-    async function renderRanking() {
-      const rankingList = document.getElementById('rankingList');
-      rankingList.innerHTML = '<div class="helper">Cargando ranking...</div>';
-      const rankingPositionEl = document.getElementById('rankingPosition');
-      rankingPositionEl.textContent = '';
+      async function renderRanking() {
+        const rankingList = document.getElementById('rankingList');
+        rankingList.innerHTML = '<div class="helper">Cargando ranking...</div>';
+        const rankingPositionEl = document.getElementById('rankingPosition');
+        rankingPositionEl.textContent = '';
 
       const rows = await fetchRanking();
       rankingList.innerHTML = '';
@@ -1082,19 +1275,95 @@
           <div><strong>${row.puntosTotales || 0} pts</strong></div>
         `;
         rankingList.appendChild(item);
-        if (isMe) {
-          rankingPositionEl.textContent = `Puesto #${idx + 1}`;
-        }
-      });
-    }
-
-    function initNavigation() {
-      document.querySelectorAll('[data-target]').forEach(el => {
-        el.addEventListener('click', () => {
-          toggleSection(el.dataset.target);
+          if (isMe) {
+            rankingPositionEl.textContent = `Puesto #${idx + 1}`;
+          }
         });
-      });
-    }
+      }
+
+      function goProdeHome() {
+        document.querySelectorAll('.section').forEach(sec => sec.classList.add('hidden'));
+        document.getElementById('homeSection').classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      async function saveBranchPredictions(stageKey) {
+        if (!currentUser) {
+          alert('Ingresá con tu usuario de Prode antes de guardar.');
+          return;
+        }
+
+        const stageStatusKey = stageKey === 'stage1' ? 'etapa1' : 'etapa2';
+        if (stageStatus[stageStatusKey] !== 'abierta') {
+          alert('Esta etapa no está abierta para pronosticar.');
+          return;
+        }
+
+        const branch = stageKey === 'stage1' ? currentBranch1 : currentBranch2;
+        const predictions = loadPredictions();
+        const matches = stageKey === 'stage1'
+          ? stage1Matches.filter(m => m.rama === branch)
+          : Object.values(stage2Rounds[branch] || {}).reduce((acc, list) => acc.concat(list), []);
+
+        const ops = matches
+          .filter(match => predictions[match.matchId]?.equipoPronosticadoGanador)
+          .map(match => {
+            const payload = {
+              rama: match.rama || branch,
+              etapa: stageKey === 'stage1' ? 1 : 2,
+              ronda: match.ronda,
+              equipoPronosticadoGanador: predictions[match.matchId].equipoPronosticadoGanador
+            };
+            return persistPrediction(match.matchId, payload);
+          });
+
+        if (!ops.length) {
+          alert('Seleccioná al menos un ganador antes de guardar.');
+          return;
+        }
+
+        await Promise.all(ops);
+        branchLocks[stageKey][branch] = true;
+        editingState[stageKey][branch] = false;
+        persistBranchLocks();
+        if (stageKey === 'stage1') renderStage1();
+        if (stageKey === 'stage2') renderStage2();
+        alert('Pronósticos guardados para esta rama.');
+      }
+
+      function startEditing(stageKey) {
+        const branch = stageKey === 'stage1' ? currentBranch1 : currentBranch2;
+        editingState[stageKey][branch] = true;
+        if (stageKey === 'stage1') renderStage1();
+        if (stageKey === 'stage2') renderStage2();
+      }
+
+      function initNavigation() {
+        document.querySelectorAll('[data-target]').forEach(el => {
+          el.addEventListener('click', () => {
+            toggleSection(el.dataset.target);
+          });
+        });
+        document.getElementById('btnGoBack').addEventListener('click', goProdeHome);
+        document.getElementById('btnGoInicio').addEventListener('click', () => {
+          window.location.href = 'index.html';
+        });
+        document.getElementById('btnLogout').addEventListener('click', async () => {
+          try {
+            await ensureAuth();
+            await signOut(auth);
+          } catch (e) {
+            console.warn('No se pudo cerrar sesión anónima', e);
+          }
+          resetLocalCaches();
+          window.location.reload();
+        });
+
+        document.getElementById('saveStage1').addEventListener('click', () => saveBranchPredictions('stage1'));
+        document.getElementById('saveStage2').addEventListener('click', () => saveBranchPredictions('stage2'));
+        document.getElementById('editStage1').addEventListener('click', () => startEditing('stage1'));
+        document.getElementById('editStage2').addEventListener('click', () => startEditing('stage2'));
+      }
 
     const createUserButton = document.getElementById('createUser');
     createUserButton.addEventListener('click', async () => {
@@ -1109,20 +1378,21 @@
       createUserButton.disabled = true;
       createUserButton.textContent = 'Guardando...';
 
-      try {
-        const userRecord = await upsertUser(alias, dni);
-        currentUser = userRecord;
-        saveUser(currentUser);
-        document.getElementById('loginPanel').classList.add('hidden');
-        document.getElementById('homeSection').classList.remove('hidden');
-        document.getElementById('userAlias').textContent = userRecord.alias;
-        renderBadges();
-        await loadUserPredictionsFromDb();
-        renderStage1();
-        renderStage2();
-        await renderScores();
-      } catch (error) {
-        console.error('Error guardando usuario Prode', error);
+        try {
+          const userRecord = await upsertUser(alias, dni);
+          currentUser = userRecord;
+          saveUser(currentUser);
+          document.getElementById('loginPanel').classList.add('hidden');
+          document.getElementById('homeSection').classList.remove('hidden');
+          document.getElementById('userAlias').textContent = userRecord.alias;
+          renderBadges();
+          await loadUserPredictionsFromDb();
+          loadBranchLocks();
+          renderStage1();
+          renderStage2();
+          await renderScores();
+        } catch (error) {
+          console.error('Error guardando usuario Prode', error);
         alert('No se pudo guardar tu usuario. Intentá de nuevo.');
       } finally {
         createUserButton.disabled = false;
@@ -1130,19 +1400,20 @@
       }
     });
 
-    async function bootstrap() {
-      initNavigation();
-      currentUser = loadUser();
-      if (currentUser) {
-        document.getElementById('loginPanel').classList.add('hidden');
-        document.getElementById('homeSection').classList.remove('hidden');
-        document.getElementById('userAlias').textContent = currentUser.alias;
-        await loadUserPredictionsFromDb();
-      }
-      renderBadges();
-      attachStage1Listener();
-      attachStage2Listener();
-      renderStage1();
+      async function bootstrap() {
+        initNavigation();
+        currentUser = loadUser();
+        if (currentUser) {
+          document.getElementById('loginPanel').classList.add('hidden');
+          document.getElementById('homeSection').classList.remove('hidden');
+          document.getElementById('userAlias').textContent = currentUser.alias;
+          await loadUserPredictionsFromDb();
+          loadBranchLocks();
+        }
+        renderBadges();
+        attachStage1Listener();
+        attachStage2Listener();
+        renderStage1();
       await renderScores();
       await renderRanking();
     }
