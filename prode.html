@@ -696,6 +696,9 @@
       return `${prefix} ${sourceFrom}`;
     }
 
+    const stage1Phases = ['zonas', 'groups', 'group', 'grupo', 'grupos'];
+    const stage2Phases = ['maindraw', 'main_draw', 'main draw', 'llaves', 'bracket'];
+
     function mapRoundKey(label) {
       const val = (label || '').toString().toLowerCase();
       if (val.includes('final')) return 'Final';
@@ -805,8 +808,8 @@
         await ensureAuth();
 
         const [groupsSnap, bracketSnap] = await Promise.all([
-          getDocs(query(collection(db, 'matches'), where('phase', '==', 'zonas'))),
-          getDocs(query(collection(db, 'matches'), where('phase', '==', 'maindraw')))
+          getDocs(query(collection(db, 'matches'), where('phase', 'in', stage1Phases))),
+          getDocs(query(collection(db, 'matches'), where('phase', 'in', stage2Phases)))
         ]);
 
         const matchesMap = {};
@@ -886,7 +889,7 @@
     }
 
       function attachStage1Listener() {
-        const q = query(collection(db, 'matches'), where('phase', '==', 'zonas'));
+      const q = query(collection(db, 'matches'), where('phase', 'in', stage1Phases));
         onSnapshot(q, snap => {
           stage1Matches = [];
           const newState = {};
@@ -923,7 +926,7 @@
       }
 
     function attachStage2Listener() {
-      const q = query(collection(db, 'matches'), where('phase', '==', 'maindraw'));
+      const q = query(collection(db, 'matches'), where('phase', 'in', stage2Phases));
       onSnapshot(q, snap => {
           stage2Rounds = { FEM: {}, MASC: {} };
           const newState = {};
