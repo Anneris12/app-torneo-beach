@@ -547,8 +547,11 @@
       getDocs,
       onSnapshot,
       query,
+      setDoc,
       updateDoc,
-      where
+      where,
+      getDoc,
+      orderBy
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
     import {
       getAuth,
@@ -569,6 +572,8 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
     const usersCollection = collection(db, 'prodeUsers');
+    const predictionsCollection = collection(db, 'prodePredictions');
+    const rankingCollection = collection(db, 'prodeRanking');
 
     let authReady = false;
     let authUnavailable = false;
@@ -603,18 +608,10 @@
       MASC: {}
     };
 
-    const roundPoints = { R1: 7, R2: 10, Semi: 15, Final: 20 };
-
-    const leaderboardSeed = [
-      { alias: 'Maca #123', puntosEtapa1: 24, puntosEtapa2: 40 },
-      { alias: 'Pérez-Gómez', puntosEtapa1: 18, puntosEtapa2: 33 },
-      { alias: 'Lau Zona C', puntosEtapa1: 21, puntosEtapa2: 28 },
-      { alias: 'Arena Pro', puntosEtapa1: 27, puntosEtapa2: 35 }
-    ];
-
     let currentUser = null;
     let currentBranch1 = 'FEM';
     let currentBranch2 = 'FEM';
+    let predictionsCache = {};
 
     const branchLabels = { FEM: 'Femenino', MASC: 'Masculino' };
 
@@ -787,17 +784,73 @@
     function savePredictions(data) {
       const userId = currentUser?.userId;
       if (!userId) return;
+      predictionsCache = { ...data };
       const raw = localStorage.getItem('prodePredictions');
       const stored = raw ? JSON.parse(raw) : {};
-      stored[userId] = data;
+      stored[userId] = predictionsCache;
       localStorage.setItem('prodePredictions', JSON.stringify(stored));
     }
 
     function loadPredictions() {
+      if (Object.keys(predictionsCache).length) return predictionsCache;
       const raw = localStorage.getItem('prodePredictions');
       if (!raw || !currentUser) return {};
       const stored = JSON.parse(raw);
-      return stored[currentUser.userId] || {};
+      predictionsCache = stored[currentUser.userId] || {};
+      return predictionsCache;
+    }
+
+    async function loadUserPredictionsFromDb() {
+      if (!currentUser) return {};
+      await ensureAuth();
+      const q = query(predictionsCollection, where('userId', '==', currentUser.userId));
+      const snap = await getDocs(q);
+      const loaded = {};
+      snap.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.matchId) loaded[data.matchId] = data;
+      });
+      predictionsCache = loaded;
+      savePredictions(predictionsCache);
+      return predictionsCache;
+    }
+
+    async function persistPrediction(matchId, payload) {
+      if (!currentUser) return;
+      await ensureAuth();
+      const now = new Date().toISOString();
+      const docRef = doc(predictionsCollection, `${currentUser.userId}_${matchId}`);
+      const data = {
+        userId: currentUser.userId,
+        matchId,
+        timestamp: now,
+        ...payload
+      };
+      predictionsCache[matchId] = data;
+      savePredictions(predictionsCache);
+      try {
+        await setDoc(docRef, data, { merge: true });
+      } catch (error) {
+        console.error('No se pudo guardar el pronóstico en la base', error);
+      }
+    }
+
+    async function loadUserRanking() {
+      if (!currentUser) return null;
+      await ensureAuth();
+      const ref = doc(rankingCollection, currentUser.userId);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) return null;
+      return snap.data();
+    }
+
+    async function fetchRanking() {
+      await ensureAuth();
+      const q = query(rankingCollection, orderBy('puntosTotales', 'desc'));
+      const snap = await getDocs(q);
+      const rows = [];
+      snap.forEach(docSnap => rows.push(docSnap.data()));
+      return rows;
     }
 
     function toggleSection(target) {
@@ -881,11 +934,11 @@
 
         const buttons = card.querySelectorAll('.select-btn');
         buttons.forEach(btn => {
-          btn.addEventListener('click', () => {
+          btn.addEventListener('click', async () => {
             predictions[match.matchId] = { rama: match.rama, etapa: 1, equipoPronosticadoGanador: btn.dataset.team };
             buttons.forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
-            savePredictions(predictions);
+            await persistPrediction(match.matchId, predictions[match.matchId]);
             renderScores();
           });
         });
@@ -971,11 +1024,11 @@
 
           const buttons = card.querySelectorAll('.select-btn');
           buttons.forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
               predictions[match.matchId] = { rama: currentBranch2, etapa: 2, ronda: match.ronda, equipoPronosticadoGanador: btn.dataset.team };
               buttons.forEach(b => b.classList.remove('selected'));
               btn.classList.add('selected');
-              savePredictions(predictions);
+              await persistPrediction(match.matchId, predictions[match.matchId]);
               renderStage2();
               renderScores();
             });
@@ -993,67 +1046,44 @@
       });
     }
 
-    function computePoints() {
-      const predictions = loadPredictions();
-      let etapa1 = 0;
-      let etapa2 = 0;
-
-      stage1Matches.forEach(match => {
-        const prediction = predictions[match.matchId];
-        if (!prediction || !match.resultadoReal) return;
-        if (prediction.equipoPronosticadoGanador === match.resultadoReal) {
-          etapa1 += 3;
-          predictions[match.matchId].puntosObtenidos = 3;
-        }
-      });
-
-      Object.values(stage2Rounds).forEach(branch => {
-        Object.values(branch).flat().forEach(match => {
-          const prediction = predictions[match.matchId];
-          if (!prediction || !match.resultadoReal) return;
-          const points = roundPoints[match.ronda] || 0;
-          if (prediction.equipoPronosticadoGanador === match.resultadoReal) {
-            etapa2 += points;
-            predictions[match.matchId].puntosObtenidos = points;
-          }
-        });
-      });
-
-      savePredictions(predictions);
-      return { etapa1, etapa2, total: etapa1 + etapa2 };
-    }
-
-    function renderScores() {
+    async function renderScores() {
       if (!currentUser) return;
-      const points = computePoints();
-      document.getElementById('pointsStage1').textContent = `${points.etapa1} pts`;
-      document.getElementById('pointsStage2').textContent = `${points.etapa2} pts`;
-      document.getElementById('pointsTotal').textContent = `${points.total} pts`;
-      renderRanking(points.total);
+      const data = await loadUserRanking();
+      const etapa1 = data?.puntosEtapa1 || 0;
+      const etapa2 = data?.puntosEtapa2 || 0;
+      const total = data?.puntosTotales || etapa1 + etapa2;
+      document.getElementById('pointsStage1').textContent = `${etapa1} pts`;
+      document.getElementById('pointsStage2').textContent = `${etapa2} pts`;
+      document.getElementById('pointsTotal').textContent = `${total} pts`;
+      renderRanking();
     }
 
-    function renderRanking(userTotal = computePoints().total) {
+    async function renderRanking() {
       const rankingList = document.getElementById('rankingList');
+      rankingList.innerHTML = '<div class="helper">Cargando ranking...</div>';
+      const rankingPositionEl = document.getElementById('rankingPosition');
+      rankingPositionEl.textContent = '';
+
+      const rows = await fetchRanking();
       rankingList.innerHTML = '';
+      if (!rows.length) {
+        rankingList.innerHTML = '<div class="helper">Aún no hay puntos cargados.</div>';
+        return;
+      }
 
-      const myAlias = currentUser?.alias || 'Mi usuario';
-      const me = { alias: myAlias, puntosEtapa1: computePoints().etapa1, puntosEtapa2: computePoints().etapa2 };
-      me.puntosTotales = me.puntosEtapa1 + me.puntosEtapa2;
-
-      const combined = [...leaderboardSeed.map(l => ({ ...l, puntosTotales: l.puntosEtapa1 + l.puntosEtapa2 })), me];
-      combined.sort((a, b) => b.puntosTotales - a.puntosTotales);
-
-      combined.forEach((row, idx) => {
+      const myId = currentUser?.userId;
+      rows.forEach((row, idx) => {
         const item = document.createElement('div');
-        item.className = 'ranking-row' + (row.alias === myAlias ? ' me' : '');
+        const isMe = myId && row.userId === myId;
+        item.className = 'ranking-row' + (isMe ? ' me' : '');
         item.innerHTML = `
           <div class="label-muted">#${idx + 1}</div>
-          <div>${row.alias}</div>
-          <div><strong>${row.puntosTotales} pts</strong></div>
+          <div>${row.alias || 'Alias'}</div>
+          <div><strong>${row.puntosTotales || 0} pts</strong></div>
         `;
         rankingList.appendChild(item);
-        if (row.alias === myAlias) {
-          document.getElementById('rankingPosition').textContent = `Puesto #${idx + 1}`;
+        if (isMe) {
+          rankingPositionEl.textContent = `Puesto #${idx + 1}`;
         }
       });
     }
@@ -1087,7 +1117,10 @@
         document.getElementById('homeSection').classList.remove('hidden');
         document.getElementById('userAlias').textContent = userRecord.alias;
         renderBadges();
-        renderScores();
+        await loadUserPredictionsFromDb();
+        renderStage1();
+        renderStage2();
+        await renderScores();
       } catch (error) {
         console.error('Error guardando usuario Prode', error);
         alert('No se pudo guardar tu usuario. Intentá de nuevo.');
@@ -1097,19 +1130,21 @@
       }
     });
 
-    function bootstrap() {
+    async function bootstrap() {
       initNavigation();
       currentUser = loadUser();
       if (currentUser) {
         document.getElementById('loginPanel').classList.add('hidden');
         document.getElementById('homeSection').classList.remove('hidden');
         document.getElementById('userAlias').textContent = currentUser.alias;
+        await loadUserPredictionsFromDb();
       }
       renderBadges();
       attachStage1Listener();
       attachStage2Listener();
       renderStage1();
-      renderScores();
+      await renderScores();
+      await renderRanking();
     }
 
     bootstrap();
