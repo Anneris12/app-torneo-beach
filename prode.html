@@ -892,11 +892,15 @@
           const data = docSnap.data();
           const match = matchesMap[data.matchId];
           const etapa = data.etapa || match?.etapa || 1;
-          const pointsValue = match ? getPointsForMatch(match, etapa) : getPointsForMatch({ ronda: data.ronda }, etapa);
-          const predictedSide = match ? getPredictionSide(data, match) : null;
-          const acertado = match && predictedSide && Number(predictedSide) === Number(match.winnerSide);
-          const puntosObtenidos = match && predictedSide ? (acertado ? pointsValue : 0) : 0;
-          updateOps.push(setDoc(docSnap.ref, { ...data, puntosObtenidos }, { merge: true }));
+          let puntosObtenidos = Number(data.puntosObtenidos) || 0;
+
+          if (match && match.winnerSide) {
+            const pointsValue = getPointsForMatch(match, etapa);
+            const predictedSide = getPredictionSide(data, match);
+            const acertado = predictedSide && Number(predictedSide) === Number(match.winnerSide);
+            puntosObtenidos = predictedSide ? (acertado ? pointsValue : 0) : 0;
+            updateOps.push(setDoc(docSnap.ref, { ...data, puntosObtenidos }, { merge: true }));
+          }
 
           if (!userTotals[data.userId]) {
             userTotals[data.userId] = { puntosEtapa1: 0, puntosEtapa2: 0 };
