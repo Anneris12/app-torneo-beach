@@ -889,7 +889,12 @@
       }
 
     function saveUser(user) {
-      localStorage.setItem('prodeUser', JSON.stringify(user));
+      const payload = {
+        userId: user.userId,
+        alias: user.alias,
+        dniRef: user.dniRef
+      };
+      localStorage.setItem('prodeUser', JSON.stringify(payload));
     }
 
     function loadUser() {
@@ -900,6 +905,12 @@
       } catch (e) {
         return null;
       }
+    }
+
+    function refreshCurrentProdeUser() {
+      const currentProdeUser = JSON.parse(localStorage.getItem('prodeUser'));
+      currentUser = currentProdeUser;
+      return currentProdeUser;
     }
 
     async function findExistingUser(dniRef) {
@@ -1263,7 +1274,10 @@
     }
 
     async function renderScores() {
-      if (!currentUser) return;
+      const currentProdeUser = JSON.parse(localStorage.getItem('prodeUser'));
+      currentUser = currentProdeUser;
+      if (!currentProdeUser) return;
+
       const data = await loadUserRanking();
       const etapa1 = data?.puntosEtapa1 || 0;
       const etapa2 = data?.puntosEtapa2 || 0;
@@ -1275,6 +1289,8 @@
     }
 
       async function renderRanking() {
+        const currentProdeUser = JSON.parse(localStorage.getItem('prodeUser'));
+        currentUser = currentProdeUser;
         const rankingList = document.getElementById('rankingList');
         rankingList.innerHTML = '<div class="helper">Cargando ranking...</div>';
         const rankingPositionEl = document.getElementById('rankingPosition');
@@ -1287,7 +1303,7 @@
         return;
       }
 
-      const myId = currentUser?.userId;
+      const myId = currentProdeUser?.userId;
       rows.forEach((row, idx) => {
         const item = document.createElement('div');
         const isMe = myId && row.userId === myId;
@@ -1405,6 +1421,7 @@
           const userRecord = await upsertUser(alias, dni);
           currentUser = userRecord;
           saveUser(currentUser);
+          currentUser = loadUser();
           await ensureRankingBaseline(currentUser);
           document.getElementById('loginPanel').classList.add('hidden');
           document.getElementById('homeSection').classList.remove('hidden');
