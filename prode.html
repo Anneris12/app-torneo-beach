@@ -719,6 +719,11 @@
           : (data.team2Name || data.visitanteName || '');
       }
 
+      function normalizeTeamName(name) {
+        if (!name) return '';
+        return name.toString().trim().toLowerCase();
+      }
+
       function getPointsForMatch(match, etapa) {
         if (etapa === 1) return 3;
         const roundKey = (match.ronda || '').toString().toLowerCase();
@@ -726,6 +731,23 @@
         if (roundKey.includes('semi')) return 15;
         if (roundKey.includes('r2') || roundKey.includes('cuarto') || roundKey.includes('2')) return 10;
         return 7;
+      }
+
+      async function ensureRankingBaseline(user) {
+        if (!user) return;
+        await ensureAuth();
+        const ref = doc(rankingCollection, user.userId);
+        const snap = await getDoc(ref);
+        if (snap.exists()) return;
+
+        await setDoc(ref, {
+          userId: user.userId,
+          alias: user.alias,
+          puntosEtapa1: 0,
+          puntosEtapa2: 0,
+          puntosTotales: 0,
+          updatedAt: new Date().toISOString()
+        });
       }
 
       async function updateRankingForUser(userId) {
@@ -764,7 +786,7 @@
 
         const ops = snap.docs.map(docSnap => {
           const data = docSnap.data();
-          const acertado = data.equipoPronosticadoGanador === match.resultadoReal;
+          const acertado = normalizeTeamName(data.equipoPronosticadoGanador) === normalizeTeamName(match.resultadoReal);
           const puntosObtenidos = acertado ? pointsValue : 0;
           impactedUsers.add(data.userId);
           return setDoc(docSnap.ref, { ...data, puntosObtenidos }, { merge: true });
@@ -1000,6 +1022,7 @@
         userId: currentUser.userId,
         matchId,
         timestamp: now,
+        puntosObtenidos: predictionsCache[matchId]?.puntosObtenidos || 0,
         ...payload
       };
       predictionsCache[matchId] = data;
@@ -1382,6 +1405,7 @@
           const userRecord = await upsertUser(alias, dni);
           currentUser = userRecord;
           saveUser(currentUser);
+          await ensureRankingBaseline(currentUser);
           document.getElementById('loginPanel').classList.add('hidden');
           document.getElementById('homeSection').classList.remove('hidden');
           document.getElementById('userAlias').textContent = userRecord.alias;
@@ -1407,6 +1431,7 @@
           document.getElementById('loginPanel').classList.add('hidden');
           document.getElementById('homeSection').classList.remove('hidden');
           document.getElementById('userAlias').textContent = currentUser.alias;
+          await ensureRankingBaseline(currentUser);
           await loadUserPredictionsFromDb();
           loadBranchLocks();
         }
