@@ -426,19 +426,26 @@
   <p class="page-description">Registra tu alias, cargá pronósticos y seguí tu puntaje por etapas.</p>
 
   <div id="loginPanel" class="login-panel">
-    <h2>Crear / Ingresar a mi Prode</h2>
-    <p class="helper">Guardamos tu alias y DNI para que puedas volver a entrar con el mismo perfil.</p>
+    <h2>Registrá tu alias y DNI</h2>
+    <p class="helper">Primero ingresá tu DNI para recuperar o crear tu usuario de Prode.</p>
     <div class="field">
+      <label for="dniInput">DNI completo</label>
+      <input id="dniInput" type="text" placeholder="Ej: 12345678" />
+      <p class="helper">El DNI se usa solo para identificar al ganador.</p>
+    </div>
+    <p id="existingUserInfo" class="helper hidden"></p>
+    <div id="aliasField" class="field hidden">
       <label for="aliasInput">Alias</label>
       <input id="aliasInput" type="text" placeholder="Ej: Maca #123" />
     </div>
-    <div class="field">
-      <label for="dniInput">DNI o últimos 4 dígitos</label>
-      <input id="dniInput" type="text" placeholder="0000" />
-      <p class="helper">El DNI se usa solo para identificar al ganador.</p>
+    <div class="section-actions" id="loginActions">
+      <button id="checkDni" class="btn">Continuar</button>
+      <button id="loginExisting" class="btn hidden">Ingresar con este usuario</button>
+      <button id="saveAliasChange" class="btn hidden">Guardar alias</button>
+      <button id="createUser" class="btn hidden">Crear mi usuario de Prode</button>
     </div>
-    <div class="section-actions">
-      <button id="createUser" class="btn">Continuar</button>
+    <div class="section-actions" id="secondaryActions">
+      <button id="startAliasChange" class="btn btn-secondary hidden">Cambiar alias</button>
     </div>
   </div>
 
@@ -892,7 +899,7 @@
       const payload = {
         userId: user.userId,
         alias: user.alias,
-        dniRef: user.dniRef
+        dni: user.dni
       };
       localStorage.setItem('prodeUser', JSON.stringify(payload));
     }
@@ -901,7 +908,11 @@
       const raw = localStorage.getItem('prodeUser');
       if (!raw) return null;
       try {
-        return JSON.parse(raw);
+        const data = JSON.parse(raw);
+        if (data && !data.dni && data.dniRef) {
+          data.dni = data.dniRef;
+        }
+        return data;
       } catch (e) {
         return null;
       }
@@ -913,18 +924,18 @@
       return currentProdeUser;
     }
 
-    async function findExistingUser(dniRef) {
-      const q = query(usersCollection, where('dniRef', '==', dniRef));
+    async function findExistingUser(dni) {
+      const q = query(usersCollection, where('dni', '==', dni));
       const snap = await getDocs(q);
       if (snap.empty) return null;
       const docSnap = snap.docs[0];
       return { userId: docSnap.id, ...docSnap.data() };
     }
 
-    async function upsertUser(alias, dniRef) {
+    async function upsertUser(alias, dni) {
       await ensureAuth();
       const now = new Date().toISOString();
-      const existing = await findExistingUser(dniRef);
+      const existing = await findExistingUser(dni);
       if (existing) {
         if (existing.alias !== alias) {
           const ref = doc(db, 'prodeUsers', existing.userId);
@@ -937,12 +948,12 @@
 
       const docRef = await addDoc(usersCollection, {
         alias,
-        dniRef,
+        dni,
         createdAt: now,
         updatedAt: now
       });
 
-      return { userId: docRef.id, alias, dniRef, createdAt: now, updatedAt: now };
+      return { userId: docRef.id, alias, dni, createdAt: now, updatedAt: now };
     }
 
     function savePredictions(data) {
@@ -1404,12 +1415,142 @@
         document.getElementById('editStage2').addEventListener('click', () => startEditing('stage2'));
       }
 
+    const checkDniButton = document.getElementById('checkDni');
+    const loginExistingButton = document.getElementById('loginExisting');
     const createUserButton = document.getElementById('createUser');
+    const startAliasChangeButton = document.getElementById('startAliasChange');
+    const saveAliasChangeButton = document.getElementById('saveAliasChange');
+    const existingUserInfo = document.getElementById('existingUserInfo');
+    const aliasField = document.getElementById('aliasField');
+    const dniInput = document.getElementById('dniInput');
+    const aliasInput = document.getElementById('aliasInput');
+    let foundUser = null;
+    let pendingDni = '';
+
+    function resetLoginView() {
+      existingUserInfo.classList.add('hidden');
+      aliasField.classList.add('hidden');
+      loginExistingButton.classList.add('hidden');
+      startAliasChangeButton.classList.add('hidden');
+      saveAliasChangeButton.classList.add('hidden');
+      createUserButton.classList.add('hidden');
+      checkDniButton.classList.remove('hidden');
+      aliasInput.value = '';
+      foundUser = null;
+      pendingDni = '';
+    }
+
+    function showExistingUser(user) {
+      existingUserInfo.textContent = `Ya existe un usuario registrado con este DNI. Alias actual: ${user.alias || ''}`;
+      existingUserInfo.classList.remove('hidden');
+      aliasField.classList.add('hidden');
+      loginExistingButton.classList.remove('hidden');
+      startAliasChangeButton.classList.remove('hidden');
+      saveAliasChangeButton.classList.add('hidden');
+      createUserButton.classList.add('hidden');
+      checkDniButton.classList.remove('hidden');
+      aliasInput.value = user.alias || '';
+    }
+
+    function showNewUserFlow() {
+      existingUserInfo.textContent = 'No encontramos un usuario con ese DNI. Ingresá tu alias para crearlo.';
+      existingUserInfo.classList.remove('hidden');
+      aliasField.classList.remove('hidden');
+      loginExistingButton.classList.add('hidden');
+      startAliasChangeButton.classList.add('hidden');
+      saveAliasChangeButton.classList.add('hidden');
+      createUserButton.classList.remove('hidden');
+      checkDniButton.classList.remove('hidden');
+    }
+
+    async function enterWithUser(userRecord) {
+      currentUser = userRecord;
+      saveUser(currentUser);
+      currentUser = loadUser();
+      await ensureRankingBaseline(currentUser);
+      document.getElementById('loginPanel').classList.add('hidden');
+      document.getElementById('homeSection').classList.remove('hidden');
+      document.getElementById('userAlias').textContent = userRecord.alias;
+      renderBadges();
+      await loadUserPredictionsFromDb();
+      loadBranchLocks();
+      renderStage1();
+      renderStage2();
+      await renderScores();
+      await renderRanking();
+    }
+
+    checkDniButton.addEventListener('click', async () => {
+      const dni = dniInput.value.trim();
+      if (!dni) {
+        alert('Ingresá tu DNI para continuar.');
+        return;
+      }
+
+      const originalLabel = checkDniButton.textContent;
+      checkDniButton.disabled = true;
+      checkDniButton.textContent = 'Buscando...';
+      pendingDni = dni;
+
+      try {
+        await ensureAuth();
+        const existing = await findExistingUser(dni);
+        foundUser = existing;
+        if (existing) {
+          showExistingUser(existing);
+        } else {
+          showNewUserFlow();
+        }
+      } catch (error) {
+        console.error('Error buscando usuario por DNI', error);
+        alert('No se pudo verificar el DNI. Intentá de nuevo.');
+      } finally {
+        checkDniButton.disabled = false;
+        checkDniButton.textContent = originalLabel;
+      }
+    });
+
+    loginExistingButton.addEventListener('click', async () => {
+      if (!foundUser) return;
+      await enterWithUser({ ...foundUser, dni: pendingDni });
+    });
+
+    startAliasChangeButton.addEventListener('click', () => {
+      if (!foundUser) return;
+      aliasField.classList.remove('hidden');
+      aliasInput.value = foundUser.alias || '';
+      saveAliasChangeButton.classList.remove('hidden');
+      loginExistingButton.classList.add('hidden');
+    });
+
+    saveAliasChangeButton.addEventListener('click', async () => {
+      if (!foundUser) return;
+      const alias = aliasInput.value.trim();
+      if (!alias) {
+        alert('Ingresá un alias para continuar.');
+        return;
+      }
+
+      saveAliasChangeButton.disabled = true;
+      const original = saveAliasChangeButton.textContent;
+      saveAliasChangeButton.textContent = 'Guardando...';
+      try {
+        const updated = await upsertUser(alias, pendingDni);
+        foundUser = updated;
+        await enterWithUser({ ...updated, dni: pendingDni });
+      } catch (error) {
+        console.error('No se pudo actualizar el alias', error);
+        alert('No pudimos actualizar tu alias. Probá nuevamente.');
+      } finally {
+        saveAliasChangeButton.disabled = false;
+        saveAliasChangeButton.textContent = original;
+      }
+    });
+
     createUserButton.addEventListener('click', async () => {
-      const alias = document.getElementById('aliasInput').value.trim();
-      const dni = document.getElementById('dniInput').value.trim();
-      if (!alias || !dni) {
-        alert('Completá alias y DNI para continuar.');
+      const alias = aliasInput.value.trim();
+      if (!alias || !pendingDni) {
+        alert('Completá DNI y alias para crear tu usuario.');
         return;
       }
 
@@ -1417,23 +1558,12 @@
       createUserButton.disabled = true;
       createUserButton.textContent = 'Guardando...';
 
-        try {
-          const userRecord = await upsertUser(alias, dni);
-          currentUser = userRecord;
-          saveUser(currentUser);
-          currentUser = loadUser();
-          await ensureRankingBaseline(currentUser);
-          document.getElementById('loginPanel').classList.add('hidden');
-          document.getElementById('homeSection').classList.remove('hidden');
-          document.getElementById('userAlias').textContent = userRecord.alias;
-          renderBadges();
-          await loadUserPredictionsFromDb();
-          loadBranchLocks();
-          renderStage1();
-          renderStage2();
-          await renderScores();
-        } catch (error) {
-          console.error('Error guardando usuario Prode', error);
+      try {
+        const userRecord = await upsertUser(alias, pendingDni);
+        foundUser = userRecord;
+        await enterWithUser({ ...userRecord, dni: pendingDni });
+      } catch (error) {
+        console.error('Error guardando usuario Prode', error);
         alert('No se pudo guardar tu usuario. Intentá de nuevo.');
       } finally {
         createUserButton.disabled = false;
@@ -1443,22 +1573,18 @@
 
       async function bootstrap() {
         initNavigation();
+        resetLoginView();
         currentUser = loadUser();
-        if (currentUser) {
-          document.getElementById('loginPanel').classList.add('hidden');
-          document.getElementById('homeSection').classList.remove('hidden');
-          document.getElementById('userAlias').textContent = currentUser.alias;
-          await ensureRankingBaseline(currentUser);
-          await loadUserPredictionsFromDb();
-          loadBranchLocks();
-        }
         renderBadges();
         attachStage1Listener();
         attachStage2Listener();
         renderStage1();
-      await renderScores();
-      await renderRanking();
-    }
+        await renderScores();
+        await renderRanking();
+        if (currentUser) {
+          await enterWithUser(currentUser);
+        }
+      }
 
     bootstrap();
   </script>
