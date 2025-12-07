@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prode – Beach Volley 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+      .top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .top-bar .btn-secondary {
+        padding: 8px 12px;
+      }
+
+      .top-bar-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+    :root {
+      --bg: #0e1f3b;
+      --card: #0f2446;
+      --accent: #ffb703;
+      --accent-2: #3fd1c2;
+      --text: #e8edf5;
+      --muted: #d9e4ff;
+      --locked: #cbd5e1;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(63, 209, 194, 0.25), rgba(14, 31, 59, 0.9)),
+                  radial-gradient(circle at 80% 0%, rgba(255, 183, 3, 0.18), rgba(14, 31, 59, 1));
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px 14px 60px;
+    }
+
+    h1 {
+      text-align: center;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      margin-bottom: 6px;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    .page-description {
+      text-align: center;
+      color: var(--muted);
+      margin-bottom: 18px;
+      font-size: 14px;
+    }
+
+    .grid-menu {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin: 14px 0 30px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.22);
+    }
+
+    .nav-card {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 12px;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .nav-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,0.35);
+    }
+
+    .nav-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: rgba(63, 209, 194, 0.14);
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+    }
+
+    .nav-body {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .nav-title {
+      font-weight: 700;
+    }
+
+    .nav-sub {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .badge-open { background: rgba(63, 209, 194, 0.14); color: #5cf2e1; }
+    .badge-closed { background: rgba(255, 99, 71, 0.12); color: #ff8c7a; }
+    .badge-blocked { background: rgba(160, 174, 192, 0.16); color: #cbd5e0; }
+
+    .section {
+      margin-bottom: 26px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .section-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: none;
+      background: var(--accent);
+      color: #0e1f3b;
+      font-weight: 700;
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.15s ease;
+    }
+
+    .btn:hover { opacity: 0.92; }
+    .btn:active { transform: translateY(1px); }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px dashed rgba(255,255,255,0.2);
+    }
+
+    .pill-switch {
+      display: inline-flex;
+      gap: 6px;
+      padding: 4px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .pill-switch button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .pill-switch button.active {
+      background: var(--accent);
+      color: #0e1f3b;
+    }
+
+    .match-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      position: relative;
+    }
+
+    .match-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .team-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.05);
+      padding: 8px 10px;
+      border-radius: 10px;
+    }
+
+    .team-name { font-weight: 700; }
+
+    .select-btn {
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .select-btn.selected {
+      background: var(--accent);
+      color: #0e1f3b;
+      border-color: var(--accent);
+    }
+
+    .select-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .locked {
+      opacity: 0.7;
+    }
+
+    .locked-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--locked);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .locked-label span {
+      font-size: 18px;
+    }
+
+    .ribbon {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 6px 8px;
+      font-size: 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      color: var(--muted);
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.08);
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .summary-box {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .mini-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px dashed rgba(255,255,255,0.08);
+      padding: 12px;
+      border-radius: 12px;
+    }
+
+    .mini-title {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+    }
+
+    .mini-value {
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .notice {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .ranking-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .ranking-row {
+      display: grid;
+      grid-template-columns: 40px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .ranking-row.me {
+      border-color: var(--accent);
+      background: rgba(255, 183, 3, 0.12);
+      color: #0e1f3b;
+    }
+
+    .label-muted { color: var(--muted); }
+
+    .login-panel {
+      max-width: 520px;
+      margin: 0 auto 20px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 18px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.24);
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    label { font-weight: 700; }
+
+    input {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      font-size: 14px;
+    }
+
+      .helper { color: var(--muted); font-size: 13px; }
+      .helper.error { color: #ff8c7a; }
+      .saved-label { color: var(--accent-2); font-weight: 700; font-size: 13px; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 720px) {
+      body { padding: 16px 12px 80px; }
+      .grid-menu { grid-template-columns: 1fr; }
+      .match-card { padding: 12px 10px; }
+    }
+  </style>
+</head>
+  <body>
+    <div class="top-bar">
+      <div class="top-bar-group">
+        <button id="btnGoInicio" class="btn btn-secondary">Inicio</button>
+        <button id="btnGoBack" class="btn btn-secondary">Volver</button>
+      </div>
+      <div class="top-bar-group">
+        <button id="btnRecalcular" class="btn btn-secondary">Recalcular Prode</button>
+        <button id="btnLogout" class="btn btn-secondary">Cerrar sesión</button>
+      </div>
+    </div>
+
+  <h1>Prode – Beach Volley 2026</h1>
+  <p class="page-description">Registra tu alias, cargá pronósticos y seguí tu puntaje por etapas.</p>
+
+  <div id="loginPanel" class="login-panel">
+    <h2>Registrá tu alias y DNI</h2>
+    <p class="helper">Ingresá tus datos para crear tu usuario o continuar con el que ya existe.</p>
+    <div class="field">
+      <label for="aliasInput">Alias</label>
+      <input id="aliasInput" type="text" placeholder="Ej: Maca #123" />
+    </div>
+    <div class="field">
+      <label for="dniInput">DNI completo</label>
+      <input id="dniInput" type="text" placeholder="Ej: 12345678" />
+      <p class="helper">El DNI se usa solo para identificar al ganador.</p>
+    </div>
+    <p id="loginMessage" class="helper hidden"></p>
+    <div class="section-actions" id="loginActions">
+      <button id="loginSubmit" class="btn">Ingresar al Prode</button>
+    </div>
+  </div>
+
+  <div id="homeSection" class="hidden">
+    <div class="grid-menu">
+      <div class="card nav-card" data-target="stage1">
+        <div class="nav-icon">🏐</div>
+        <div class="nav-body">
+          <div class="nav-title">Etapa 1 – Grupos</div>
+          <div class="nav-sub">Completá hasta el inicio de cada partido.</div>
+          <div class="badge" id="badgeStage1"></div>
+        </div>
+      </div>
+
+      <div class="card nav-card" data-target="stage2">
+        <div class="nav-icon">🏆</div>
+        <div class="nav-body">
+          <div class="nav-title">Etapa 2 – Llaves</div>
+          <div class="nav-sub">Elegí ganadores ronda por ronda.</div>
+          <div class="badge" id="badgeStage2"></div>
+        </div>
+      </div>
+
+      <div class="card nav-card" data-target="scores">
+        <div class="nav-icon">📊</div>
+        <div class="nav-body">
+          <div class="nav-title">Mi puntaje</div>
+          <div class="nav-sub">Etapas y total actualizado.</div>
+          <div class="badge badge-open" id="userAlias">Mi Prode</div>
+        </div>
+      </div>
+
+      <div class="card nav-card" data-target="ranking">
+        <div class="nav-icon">🥇</div>
+        <div class="nav-body">
+          <div class="nav-title">Ranking general</div>
+          <div class="nav-sub">Alias destacados y puntos.</div>
+          <div class="badge badge-open">Ver tabla</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="stage1" class="section hidden">
+    <div class="card">
+      <div class="section-header">
+        <div>
+          <h2>Pronósticos – Fase de grupos</h2>
+          <p class="helper">Elegí ganadores por rama. Los partidos en juego o finalizados aparecen bloqueados.</p>
+        </div>
+        <div class="section-actions">
+          <div class="pill-switch" id="branchSwitch1"></div>
+          <div id="stage1State" class="status-chip"></div>
+        </div>
+      </div>
+
+        <div class="list" id="stage1List"></div>
+        <div class="notice">Las modificaciones son posibles antes del inicio de cada partido.</div>
+        <div class="section-actions" style="margin-top: 14px;">
+          <button id="editStage1" class="btn btn-secondary hidden">Editar pronósticos de esta rama</button>
+          <button id="saveStage1" class="btn">Guardar pronósticos de esta rama</button>
+          <button class="btn btn-secondary" data-target="home">Volver al home</button>
+        </div>
+      </div>
+    </div>
+
+  <div id="stage2" class="section hidden">
+    <div class="card">
+      <div class="section-header">
+        <div>
+          <h2>Pronósticos – Llaves</h2>
+          <p class="helper">Elegí ganadores por ronda. El cuadro se habilita al terminar la fase de grupos.</p>
+        </div>
+        <div class="section-actions">
+          <div class="pill-switch" id="branchSwitch2"></div>
+          <div id="stage2State" class="status-chip"></div>
+        </div>
+      </div>
+        <div id="stage2Content" class="list"></div>
+        <div class="notice">Mientras los partidos no hayan comenzado, podés volver atrás y editar.</div>
+        <div class="section-actions" style="margin-top: 14px;">
+          <button id="editStage2" class="btn btn-secondary hidden">Editar pronósticos de esta rama</button>
+          <button id="saveStage2" class="btn">Guardar llaves</button>
+          <button class="btn btn-secondary" data-target="home">Volver al home</button>
+        </div>
+      </div>
+    </div>
+
+  <div id="scores" class="section hidden">
+    <div class="card">
+      <div class="section-header">
+        <div>
+          <h2>Mi puntaje</h2>
+          <p class="helper">Actualizado al último cálculo.</p>
+        </div>
+        <div class="section-actions">
+          <div class="status-chip" id="rankingPosition"></div>
+        </div>
+      </div>
+      <div class="summary-box">
+        <div class="mini-card">
+          <div class="mini-title">Etapa 1 – Grupos</div>
+          <div class="mini-value" id="pointsStage1">0 pts</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-title">Etapa 2 – Llaves</div>
+          <div class="mini-value" id="pointsStage2">0 pts</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-title">Total</div>
+          <div class="mini-value" id="pointsTotal">0 pts</div>
+        </div>
+      </div>
+      <p class="notice">Las modificaciones de partidos solo son posibles antes del inicio de cada partido.</p>
+    </div>
+  </div>
+
+  <div id="ranking" class="section hidden">
+    <div class="card">
+      <div class="section-header">
+        <div>
+          <h2>Ranking general</h2>
+          <p class="helper">Ordenado por puntos totales. Tu usuario se resalta automáticamente.</p>
+        </div>
+      </div>
+      <div class="ranking-list" id="rankingList"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      doc,
+      addDoc,
+      getDocs,
+      onSnapshot,
+      query,
+      setDoc,
+      updateDoc,
+      where,
+      getDoc,
+      orderBy
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import {
+        getAuth,
+        signInAnonymously,
+        onAuthStateChanged,
+        signOut
+      } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
+      authDomain: "torneo-beach.firebaseapp.com",
+      projectId: "torneo-beach",
+      storageBucket: "torneo-beach.firebasestorage.app",
+      messagingSenderId: "21136645638",
+      appId: "1:21136645638:web:52c3b06affc2ee151eed87"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const usersCollection = collection(db, 'prodeUsers');
+    const predictionsCollection = collection(db, 'prodePredictions');
+    const rankingCollection = collection(db, 'prodeRanking');
+
+    let authReady = false;
+    let authUnavailable = false;
+
+      let stageStatus = {
+        etapa1: 'bloqueada',
+        etapa2: 'bloqueada'
+      };
+
+      let branchLocks = {
+        stage1: { FEM: false, MASC: false },
+        stage2: { FEM: false, MASC: false }
+      };
+
+      let editingState = {
+        stage1: { FEM: true, MASC: true },
+        stage2: { FEM: true, MASC: true }
+      };
+
+      let lastMatchState = {
+        stage1: {},
+        stage2: {}
+      };
+
+    async function ensureAuth() {
+      if (authUnavailable) return null;
+      if (authReady && auth.currentUser) return auth.currentUser;
+      try {
+        const user = await signInAnonymously(auth);
+        authReady = true;
+        return user;
+      } catch (error) {
+        authUnavailable = true;
+        console.warn('No se pudo autenticar de forma anónima, se continúa sin login.', error);
+        return null;
+      }
+    }
+
+    onAuthStateChanged(auth, user => {
+      if (user) authReady = true;
+    });
+
+    let stage1Matches = [];
+
+    let stage2Rounds = {
+      FEM: {},
+      MASC: {}
+    };
+
+    let currentUser = null;
+    let currentBranch1 = 'FEM';
+    let currentBranch2 = 'FEM';
+    let predictionsCache = {};
+
+    const branchLabels = { FEM: 'Femenino', MASC: 'Masculino' };
+
+    const badgeStage1 = document.getElementById('badgeStage1');
+    const badgeStage2 = document.getElementById('badgeStage2');
+    const stage1List = document.getElementById('stage1List');
+    const stage2Content = document.getElementById('stage2Content');
+
+    function normalizeRama(raw) {
+      const val = (raw || '').toString().toUpperCase();
+      if (val.startsWith('F')) return 'FEM';
+      if (val.startsWith('M')) return 'MASC';
+      return val || 'FEM';
+    }
+
+    function normalizeEstado(estado, status) {
+      const val = (estado || '').toString().toLowerCase();
+      if (val.includes('final')) return 'finalizado';
+      if (val.includes('juego')) return 'enjuego';
+      if (val.includes('pend')) return 'pendiente';
+
+      const st = (status || '').toString().toLowerCase();
+      if (st === 'finished') return 'finalizado';
+      if (st === 'in_progress') return 'enjuego';
+      return 'pendiente';
+    }
+
+    function buildSlotLabel(sourceFrom, sourceResult) {
+      if (!sourceFrom) return '';
+      const isLoser = (sourceResult || '').toString().toLowerCase().includes('lose');
+      const prefix = isLoser ? 'Perdedor' : 'Ganador';
+      return `${prefix} ${sourceFrom}`;
+    }
+
+    const stage1Phases = ['zonas', 'groups', 'group', 'grupo', 'grupos'];
+    const stage2Phases = ['maindraw', 'main_draw', 'main draw', 'llaves', 'bracket'];
+
+    function mapRoundKey(label) {
+      const val = (label || '').toString().toLowerCase();
+      if (val.includes('final')) return 'Final';
+      if (val.includes('semi')) return 'Semi';
+      if (val.includes('cuarto') || val.includes('2da') || val.includes('2°')) return 'R2';
+      return 'R1';
+    }
+
+      function computeWinnerSideFromSets(data) {
+        const sets = Array.isArray(data.setsData) ? data.setsData : [];
+        let wins1 = 0;
+        let wins2 = 0;
+
+        sets.forEach(set => {
+          const a = Number(set.local);
+          const b = Number(set.visitante);
+          if (a > b) wins1++;
+          else if (b > a) wins2++;
+        });
+
+        if (wins1 === wins2) return null;
+        return wins1 > wins2 ? 1 : 2;
+      }
+
+      function normalizeTeamName(name) {
+        if (!name) return '';
+        return name.toString().trim().toLowerCase();
+      }
+
+      function getWinnerDetails(data) {
+        const winnerSide = Number(data.winnerSide);
+        const team1 = data.team1Name || data.localName || '';
+        const team2 = data.team2Name || data.visitanteName || '';
+        const baseWinnerName = data.winnerName || data.resultadoReal || '';
+        const normalizedWinner = normalizeTeamName(baseWinnerName);
+
+        if (winnerSide === 1 || winnerSide === 2) {
+          return { winnerSide, winnerName: winnerSide === 1 ? team1 : team2 };
+        }
+
+        if (normalizedWinner) {
+          if (normalizeTeamName(team1) === normalizedWinner) return { winnerSide: 1, winnerName: team1 || baseWinnerName };
+          if (normalizeTeamName(team2) === normalizedWinner) return { winnerSide: 2, winnerName: team2 || baseWinnerName };
+        }
+
+        const winnerFromSets = computeWinnerSideFromSets(data);
+        if (winnerFromSets) {
+          return { winnerSide: winnerFromSets, winnerName: winnerFromSets === 1 ? team1 : team2 };
+        }
+
+        return { winnerSide: null, winnerName: baseWinnerName };
+      }
+
+      function getPredictionSide(prediction, match) {
+        if (!prediction) return null;
+        const side = Number(prediction.predictedSide);
+        if (side === 1 || side === 2) return side;
+
+        const predictedName = prediction.predictedTeamName || prediction.equipoPronosticadoGanador;
+        if (!predictedName || !match) return null;
+        const normalized = normalizeTeamName(predictedName);
+        if (normalizeTeamName(match.equipo1) === normalized) return 1;
+        if (normalizeTeamName(match.equipo2) === normalized) return 2;
+        return null;
+      }
+
+      function getPointsForMatch(match, etapa) {
+        if (etapa === 1) return 3;
+        const roundKey = (match.ronda || '').toString().toLowerCase();
+        if (roundKey.includes('final')) return 20;
+        if (roundKey.includes('semi')) return 15;
+        if (roundKey.includes('r2') || roundKey.includes('cuarto') || roundKey.includes('2')) return 10;
+        return 7;
+      }
+
+      async function ensureRankingBaseline(user) {
+        if (!user) return;
+        await ensureAuth();
+        const ref = doc(rankingCollection, user.userId);
+        const snap = await getDoc(ref);
+        if (snap.exists()) return;
+
+        await setDoc(ref, {
+          userId: user.userId,
+          alias: user.alias,
+          puntosEtapa1: 0,
+          puntosEtapa2: 0,
+          puntosTotales: 0,
+          updatedAt: new Date().toISOString()
+        });
+      }
+
+      async function updateRankingForUser(userId) {
+        await ensureAuth();
+        const predsQ = query(predictionsCollection, where('userId', '==', userId));
+        const snap = await getDocs(predsQ);
+        let puntosEtapa1 = 0;
+        let puntosEtapa2 = 0;
+        snap.forEach(docSnap => {
+          const data = docSnap.data();
+          const pts = Number(data.puntosObtenidos) || 0;
+          if (data.etapa === 1) puntosEtapa1 += pts;
+          if (data.etapa === 2) puntosEtapa2 += pts;
+        });
+        const total = puntosEtapa1 + puntosEtapa2;
+        const userRef = doc(usersCollection, userId);
+        const userSnap = await getDoc(userRef);
+        const alias = userSnap.exists() ? userSnap.data().alias : '';
+        await setDoc(doc(rankingCollection, userId), {
+          userId,
+          alias,
+          puntosEtapa1,
+          puntosEtapa2,
+          puntosTotales: total,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      }
+
+      async function updateProdeForMatch(match, etapa) {
+        if (!match.resultadoReal && !match.winnerSide) return;
+        await ensureAuth();
+        const winnerSide = Number(match.winnerSide);
+        if (!winnerSide) return;
+        const q = query(predictionsCollection, where('matchId', '==', match.matchId));
+        const snap = await getDocs(q);
+        const impactedUsers = new Set();
+        const pointsValue = getPointsForMatch(match, etapa);
+
+        const ops = snap.docs.map(docSnap => {
+          const data = docSnap.data();
+          const predictedSide = getPredictionSide(data, match);
+          const acertado = predictedSide && Number(predictedSide) === winnerSide;
+          const puntosObtenidos = predictedSide ? (acertado ? pointsValue : 0) : 0;
+          impactedUsers.add(data.userId);
+          return setDoc(docSnap.ref, { ...data, puntosObtenidos }, { merge: true });
+        });
+
+        await Promise.all(ops);
+        for (const userId of impactedUsers) {
+          await updateRankingForUser(userId);
+        }
+      }
+
+      async function recalcProde() {
+        await ensureAuth();
+
+        const [groupsSnap, bracketSnap] = await Promise.all([
+          getDocs(query(collection(db, 'matches'), where('phase', 'in', stage1Phases))),
+          getDocs(query(collection(db, 'matches'), where('phase', 'in', stage2Phases)))
+        ]);
+
+        const matchesMap = {};
+
+        groupsSnap.forEach(docSnap => {
+          const data = docSnap.data();
+          const estado = normalizeEstado(data.estado, data.status);
+          if (estado !== 'finalizado') return;
+          const winner = getWinnerDetails(data);
+          matchesMap[docSnap.id] = {
+            etapa: 1,
+            ronda: data.roundLabel || data.ronda || '',
+            resultadoReal: winner.winnerName,
+            winnerSide: winner.winnerSide,
+            rama: normalizeRama(data.categoria || data.category || data.rama),
+            equipo1: data.localName || data.team1Name || '',
+            equipo2: data.visitanteName || data.team2Name || ''
+          };
+        });
+
+        bracketSnap.forEach(docSnap => {
+          const data = docSnap.data();
+          const estado = normalizeEstado(data.estado, data.status);
+          if (estado !== 'finalizado') return;
+          const winner = getWinnerDetails(data);
+          matchesMap[docSnap.id] = {
+            etapa: 2,
+            ronda: mapRoundKey(data.roundLabel || data.fase || ''),
+            resultadoReal: winner.winnerName,
+            winnerSide: winner.winnerSide,
+            rama: normalizeRama(data.categoria || data.category || data.rama),
+            equipo1: data.team1Name || data.localName || '',
+            equipo2: data.team2Name || data.visitanteName || ''
+          };
+        });
+
+        const predsSnap = await getDocs(predictionsCollection);
+        const userTotals = {};
+        const updateOps = [];
+
+        predsSnap.forEach(docSnap => {
+          const data = docSnap.data();
+          const match = matchesMap[data.matchId];
+          const etapa = data.etapa || match?.etapa || 1;
+          let puntosObtenidos = Number(data.puntosObtenidos) || 0;
+
+          if (match && match.winnerSide) {
+            const pointsValue = getPointsForMatch(match, etapa);
+            const predictedSide = getPredictionSide(data, match);
+            const acertado = predictedSide && Number(predictedSide) === Number(match.winnerSide);
+            puntosObtenidos = predictedSide ? (acertado ? pointsValue : 0) : 0;
+            updateOps.push(setDoc(docSnap.ref, { ...data, puntosObtenidos }, { merge: true }));
+          }
+
+          if (!userTotals[data.userId]) {
+            userTotals[data.userId] = { puntosEtapa1: 0, puntosEtapa2: 0 };
+          }
+          if (etapa === 1) userTotals[data.userId].puntosEtapa1 += puntosObtenidos;
+          if (etapa === 2) userTotals[data.userId].puntosEtapa2 += puntosObtenidos;
+        });
+
+        await Promise.all(updateOps);
+
+        const usersSnap = await getDocs(usersCollection);
+        const aliasMap = {};
+        usersSnap.forEach(docSnap => { aliasMap[docSnap.id] = docSnap.data().alias; });
+
+        const rankOps = Object.entries(userTotals).map(([userId, pts]) => {
+          const total = (pts.puntosEtapa1 || 0) + (pts.puntosEtapa2 || 0);
+          return setDoc(doc(rankingCollection, userId), {
+            userId,
+            alias: aliasMap[userId] || '',
+            puntosEtapa1: pts.puntosEtapa1 || 0,
+            puntosEtapa2: pts.puntosEtapa2 || 0,
+            puntosTotales: total,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+        });
+
+        await Promise.all(rankOps);
+      }
+
+    function updateStageStatusFromGroups() {
+      const anyEditable = stage1Matches.some(m => m.estado !== 'finalizado');
+      const allFinished = stage1Matches.length > 0 && stage1Matches.every(m => m.estado === 'finalizado');
+      stageStatus.etapa1 = anyEditable ? 'abierta' : 'cerrada';
+      stageStatus.etapa2 = allFinished ? 'abierta' : 'bloqueada';
+      renderBadges();
+      renderStage2();
+    }
+
+      function attachStage1Listener() {
+      const q = query(collection(db, 'matches'), where('phase', 'in', stage1Phases));
+        onSnapshot(q, snap => {
+          stage1Matches = [];
+          const newState = {};
+          snap.forEach(docSnap => {
+            const d = docSnap.data();
+            const rama = normalizeRama(d.categoria || d.category || d.rama);
+            const estado = normalizeEstado(d.estado, d.status);
+            const winner = getWinnerDetails(d);
+            stage1Matches.push({
+              matchId: docSnap.id,
+              rama,
+              ronda: d.roundLabel || d.ronda || '',
+              zona: d.zona || d.zone || '',
+              cancha: d.cancha || '',
+              hora: d.hora || '',
+              equipo1: d.localName || d.team1Name || '',
+              equipo2: d.visitanteName || d.team2Name || '',
+              estado,
+              resultadoReal: winner.winnerName,
+              winnerSide: winner.winnerSide
+            });
+            newState[docSnap.id] = estado;
+          });
+          Object.entries(newState).forEach(([matchId, estado]) => {
+            const prev = lastMatchState.stage1[matchId];
+            if (prev !== 'finalizado' && estado === 'finalizado') {
+              const match = stage1Matches.find(m => m.matchId === matchId);
+              if (match) updateProdeForMatch(match, 1);
+            }
+          });
+          lastMatchState.stage1 = newState;
+          updateStageStatusFromGroups();
+          renderStage1();
+          renderScores();
+        });
+      }
+
+    function attachStage2Listener() {
+      const q = query(collection(db, 'matches'), where('phase', 'in', stage2Phases));
+      onSnapshot(q, snap => {
+          stage2Rounds = { FEM: {}, MASC: {} };
+          const newState = {};
+          snap.forEach(docSnap => {
+            const d = docSnap.data();
+            const rama = normalizeRama(d.categoria || d.category || d.rama);
+            const roundKey = mapRoundKey(d.roundLabel || d.fase || '');
+            if (!stage2Rounds[rama][roundKey]) stage2Rounds[rama][roundKey] = [];
+            const estado = normalizeEstado(d.estado, d.status);
+            const winner = getWinnerDetails(d);
+
+            stage2Rounds[rama][roundKey].push({
+              matchId: docSnap.id,
+              ronda: roundKey,
+              label: d.drawMatchNumber ? `P${d.drawMatchNumber}` : (d.roundLabel || 'Partido'),
+              equipo1: d.team1Name || d.localName || buildSlotLabel(d.slot1SourceFrom, d.slot1SourceResult),
+              equipo2: d.team2Name || d.visitanteName || buildSlotLabel(d.slot2SourceFrom, d.slot2SourceResult),
+              estado,
+              resultadoReal: winner.winnerName,
+              winnerSide: winner.winnerSide,
+              rama
+            });
+            newState[docSnap.id] = estado;
+          });
+          Object.entries(newState).forEach(([matchId, estado]) => {
+            const prev = lastMatchState.stage2[matchId];
+            if (prev !== 'finalizado' && estado === 'finalizado') {
+              let targetMatch;
+              Object.values(stage2Rounds).forEach(rounds => {
+                Object.values(rounds).forEach(list => {
+                  const found = list.find(m => m.matchId === matchId);
+                  if (found) targetMatch = found;
+                });
+              });
+              if (targetMatch) updateProdeForMatch(targetMatch, 2);
+            }
+          });
+          lastMatchState.stage2 = newState;
+          renderStage2();
+          renderScores();
+        });
+      }
+
+    function saveUser(user) {
+      const payload = {
+        userId: user.userId,
+        alias: user.alias,
+        dni: user.dni
+      };
+      localStorage.setItem('prodeUser', JSON.stringify(payload));
+    }
+
+    function loadUser() {
+      const raw = localStorage.getItem('prodeUser');
+      if (!raw) return null;
+      try {
+        const data = JSON.parse(raw);
+        if (data && !data.dni && data.dniRef) {
+          data.dni = data.dniRef;
+        }
+        return data;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function refreshCurrentProdeUser() {
+      const currentProdeUser = JSON.parse(localStorage.getItem('prodeUser'));
+      currentUser = currentProdeUser;
+      return currentProdeUser;
+    }
+
+    async function findExistingUser(dni) {
+      const q = query(usersCollection, where('dni', '==', dni));
+      const snap = await getDocs(q);
+      if (snap.empty) return null;
+      const docSnap = snap.docs[0];
+      return { userId: docSnap.id, ...docSnap.data() };
+    }
+
+    async function upsertUser(alias, dni) {
+      await ensureAuth();
+      const now = new Date().toISOString();
+      const existing = await findExistingUser(dni);
+      if (existing) {
+        if (existing.alias !== alias) {
+          const ref = doc(db, 'prodeUsers', existing.userId);
+          await updateDoc(ref, { alias, updatedAt: now });
+          existing.alias = alias;
+          existing.updatedAt = now;
+        }
+        return existing;
+      }
+
+      const docRef = await addDoc(usersCollection, {
+        alias,
+        dni,
+        createdAt: now,
+        updatedAt: now
+      });
+
+      return { userId: docRef.id, alias, dni, createdAt: now, updatedAt: now };
+    }
+
+    function savePredictions(data) {
+      const userId = currentUser?.userId;
+      if (!userId) return;
+      predictionsCache = { ...data };
+      const raw = localStorage.getItem('prodePredictions');
+      const stored = raw ? JSON.parse(raw) : {};
+      stored[userId] = predictionsCache;
+      localStorage.setItem('prodePredictions', JSON.stringify(stored));
+    }
+
+      function loadPredictions() {
+        if (Object.keys(predictionsCache).length) return predictionsCache;
+        const raw = localStorage.getItem('prodePredictions');
+        if (!raw || !currentUser) return {};
+        const stored = JSON.parse(raw);
+        predictionsCache = stored[currentUser.userId] || {};
+        return predictionsCache;
+      }
+
+      function loadBranchLocks() {
+        if (!currentUser) return;
+        const raw = localStorage.getItem('prodeBranchLocks');
+        const stored = raw ? JSON.parse(raw) : {};
+        const userLocks = stored[currentUser.userId];
+        const defaults = { stage1: { FEM: false, MASC: false }, stage2: { FEM: false, MASC: false } };
+        branchLocks = userLocks ? {
+          stage1: {
+            FEM: !!(userLocks.stage1 && userLocks.stage1.FEM),
+            MASC: !!(userLocks.stage1 && userLocks.stage1.MASC)
+          },
+          stage2: {
+            FEM: !!(userLocks.stage2 && userLocks.stage2.FEM),
+            MASC: !!(userLocks.stage2 && userLocks.stage2.MASC)
+          }
+        } : defaults;
+        editingState = {
+          stage1: {
+            FEM: !branchLocks.stage1.FEM,
+            MASC: !branchLocks.stage1.MASC
+          },
+          stage2: {
+            FEM: !branchLocks.stage2.FEM,
+            MASC: !branchLocks.stage2.MASC
+          }
+        };
+      }
+
+      function persistBranchLocks() {
+        if (!currentUser) return;
+        const raw = localStorage.getItem('prodeBranchLocks');
+        const stored = raw ? JSON.parse(raw) : {};
+        stored[currentUser.userId] = branchLocks;
+        localStorage.setItem('prodeBranchLocks', JSON.stringify(stored));
+      }
+
+      function resetLocalCaches() {
+        predictionsCache = {};
+        localStorage.removeItem('prodeUser');
+        localStorage.removeItem('prodePredictions');
+        localStorage.removeItem('prodeBranchLocks');
+        branchLocks = { stage1: { FEM: false, MASC: false }, stage2: { FEM: false, MASC: false } };
+        editingState = { stage1: { FEM: true, MASC: true }, stage2: { FEM: true, MASC: true } };
+      }
+
+    async function loadUserPredictionsFromDb() {
+      if (!currentUser) return {};
+      await ensureAuth();
+      const q = query(predictionsCollection, where('userId', '==', currentUser.userId));
+      const snap = await getDocs(q);
+      const loaded = {};
+      snap.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.matchId) loaded[data.matchId] = data;
+      });
+      predictionsCache = loaded;
+      savePredictions(predictionsCache);
+      return predictionsCache;
+    }
+
+    async function persistPrediction(matchId, payload) {
+      if (!currentUser) return;
+      await ensureAuth();
+      const now = new Date().toISOString();
+      const docRef = doc(predictionsCollection, `${currentUser.userId}_${matchId}`);
+      const data = {
+        userId: currentUser.userId,
+        matchId,
+        timestamp: now,
+        puntosObtenidos: predictionsCache[matchId]?.puntosObtenidos || 0,
+        ...payload
+      };
+      predictionsCache[matchId] = data;
+      savePredictions(predictionsCache);
+      try {
+        await setDoc(docRef, data, { merge: true });
+      } catch (error) {
+        console.error('No se pudo guardar el pronóstico en la base', error);
+      }
+    }
+
+    async function loadUserRanking() {
+      if (!currentUser) return null;
+      await ensureAuth();
+      const ref = doc(rankingCollection, currentUser.userId);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) return null;
+      return snap.data();
+    }
+
+    async function fetchRanking() {
+      await ensureAuth();
+      const q = query(rankingCollection, orderBy('puntosTotales', 'desc'));
+      const snap = await getDocs(q);
+      const rows = [];
+      snap.forEach(docSnap => rows.push(docSnap.data()));
+      return rows;
+    }
+
+    function toggleSection(target) {
+      document.querySelectorAll('.section').forEach(sec => sec.classList.add('hidden'));
+      document.querySelectorAll('.nav-card').forEach(card => card.classList.remove('active'));
+      if (target === 'home') return;
+      const el = document.getElementById(target);
+      el?.classList.remove('hidden');
+      if (target === 'stage1') renderStage1();
+      if (target === 'stage2') renderStage2();
+      if (target === 'scores') renderScores();
+      if (target === 'ranking') renderRanking();
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderBadges() {
+      const stage1State = stageStatus.etapa1;
+      const stage2State = stageStatus.etapa2;
+
+      const badgeMap = {
+        abierta: { className: 'badge-open', text: 'Abierta' },
+        cerrada: { className: 'badge-closed', text: 'Cerrada' },
+        bloqueada: { className: 'badge-blocked', text: 'Bloqueada' }
+      };
+
+      const b1 = badgeMap[stage1State];
+      badgeStage1.className = `badge ${b1.className}`;
+      badgeStage1.textContent = `Estado: ${b1.text}`;
+
+      const b2 = badgeMap[stage2State];
+      badgeStage2.className = `badge ${b2.className}`;
+      badgeStage2.textContent = `Estado: ${b2.text}`;
+
+      document.getElementById('stage1State').textContent = `Etapa 1: ${b1.text}`;
+      document.getElementById('stage2State').textContent = `Etapa 2: ${b2.text}`;
+    }
+
+    function buildBranchSwitch(container, value, onChange) {
+      container.innerHTML = '';
+      ['FEM', 'MASC'].forEach(code => {
+        const btn = document.createElement('button');
+        btn.textContent = branchLabels[code];
+        btn.className = value === code ? 'active' : '';
+        btn.addEventListener('click', () => onChange(code));
+        container.appendChild(btn);
+      });
+    }
+
+      function renderStage1() {
+        buildBranchSwitch(document.getElementById('branchSwitch1'), currentBranch1, val => {
+          currentBranch1 = val;
+          renderStage1();
+        });
+
+        stage1List.innerHTML = '';
+        const predictions = loadPredictions();
+        const branchMatches = stage1Matches.filter(m => m.rama === currentBranch1);
+        const stageOpen = stageStatus.etapa1 === 'abierta';
+        const branchLocked = branchLocks.stage1[currentBranch1];
+        const editing = editingState.stage1[currentBranch1];
+        const viewLocked = branchLocked && !editing;
+
+        const saveBtn = document.getElementById('saveStage1');
+        const editBtn = document.getElementById('editStage1');
+        saveBtn.textContent = branchLocked ? (editing ? 'Guardar cambios de esta rama' : 'Pronósticos guardados') : 'Guardar pronósticos de esta rama';
+        saveBtn.disabled = !editing || !stageOpen;
+        editBtn.classList.toggle('hidden', !branchLocked);
+        editBtn.disabled = !stageOpen;
+
+        branchMatches.forEach(match => {
+          const card = document.createElement('div');
+          card.className = 'match-card';
+          const locked = viewLocked || !stageOpen || match.estado !== 'pendiente';
+          if (locked) card.classList.add('locked');
+
+            card.innerHTML = `
+              <div class="match-top">
+                <div>${match.zona} · ${match.cancha} · ${match.hora}</div>
+                <span class="ribbon">${match.estado}</span>
+              </div>
+              <div class="team-row">
+                <span class="team-name">${match.equipo1}</span>
+                <button class="select-btn" data-team="${match.equipo1}" data-side="1" ${locked ? 'disabled' : ''}>Elegir</button>
+              </div>
+              <div class="team-row">
+                <span class="team-name">${match.equipo2}</span>
+                <button class="select-btn" data-team="${match.equipo2}" data-side="2" ${locked ? 'disabled' : ''}>Elegir</button>
+              </div>
+              <div class="helper">${viewLocked && predictions[match.matchId] ? '<span class="saved-label">Pronóstico guardado</span>' : (locked ? '<span class="locked-label">🔒 No se puede modificar</span>' : 'Seleccioná el ganador antes del inicio del partido.')}</div>
+            `;
+
+          const buttons = card.querySelectorAll('.select-btn');
+          buttons.forEach(btn => {
+            btn.addEventListener('click', async () => {
+              predictions[match.matchId] = { rama: match.rama, etapa: 1, ronda: match.ronda, predictedSide: Number(btn.dataset.side), predictedTeamName: btn.dataset.team };
+              buttons.forEach(b => b.classList.remove('selected'));
+              btn.classList.add('selected');
+              savePredictions(predictions);
+            });
+          });
+
+          const selectedSide = getPredictionSide(predictions[match.matchId], match);
+          if (selectedSide) {
+            buttons.forEach(b => {
+              if (Number(b.dataset.side) === Number(selectedSide)) b.classList.add('selected');
+            });
+          }
+
+          stage1List.appendChild(card);
+        });
+      }
+
+    function resolveTeamName(ref, rama) {
+      if (!ref) return '';
+      const allRounds = stage2Rounds[rama];
+      for (const round of Object.values(allRounds)) {
+        const match = round.find(m => m.matchId === ref);
+        if (match) {
+          const predictions = loadPredictions();
+          const prediction = predictions[ref];
+          const side = getPredictionSide(prediction, match);
+          if (side === 1) return match.equipo1;
+          if (side === 2) return match.equipo2;
+          const resolved = prediction?.predictedTeamName || prediction?.equipoPronosticadoGanador || match.resultadoReal || `${match.label} ganador`;
+          return resolved;
+        }
+      }
+      return ref;
+    }
+
+      function renderStage2() {
+        buildBranchSwitch(document.getElementById('branchSwitch2'), currentBranch2, val => {
+          currentBranch2 = val;
+          renderStage2();
+        });
+
+        stage2Content.innerHTML = '';
+        const status = stageStatus.etapa2;
+        if (status === 'bloqueada') {
+          const notice = document.createElement('p');
+          notice.className = 'notice';
+          notice.textContent = 'Se habilita cuando termine la fase de grupos.';
+          stage2Content.appendChild(notice);
+          return;
+        }
+
+        const predictions = loadPredictions();
+        const rounds = stage2Rounds[currentBranch2];
+        const branchLocked = branchLocks.stage2[currentBranch2];
+        const editing = editingState.stage2[currentBranch2];
+        const viewLocked = branchLocked && !editing;
+        const saveBtn = document.getElementById('saveStage2');
+        const editBtn = document.getElementById('editStage2');
+        saveBtn.textContent = branchLocked ? (editing ? 'Guardar cambios de esta rama' : 'Pronósticos guardados') : 'Guardar llaves';
+        saveBtn.disabled = !editing || status !== 'abierta';
+        editBtn.classList.toggle('hidden', !branchLocked);
+        editBtn.disabled = status !== 'abierta';
+
+        Object.entries(rounds).forEach(([roundKey, matches]) => {
+          if (!matches.length) return;
+          const block = document.createElement('div');
+          block.className = 'list';
+          const title = document.createElement('h3');
+          title.textContent = roundKey === 'Final' ? 'Final' : `Ronda ${roundKey}`;
+          title.style.margin = '8px 0';
+          stage2Content.appendChild(title);
+          stage2Content.appendChild(block);
+
+          matches.forEach(match => {
+            const card = document.createElement('div');
+            card.className = 'match-card';
+            const editable = status === 'abierta' && match.estado === 'pendiente' && !viewLocked;
+            if (!editable) card.classList.add('locked');
+
+            const equipo1 = match.equipo1Ref ? resolveTeamName(match.equipo1Ref, currentBranch2) : match.equipo1;
+            const equipo2 = match.equipo2Ref ? resolveTeamName(match.equipo2Ref, currentBranch2) : match.equipo2;
+
+            card.innerHTML = `
+              <div class="match-top">
+                <div>${match.label} · ${branchLabels[currentBranch2]}</div>
+                <span class="ribbon">${match.estado}</span>
+              </div>
+              <div class="team-row">
+                <span class="team-name">${equipo1}</span>
+                <button class="select-btn" data-team="${equipo1}" data-side="1" ${editable ? '' : 'disabled'}>Gana</button>
+              </div>
+              <div class="team-row">
+                <span class="team-name">${equipo2}</span>
+                <button class="select-btn" data-team="${equipo2}" data-side="2" ${editable ? '' : 'disabled'}>Gana</button>
+              </div>
+              <div class="helper">${viewLocked && predictions[match.matchId] ? '<span class="saved-label">Pronóstico guardado</span>' : (editable ? 'Elegí tu ganador para avanzar en el bracket.' : '<span class="locked-label">🔒 No se puede modificar</span>')}</div>
+            `;
+
+            const buttons = card.querySelectorAll('.select-btn');
+            buttons.forEach(btn => {
+              btn.addEventListener('click', async () => {
+                predictions[match.matchId] = { rama: currentBranch2, etapa: 2, ronda: match.ronda, predictedSide: Number(btn.dataset.side), predictedTeamName: btn.dataset.team };
+                buttons.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                savePredictions(predictions);
+              });
+            });
+
+          const selected = getPredictionSide(predictions[match.matchId], match);
+          if (selected) {
+            buttons.forEach(b => {
+              if (Number(b.dataset.side) === Number(selected)) b.classList.add('selected');
+            });
+          }
+
+          block.appendChild(card);
+        });
+      });
+    }
+
+    async function renderScores() {
+      const currentProdeUser = JSON.parse(localStorage.getItem('prodeUser'));
+      currentUser = currentProdeUser;
+      if (!currentProdeUser) return;
+
+      const data = await loadUserRanking();
+      const etapa1 = data?.puntosEtapa1 || 0;
+      const etapa2 = data?.puntosEtapa2 || 0;
+      const total = data?.puntosTotales || etapa1 + etapa2;
+      document.getElementById('pointsStage1').textContent = `${etapa1} pts`;
+      document.getElementById('pointsStage2').textContent = `${etapa2} pts`;
+      document.getElementById('pointsTotal').textContent = `${total} pts`;
+      renderRanking();
+    }
+
+      async function renderRanking() {
+        const currentProdeUser = JSON.parse(localStorage.getItem('prodeUser'));
+        currentUser = currentProdeUser;
+        const rankingList = document.getElementById('rankingList');
+        rankingList.innerHTML = '<div class="helper">Cargando ranking...</div>';
+        const rankingPositionEl = document.getElementById('rankingPosition');
+        rankingPositionEl.textContent = '';
+
+      const rows = await fetchRanking();
+      rankingList.innerHTML = '';
+      if (!rows.length) {
+        rankingList.innerHTML = '<div class="helper">Aún no hay puntos cargados.</div>';
+        return;
+      }
+
+      const myId = currentProdeUser?.userId;
+      rows.forEach((row, idx) => {
+        const item = document.createElement('div');
+        const isMe = myId && row.userId === myId;
+        item.className = 'ranking-row' + (isMe ? ' me' : '');
+        item.innerHTML = `
+          <div class="label-muted">#${idx + 1}</div>
+          <div>${row.alias || 'Alias'}</div>
+          <div><strong>${row.puntosTotales || 0} pts</strong></div>
+        `;
+        rankingList.appendChild(item);
+          if (isMe) {
+            rankingPositionEl.textContent = `Puesto #${idx + 1}`;
+          }
+        });
+      }
+
+      function goProdeHome() {
+        document.querySelectorAll('.section').forEach(sec => sec.classList.add('hidden'));
+        document.getElementById('homeSection').classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      async function saveBranchPredictions(stageKey) {
+        if (!currentUser) {
+          alert('Ingresá con tu usuario de Prode antes de guardar.');
+          return;
+        }
+
+        const stageStatusKey = stageKey === 'stage1' ? 'etapa1' : 'etapa2';
+        if (stageStatus[stageStatusKey] !== 'abierta') {
+          alert('Esta etapa no está abierta para pronosticar.');
+          return;
+        }
+
+        const branch = stageKey === 'stage1' ? currentBranch1 : currentBranch2;
+        const predictions = loadPredictions();
+        const matches = stageKey === 'stage1'
+          ? stage1Matches.filter(m => m.rama === branch)
+          : Object.values(stage2Rounds[branch] || {}).reduce((acc, list) => acc.concat(list), []);
+
+        const ops = matches
+          .map(match => {
+            const prediction = predictions[match.matchId];
+            const predictedSide = getPredictionSide(prediction, match);
+            if (!predictedSide) return null;
+            const payload = {
+              rama: match.rama || branch,
+              etapa: stageKey === 'stage1' ? 1 : 2,
+              ronda: match.ronda,
+              predictedSide,
+              predictedTeamName: prediction?.predictedTeamName || prediction?.equipoPronosticadoGanador || (predictedSide === 1 ? match.equipo1 : match.equipo2)
+            };
+            return persistPrediction(match.matchId, payload);
+          })
+          .filter(Boolean);
+
+        if (!ops.length) {
+          alert('Seleccioná al menos un ganador antes de guardar.');
+          return;
+        }
+
+        await Promise.all(ops);
+        branchLocks[stageKey][branch] = true;
+        editingState[stageKey][branch] = false;
+        persistBranchLocks();
+        if (stageKey === 'stage1') renderStage1();
+        if (stageKey === 'stage2') renderStage2();
+        alert('Pronósticos guardados para esta rama.');
+      }
+
+      function startEditing(stageKey) {
+        const branch = stageKey === 'stage1' ? currentBranch1 : currentBranch2;
+        editingState[stageKey][branch] = true;
+        if (stageKey === 'stage1') renderStage1();
+        if (stageKey === 'stage2') renderStage2();
+      }
+
+      function initNavigation() {
+        document.querySelectorAll('[data-target]').forEach(el => {
+          el.addEventListener('click', () => {
+            toggleSection(el.dataset.target);
+          });
+        });
+        document.getElementById('btnGoBack').addEventListener('click', goProdeHome);
+        document.getElementById('btnGoInicio').addEventListener('click', () => {
+          window.location.href = 'index.html';
+        });
+        document.getElementById('btnRecalcular').addEventListener('click', async () => {
+          await recalcProde();
+          await renderScores();
+          await renderRanking();
+          alert('Recalculamos los puntajes del Prode.');
+        });
+        document.getElementById('btnLogout').addEventListener('click', async () => {
+          try {
+            await ensureAuth();
+            await signOut(auth);
+          } catch (e) {
+            console.warn('No se pudo cerrar sesión anónima', e);
+          }
+          resetLocalCaches();
+          window.location.reload();
+        });
+
+        document.getElementById('saveStage1').addEventListener('click', () => saveBranchPredictions('stage1'));
+        document.getElementById('saveStage2').addEventListener('click', () => saveBranchPredictions('stage2'));
+        document.getElementById('editStage1').addEventListener('click', () => startEditing('stage1'));
+        document.getElementById('editStage2').addEventListener('click', () => startEditing('stage2'));
+      }
+
+    const loginSubmitButton = document.getElementById('loginSubmit');
+    const loginMessage = document.getElementById('loginMessage');
+    const dniInput = document.getElementById('dniInput');
+    const aliasInput = document.getElementById('aliasInput');
+
+    function showLoginMessage(text, isError = false) {
+      loginMessage.textContent = text;
+      loginMessage.classList.toggle('error', isError);
+      if (text) {
+        loginMessage.classList.remove('hidden');
+      } else {
+        loginMessage.classList.add('hidden');
+      }
+    }
+
+    async function enterWithUser(userRecord) {
+      currentUser = userRecord;
+      saveUser(currentUser);
+      currentUser = loadUser();
+      await ensureRankingBaseline(currentUser);
+      document.getElementById('loginPanel').classList.add('hidden');
+      document.getElementById('homeSection').classList.remove('hidden');
+      document.getElementById('userAlias').textContent = userRecord.alias;
+      renderBadges();
+      await loadUserPredictionsFromDb();
+      loadBranchLocks();
+      renderStage1();
+      renderStage2();
+      await renderScores();
+      await renderRanking();
+    }
+
+    loginSubmitButton.addEventListener('click', async () => {
+      const alias = aliasInput.value.trim();
+      const dni = dniInput.value.trim();
+      if (!alias || !dni) {
+        showLoginMessage('Completá alias y DNI para continuar.', true);
+        return;
+      }
+
+      const originalLabel = loginSubmitButton.textContent;
+      loginSubmitButton.disabled = true;
+      loginSubmitButton.textContent = 'Ingresando...';
+      showLoginMessage('');
+
+      try {
+        await ensureAuth();
+        const existing = await findExistingUser(dni);
+        const normalizedAlias = alias.toLowerCase().trim();
+
+        if (!existing) {
+          showLoginMessage('No encontramos un usuario con este DNI. Vamos a registrarte.');
+          const userRecord = await upsertUser(alias, dni);
+          await enterWithUser({ ...userRecord, dni });
+          return;
+        }
+
+        const existingAlias = (existing.alias || '').toLowerCase().trim();
+        if (existingAlias === normalizedAlias) {
+          await enterWithUser({ ...existing, dni });
+        } else {
+          showLoginMessage('Este DNI ya está registrado con otro alias. Verificá que hayas ingresado bien tus datos.', true);
+        }
+      } catch (error) {
+        console.error('Error durante el login del Prode', error);
+        showLoginMessage('No pudimos procesar tu ingreso. Intentá nuevamente.', true);
+      } finally {
+        loginSubmitButton.disabled = false;
+        loginSubmitButton.textContent = originalLabel;
+      }
+    });
+
+      async function bootstrap() {
+        initNavigation();
+        currentUser = loadUser();
+        renderBadges();
+        attachStage1Listener();
+        attachStage2Listener();
+        if (currentUser) {
+          await enterWithUser(currentUser);
+        } else {
+          document.getElementById('loginPanel').classList.remove('hidden');
+        }
+      }
+
+    bootstrap();
+  </script>
+</body>
+</html>
