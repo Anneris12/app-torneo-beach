@@ -14,8 +14,8 @@
       --accent: #ffb703;
       --accent-2: #3fd1c2;
       --text: #e8edf5;
-      --muted: #a0aec0;
-      --locked: #6b7280;
+      --muted: #d9e4ff;
+      --locked: #cbd5e1;
     }
 
     * {
@@ -537,48 +537,43 @@
     </div>
   </div>
 
-  <script>
-    const stageStatus = {
-      etapa1: 'abierta',
-      etapa2: 'abierta'
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      doc,
+      addDoc,
+      getDocs,
+      onSnapshot,
+      query,
+      updateDoc,
+      where
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
+      authDomain: "torneo-beach.firebaseapp.com",
+      projectId: "torneo-beach",
+      storageBucket: "torneo-beach.firebasestorage.app",
+      messagingSenderId: "21136645638",
+      appId: "1:21136645638:web:52c3b06affc2ee151eed87"
     };
 
-    const stage1Matches = [
-      { matchId: 'G1', rama: 'FEM', ronda: 'R1', zona: 'Zona A', cancha: 'Cancha 1', hora: '09:00', equipo1: 'Arena Sur', equipo2: 'Las Olas', estado: 'pendiente', resultadoReal: 'Arena Sur' },
-      { matchId: 'G2', rama: 'FEM', ronda: 'R1', zona: 'Zona B', cancha: 'Cancha 2', hora: '10:30', equipo1: 'Mar Brava', equipo2: 'Cielo', estado: 'enjuego', resultadoReal: null },
-      { matchId: 'G3', rama: 'FEM', ronda: 'R2', zona: 'Zona A', cancha: 'Cancha 3', hora: '12:15', equipo1: 'Foquita', equipo2: 'Luminarias', estado: 'finalizado', resultadoReal: 'Luminarias' },
-      { matchId: 'G4', rama: 'MASC', ronda: 'R1', zona: 'Zona C', cancha: 'Cancha 1', hora: '09:00', equipo1: 'Costa Azul', equipo2: 'Tormenta', estado: 'pendiente', resultadoReal: null },
-      { matchId: 'G5', rama: 'MASC', ronda: 'R2', zona: 'Zona D', cancha: 'Cancha 2', hora: '11:00', equipo1: 'Atlántico', equipo2: 'Rocamar', estado: 'finalizado', resultadoReal: 'Rocamar' },
-      { matchId: 'G6', rama: 'MASC', ronda: 'R2', zona: 'Zona D', cancha: 'Cancha 3', hora: '13:45', equipo1: 'Náuticos', equipo2: 'Arena Norte', estado: 'enjuego', resultadoReal: null }
-    ];
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const usersCollection = collection(db, 'prodeUsers');
 
-    const stage2Rounds = {
-      FEM: {
-        R1: [
-          { matchId: 'F-R1-1', ronda: 'R1', label: 'P1', equipo1: 'Arena Sur', equipo2: 'Las Olas', estado: 'pendiente', resultadoReal: null },
-          { matchId: 'F-R1-2', ronda: 'R1', label: 'P2', equipo1: 'Mar Brava', equipo2: 'Cielo', estado: 'finalizado', resultadoReal: 'Mar Brava' }
-        ],
-        R2: [
-          { matchId: 'F-R2-1', ronda: 'R2', label: 'P3', equipo1Ref: 'F-R1-1', equipo2Ref: 'F-R1-2', estado: 'pendiente', resultadoReal: null }
-        ],
-        Semi: [],
-        Final: [
-          { matchId: 'F-Final', ronda: 'Final', label: 'Final', equipo1Ref: 'F-R2-1', equipo2: 'Invitado FEM', estado: 'pendiente', resultadoReal: null }
-        ]
-      },
-      MASC: {
-        R1: [
-          { matchId: 'M-R1-1', ronda: 'R1', label: 'P1', equipo1: 'Costa Azul', equipo2: 'Tormenta', estado: 'pendiente', resultadoReal: null },
-          { matchId: 'M-R1-2', ronda: 'R1', label: 'P2', equipo1: 'Atlántico', equipo2: 'Rocamar', estado: 'finalizado', resultadoReal: 'Rocamar' }
-        ],
-        R2: [
-          { matchId: 'M-R2-1', ronda: 'R2', label: 'P3', equipo1Ref: 'M-R1-1', equipo2Ref: 'M-R1-2', estado: 'pendiente', resultadoReal: null }
-        ],
-        Semi: [],
-        Final: [
-          { matchId: 'M-Final', ronda: 'Final', label: 'Final', equipo1Ref: 'M-R2-1', equipo2: 'Invitado MASC', estado: 'pendiente', resultadoReal: null }
-        ]
-      }
+    let stageStatus = {
+      etapa1: 'bloqueada',
+      etapa2: 'bloqueada'
+    };
+
+    let stage1Matches = [];
+
+    let stage2Rounds = {
+      FEM: {},
+      MASC: {}
     };
 
     const roundPoints = { R1: 7, R2: 10, Semi: 15, Final: 20 };
@@ -601,8 +596,119 @@
     const stage1List = document.getElementById('stage1List');
     const stage2Content = document.getElementById('stage2Content');
 
-    function generateId() {
-      return 'u-' + Date.now().toString(36);
+    function normalizeRama(raw) {
+      const val = (raw || '').toString().toUpperCase();
+      if (val.startsWith('F')) return 'FEM';
+      if (val.startsWith('M')) return 'MASC';
+      return val || 'FEM';
+    }
+
+    function normalizeEstado(estado, status) {
+      const val = (estado || '').toString().toLowerCase();
+      if (val.includes('final')) return 'finalizado';
+      if (val.includes('juego')) return 'enjuego';
+      if (val.includes('pend')) return 'pendiente';
+
+      const st = (status || '').toString().toLowerCase();
+      if (st === 'finished') return 'finalizado';
+      if (st === 'in_progress') return 'enjuego';
+      return 'pendiente';
+    }
+
+    function buildSlotLabel(sourceFrom, sourceResult) {
+      if (!sourceFrom) return '';
+      const isLoser = (sourceResult || '').toString().toLowerCase().includes('lose');
+      const prefix = isLoser ? 'Perdedor' : 'Ganador';
+      return `${prefix} ${sourceFrom}`;
+    }
+
+    function mapRoundKey(label) {
+      const val = (label || '').toString().toLowerCase();
+      if (val.includes('final')) return 'Final';
+      if (val.includes('semi')) return 'Semi';
+      if (val.includes('cuarto') || val.includes('2da') || val.includes('2°')) return 'R2';
+      return 'R1';
+    }
+
+    function computeWinnerFromSets(data) {
+      const sets = Array.isArray(data.setsData) ? data.setsData : [];
+      let wins1 = 0;
+      let wins2 = 0;
+
+      sets.forEach(set => {
+        const a = Number(set.local);
+        const b = Number(set.visitante);
+        if (a > b) wins1++;
+        else if (b > a) wins2++;
+      });
+
+      if (wins1 === wins2) return null;
+      return wins1 > wins2
+        ? (data.team1Name || data.localName || '')
+        : (data.team2Name || data.visitanteName || '');
+    }
+
+    function updateStageStatusFromGroups() {
+      const anyEditable = stage1Matches.some(m => m.estado !== 'finalizado');
+      const allFinished = stage1Matches.length > 0 && stage1Matches.every(m => m.estado === 'finalizado');
+      stageStatus.etapa1 = anyEditable ? 'abierta' : 'cerrada';
+      stageStatus.etapa2 = allFinished ? 'abierta' : 'bloqueada';
+      renderBadges();
+      renderStage2();
+    }
+
+    function attachStage1Listener() {
+      const q = query(collection(db, 'matches'), where('phase', '==', 'zonas'));
+      onSnapshot(q, snap => {
+        stage1Matches = [];
+        snap.forEach(docSnap => {
+          const d = docSnap.data();
+          const rama = normalizeRama(d.categoria || d.category || d.rama);
+          const estado = normalizeEstado(d.estado, d.status);
+          stage1Matches.push({
+            matchId: docSnap.id,
+            rama,
+            ronda: d.roundLabel || d.ronda || '',
+            zona: d.zona || d.zone || '',
+            cancha: d.cancha || '',
+            hora: d.hora || '',
+            equipo1: d.localName || d.team1Name || '',
+            equipo2: d.visitanteName || d.team2Name || '',
+            estado,
+            resultadoReal: d.winnerName || d.resultadoReal || computeWinnerFromSets(d) || null
+          });
+        });
+        updateStageStatusFromGroups();
+        renderStage1();
+        renderScores();
+      });
+    }
+
+    function attachStage2Listener() {
+      const q = query(collection(db, 'matches'), where('phase', '==', 'maindraw'));
+      onSnapshot(q, snap => {
+        stage2Rounds = { FEM: {}, MASC: {} };
+        snap.forEach(docSnap => {
+          const d = docSnap.data();
+          const rama = normalizeRama(d.categoria || d.category || d.rama);
+          const roundKey = mapRoundKey(d.roundLabel || d.fase || '');
+          if (!stage2Rounds[rama][roundKey]) stage2Rounds[rama][roundKey] = [];
+          const estado = normalizeEstado(d.estado, d.status);
+          const resultadoReal = d.winnerName || d.resultadoReal || computeWinnerFromSets(d) || null;
+
+          stage2Rounds[rama][roundKey].push({
+            matchId: docSnap.id,
+            ronda: roundKey,
+            label: d.drawMatchNumber ? `P${d.drawMatchNumber}` : (d.roundLabel || 'Partido'),
+            equipo1: d.team1Name || d.localName || buildSlotLabel(d.slot1SourceFrom, d.slot1SourceResult),
+            equipo2: d.team2Name || d.visitanteName || buildSlotLabel(d.slot2SourceFrom, d.slot2SourceResult),
+            estado,
+            resultadoReal
+          });
+        });
+        renderStage2();
+        renderScores();
+      });
     }
 
     function saveUser(user) {
@@ -617,6 +723,37 @@
       } catch (e) {
         return null;
       }
+    }
+
+    async function findExistingUser(dniRef) {
+      const q = query(usersCollection, where('dniRef', '==', dniRef));
+      const snap = await getDocs(q);
+      if (snap.empty) return null;
+      const docSnap = snap.docs[0];
+      return { userId: docSnap.id, ...docSnap.data() };
+    }
+
+    async function upsertUser(alias, dniRef) {
+      const now = new Date().toISOString();
+      const existing = await findExistingUser(dniRef);
+      if (existing) {
+        if (existing.alias !== alias) {
+          const ref = doc(db, 'prodeUsers', existing.userId);
+          await updateDoc(ref, { alias, updatedAt: now });
+          existing.alias = alias;
+          existing.updatedAt = now;
+        }
+        return existing;
+      }
+
+      const docRef = await addDoc(usersCollection, {
+        alias,
+        dniRef,
+        createdAt: now,
+        updatedAt: now
+      });
+
+      return { userId: docRef.id, alias, dniRef, createdAt: now, updatedAt: now };
     }
 
     function savePredictions(data) {
@@ -901,20 +1038,35 @@
       });
     }
 
-    document.getElementById('createUser').addEventListener('click', () => {
+    const createUserButton = document.getElementById('createUser');
+    createUserButton.addEventListener('click', async () => {
       const alias = document.getElementById('aliasInput').value.trim();
       const dni = document.getElementById('dniInput').value.trim();
       if (!alias || !dni) {
         alert('Completá alias y DNI para continuar.');
         return;
       }
-      currentUser = { userId: generateId(), alias, dniRef: dni, createdAt: new Date().toISOString() };
-      saveUser(currentUser);
-      document.getElementById('loginPanel').classList.add('hidden');
-      document.getElementById('homeSection').classList.remove('hidden');
-      document.getElementById('userAlias').textContent = alias;
-      renderBadges();
-      renderScores();
+
+      const originalLabel = createUserButton.textContent;
+      createUserButton.disabled = true;
+      createUserButton.textContent = 'Guardando...';
+
+      try {
+        const userRecord = await upsertUser(alias, dni);
+        currentUser = userRecord;
+        saveUser(currentUser);
+        document.getElementById('loginPanel').classList.add('hidden');
+        document.getElementById('homeSection').classList.remove('hidden');
+        document.getElementById('userAlias').textContent = userRecord.alias;
+        renderBadges();
+        renderScores();
+      } catch (error) {
+        console.error('Error guardando usuario Prode', error);
+        alert('No se pudo guardar tu usuario. Intentá de nuevo.');
+      } finally {
+        createUserButton.disabled = false;
+        createUserButton.textContent = originalLabel;
+      }
     });
 
     function bootstrap() {
@@ -926,6 +1078,8 @@
         document.getElementById('userAlias').textContent = currentUser.alias;
       }
       renderBadges();
+      attachStage1Listener();
+      attachStage2Listener();
       renderStage1();
       renderScores();
     }
