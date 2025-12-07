@@ -550,6 +550,11 @@
       updateDoc,
       where
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import {
+      getAuth,
+      signInAnonymously,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
@@ -562,12 +567,27 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
     const usersCollection = collection(db, 'prodeUsers');
+
+    let authReady = false;
 
     let stageStatus = {
       etapa1: 'bloqueada',
       etapa2: 'bloqueada'
     };
+
+    function ensureAuth() {
+      if (authReady && auth.currentUser) return Promise.resolve(auth.currentUser);
+      return signInAnonymously(auth).then(user => {
+        authReady = true;
+        return user;
+      });
+    }
+
+    onAuthStateChanged(auth, user => {
+      if (user) authReady = true;
+    });
 
     let stage1Matches = [];
 
@@ -734,6 +754,7 @@
     }
 
     async function upsertUser(alias, dniRef) {
+      await ensureAuth();
       const now = new Date().toISOString();
       const existing = await findExistingUser(dniRef);
       if (existing) {
