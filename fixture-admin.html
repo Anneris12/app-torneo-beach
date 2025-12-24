@@ -577,7 +577,7 @@
         const cat = normalizeCategoria(d.categoria || d.category);
         const phase = (d.phase || "zonas").toString().trim().toLowerCase() || "zonas";
         if (cat !== rama) return;
-        if (phase !== "zonas") return;
+        if (phase === "maindraw") return;
         refs.push(docSnap.ref);
       });
 
