@@ -159,6 +159,23 @@
       margin-top: 6px;
     }
 
+    .credit {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 12px;
+      opacity: 0.75;
+    }
+
+    .credit a {
+      color: inherit;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .credit a:hover {
+      text-decoration: underline;
+    }
+
     .set-chip {
       padding: 4px 8px;
       border-radius: 10px;
@@ -389,6 +406,11 @@
       <button class="set-btn undo-btn" onclick="undoLast()">Deshacer último</button>
     </div>
   </div>
+
+  <footer class="credit">
+    Sistema Torneo Beach Volley · MacaErlan® 2026 ·
+    <a href="https://wa.me/541168319095" target="_blank" rel="noopener">WhatsApp +54 11 6831-9095</a>
+  </footer>
 
   <script>
     let currentMatchData = null;
