@@ -321,6 +321,11 @@
       <option value="all">Todas</option>
     </select>
 
+    <label style="margin-top:10px;">Cancha</label>
+    <select id="filterCourt">
+      <option value="all">Todas</option>
+    </select>
+
     <label style="margin-top:16px;">Partido</label>
     <select id="selectMatch"></select>
   </div>
@@ -392,6 +397,38 @@
         </div>
         <button type="button" id="btnEditFirstServe" class="top-btn small-edit-btn">
           Editar 1er saque
+        </button>
+      </div>
+
+      <!-- PANEL CAMISETAS -->
+      <div class="first-serve-panel">
+        <div class="estado-label" style="margin-bottom:6px;">
+          Configurar camisetas
+        </div>
+        <div class="first-serve-row">
+          <span class="first-serve-team-label">Local #1:</span>
+          <label class="starter-label">
+            <input type="radio" name="localJerseyFirst" value="1" checked>
+            <span id="localJerseyName1">Jugador 1</span>
+          </label>
+          <label class="starter-label">
+            <input type="radio" name="localJerseyFirst" value="2">
+            <span id="localJerseyName2">Jugador 2</span>
+          </label>
+        </div>
+        <div class="first-serve-row">
+          <span class="first-serve-team-label">Visitante #1:</span>
+          <label class="starter-label">
+            <input type="radio" name="visitJerseyFirst" value="1" checked>
+            <span id="visitJerseyName1">Jugador 1</span>
+          </label>
+          <label class="starter-label">
+            <input type="radio" name="visitJerseyFirst" value="2">
+            <span id="visitJerseyName2">Jugador 2</span>
+          </label>
+        </div>
+        <button type="button" id="btnSaveJerseys" class="top-btn small-edit-btn">
+          Guardar camisetas
         </button>
       </div>
 
@@ -656,6 +693,7 @@
   const selPhase = document.getElementById("filterPhase");
   const selZone  = document.getElementById("filterZone");
   const selRound = document.getElementById("filterRound");
+  const selCourt = document.getElementById("filterCourt");
   const selMatch = document.getElementById("selectMatch");
   const panel    = document.getElementById("matchPanel");
 
@@ -667,6 +705,7 @@
   const matchNumberLabel  = document.getElementById("matchNumberLabel");
   const infoExtraLabel    = document.getElementById("infoExtraLabel");
   const btnEditFirstServe = document.getElementById("btnEditFirstServe");
+  const btnSaveJerseys    = document.getElementById("btnSaveJerseys");
   const setsCurrentLabel  = document.getElementById("setsCurrentLabel");
   const setsChips         = document.getElementById("setsChips");
 
@@ -723,6 +762,19 @@
     return str.replace(/^ZONA\s+/, "");
   }
 
+  function normalizeCancha(value) {
+    if (value === null || value === undefined) return "";
+    const str = value.toString().trim();
+    return str;
+  }
+
+  function getCourtSortValue(court) {
+    const raw = normalizeCancha(court);
+    const num = Number(raw);
+    if (!Number.isNaN(num)) return num;
+    return Number.MAX_SAFE_INTEGER;
+  }
+
   function getRadioValue(name) {
     const radios = document.querySelectorAll(`input[name="${name}"]`);
     for (const r of radios) {
@@ -763,6 +815,19 @@
     inputs.forEach(i => {
       i.disabled = disabled;
     });
+  }
+
+  function setJerseyInputsDisabled(disabled) {
+    const inputs = document.querySelectorAll('input[name="localJerseyFirst"], input[name="visitJerseyFirst"]');
+    inputs.forEach(i => {
+      i.disabled = disabled;
+    });
+    btnSaveJerseys.disabled = disabled;
+  }
+
+  function formatPlayerName(name, jerseyNumber) {
+    const base = name || "Jugador";
+    return `${base} (#${jerseyNumber})`;
   }
 
   function renderServeIcons() {
@@ -1088,7 +1153,7 @@
         phase,          
         roundLabel: roundLabelVal,
         zona: normalizeZone(d.zona),
-        cancha: d.cancha || "",
+        cancha: normalizeCancha(d.cancha),
         fecha: d.fecha || "",
         hora: d.hora || "",
         estado,
@@ -1111,6 +1176,7 @@
 
     buildRoundOptions();
     buildZoneOptions();
+    buildCourtOptions();
     updatePhaseUI();
   }
 
@@ -1163,6 +1229,31 @@
     }
   }
 
+  function buildCourtOptions() {
+    const prev = selCourt.value;
+    selCourt.innerHTML = `<option value="all">Todas</option>`;
+
+    const courtsSet = new Set();
+
+    allMatches.forEach(m => {
+      const court = normalizeCancha(m.cancha);
+      if (court) courtsSet.add(court);
+    });
+
+    Array.from(courtsSet)
+      .sort((a, b) => getCourtSortValue(a) - getCourtSortValue(b))
+      .forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c;
+        opt.textContent = `Cancha ${c}`;
+        selCourt.appendChild(opt);
+      });
+
+    if (prev && courtsSet.has(prev)) {
+      selCourt.value = prev;
+    }
+  }
+
   function updatePhaseUI() {
     const phase = selPhase.value; // groups | maindraw
 
@@ -1208,11 +1299,18 @@
       list = list.filter(m => m.roundLabel === selRound.value);
     }
 
+    if (selCourt.value !== "all") {
+      list = list.filter(m => normalizeCancha(m.cancha) === selCourt.value);
+    }
+
     list = list.filter(m => m.estado !== "Finalizado");
 
     list.sort((a, b) => {
       const na = typeof a.numeroPartido === "number" ? a.numeroPartido : 9999;
       const nb = typeof b.numeroPartido === "number" ? b.numeroPartido : 9999;
+      const ca = getCourtSortValue(a.cancha);
+      const cb = getCourtSortValue(b.cancha);
+      if (ca !== cb) return ca - cb;
       return na - nb;
     });
 
@@ -1220,10 +1318,11 @@
       const labelNumero = typeof m.numeroPartido === "number"
         ? `#${m.numeroPartido} – `
         : "";
+      const labelCancha = m.cancha ? `Cancha ${m.cancha} · ` : "";
 
       selMatch.innerHTML += `
         <option value="${m.id}">
-          ${labelNumero}${m.localName} vs ${m.visitanteName}
+          ${labelCancha}${labelNumero}${m.localName} vs ${m.visitanteName}
         </option>
       `;
     });
@@ -1233,6 +1332,7 @@
   selPhase.onchange = updatePhaseUI;
   selZone.onchange  = renderMatchList;
   selRound.onchange = renderMatchList;
+  selCourt.onchange = renderMatchList;
 
   selMatch.onchange = () => {
     currentMatchId = selMatch.value;
@@ -1297,15 +1397,28 @@
     const [localP1, localP2]   = splitPlayers(localFullName);
     const [visitP1, visitP2]   = splitPlayers(visitFullName);
 
-    document.getElementById("localPlayer1Name").textContent  = localP1 || "Jugador 1";
-    document.getElementById("localPlayer2Name").textContent  = localP2 || "Jugador 2";
-    document.getElementById("visitPlayer1Name").textContent  = visitP1 || "Jugador 1";
-    document.getElementById("visitPlayer2Name").textContent  = visitP2 || "Jugador 2";
+    const localJerseyFirst = currentMatchData.localJerseyFirst || 1;
+    const visitJerseyFirst = currentMatchData.visitJerseyFirst || 1;
+
+    const localP1Jersey = localJerseyFirst === 1 ? 1 : 2;
+    const localP2Jersey = localJerseyFirst === 1 ? 2 : 1;
+    const visitP1Jersey = visitJerseyFirst === 1 ? 1 : 2;
+    const visitP2Jersey = visitJerseyFirst === 1 ? 2 : 1;
+
+    document.getElementById("localPlayer1Name").textContent  = formatPlayerName(localP1 || "Jugador 1", localP1Jersey);
+    document.getElementById("localPlayer2Name").textContent  = formatPlayerName(localP2 || "Jugador 2", localP2Jersey);
+    document.getElementById("visitPlayer1Name").textContent  = formatPlayerName(visitP1 || "Jugador 1", visitP1Jersey);
+    document.getElementById("visitPlayer2Name").textContent  = formatPlayerName(visitP2 || "Jugador 2", visitP2Jersey);
 
     document.getElementById("localStarterName1").textContent = localP1 || "Jugador 1";
     document.getElementById("localStarterName2").textContent = localP2 || "Jugador 2";
     document.getElementById("visitStarterName1").textContent = visitP1 || "Jugador 1";
     document.getElementById("visitStarterName2").textContent = visitP2 || "Jugador 2";
+
+    document.getElementById("localJerseyName1").textContent = localP1 || "Jugador 1";
+    document.getElementById("localJerseyName2").textContent = localP2 || "Jugador 2";
+    document.getElementById("visitJerseyName1").textContent = visitP1 || "Jugador 1";
+    document.getElementById("visitJerseyName2").textContent = visitP2 || "Jugador 2";
 
     if (typeof currentMatchData.numeroPartido === "number") {
       matchNumberLabel.textContent = `Partido #${currentMatchData.numeroPartido}`;
@@ -1351,6 +1464,8 @@
     const visitFS = currentMatchData.visitFirstServer || 1;
     setRadioValue("localStarter", localFS);
     setRadioValue("visitStarter", visitFS);
+    setRadioValue("localJerseyFirst", localJerseyFirst);
+    setRadioValue("visitJerseyFirst", visitJerseyFirst);
 
     if (estado === "En juego" || estado === "Finalizado") {
       if (!isEditingFirstServe) {
@@ -1367,6 +1482,8 @@
       btnEditFirstServe.textContent = "Editar 1er saque";
     }
 
+    setJerseyInputsDisabled(estado !== "Pendiente");
+
     renderServeIcons();
     renderSetsInfo();
   }
@@ -1382,6 +1499,23 @@
     btnEditFirstServe.textContent = isEditingFirstServe
       ? "Bloquear 1er saque"
       : "Editar 1er saque";
+  });
+
+  btnSaveJerseys.addEventListener("click", async () => {
+    if (!currentMatchId || !currentMatchData) return;
+    if (currentMatchData.estado !== "Pendiente") {
+      alert("Solo podés editar las camisetas antes de iniciar el partido.");
+      return;
+    }
+
+    const matchRef = doc(db, MATCHES_COLLECTION, currentMatchId);
+    const localJerseyFirst = getRadioValue("localJerseyFirst") || 1;
+    const visitJerseyFirst = getRadioValue("visitJerseyFirst") || 1;
+
+    await updateDoc(matchRef, {
+      localJerseyFirst,
+      visitJerseyFirst
+    });
   });
 
   async function updateServe(pointWinner) {
@@ -1520,12 +1654,16 @@
 
     const localFirst = getRadioValue("localStarter") || 1;
     const visitFirst = getRadioValue("visitStarter") || 1;
+    const localJerseyFirst = getRadioValue("localJerseyFirst") || 1;
+    const visitJerseyFirst = getRadioValue("visitJerseyFirst") || 1;
     const setsMode = getSetsModeFromInputs();
 
     await updateDoc(matchRef, {
       estado: "En juego",
       localFirstServer: localFirst,
       visitFirstServer: visitFirst,
+      localJerseyFirst,
+      visitJerseyFirst,
       currentServerTeam: null,
       currentServerPlayer: null,
       localNextServer: localFirst,
@@ -1560,7 +1698,9 @@
       "estado",
       "setsMode",
       "localFirstServer",
-      "visitFirstServer"
+      "visitFirstServer",
+      "localJerseyFirst",
+      "visitJerseyFirst"
     ];
 
     const fieldsToUpdate = new Set([
