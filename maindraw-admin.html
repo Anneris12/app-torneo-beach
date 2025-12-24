@@ -228,6 +228,10 @@
         Exportar partidos (CSV)
       </button>
 
+      <button id="btnResetMainDraw" type="button" class="btn-secondary">
+        Resetear partidos y resultados
+      </button>
+
       <button id="btnAssignFromRanking" type="button" class="btn-primary">
         Asignar equipos según ranking
       </button>
@@ -312,6 +316,7 @@
   const btnCheckMainDraw     = document.getElementById("btnCheckMainDraw");
   const btnImportMainDraw    = document.getElementById("btnImportMainDraw");
   const btnExportMainDraw    = document.getElementById("btnExportMainDraw");
+  const btnResetMainDraw     = document.getElementById("btnResetMainDraw");
   const btnAssignFromRanking = document.getElementById("btnAssignFromRanking");
   const mainDrawStatus       = document.getElementById("mainDrawStatus");
   const fileInput            = document.getElementById("fileInput");
@@ -339,6 +344,11 @@
   btnExportMainDraw.addEventListener("click", () => {
     const rama = mainDrawRamaSelect.value;
     exportMainDrawToCSV(rama);
+  });
+
+  btnResetMainDraw.addEventListener("click", () => {
+    const rama = mainDrawRamaSelect.value;
+    resetMainDraw(rama);
   });
 
   btnAssignFromRanking.addEventListener("click", () => {
@@ -582,6 +592,32 @@
     } else {
       mainDrawStatus.textContent = `Hay ${snap.size} partidos de cuadro para ${rama === "F" ? "Femenino" : "Masculino"}.\nLuego podés asignar equipos de 1ra ronda según el ranking.`;
     }
+  }
+
+  async function resetMainDraw(rama) {
+    const confirmReset = confirm(
+      `¿Seguro que querés eliminar todos los partidos y resultados del cuadro principal para ${rama === "F" ? "Femenino" : "Masculino"}?`
+    );
+    if (!confirmReset) return;
+
+    mainDrawStatus.textContent = "Eliminando partidos del cuadro...";
+
+    const existingQ = query(
+      collection(db, "matches"),
+      where("phase", "==", "maindraw"),
+      where("rama", "==", rama)
+    );
+    const existingSnap = await getDocs(existingQ);
+
+    if (!existingSnap.empty) {
+      const batchDel = writeBatch(db);
+      existingSnap.forEach(docSnap => {
+        batchDel.delete(docSnap.ref);
+      });
+      await batchDel.commit();
+    }
+
+    mainDrawStatus.textContent = `Partidos y resultados del cuadro eliminados para ${rama === "F" ? "Femenino" : "Masculino"}.`;
   }
 
   /* ============================
