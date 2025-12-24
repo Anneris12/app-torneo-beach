@@ -351,7 +351,6 @@
   <div class="admin-actions">
     <button id="btnExport" class="admin-btn">Exportar CSV</button>
     <button id="btnImport" class="admin-btn">Importar CSV</button>
-    <button id="btnResetFixture" class="admin-btn">Resetear partidos y resultados</button>
     <input type="file" id="fileCsv" accept=".csv" style="display:none;" />
   </div>
 
@@ -459,6 +458,10 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
     import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+    import {
       getFirestore,
       collection,
       onSnapshot,
@@ -480,7 +483,12 @@
     };
 
     const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const db  = getFirestore(app);
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) location.href = "login.html";
+    });
 
     const btnRamaF     = document.getElementById("btnRamaF");
     const btnRamaM     = document.getElementById("btnRamaM");
@@ -492,7 +500,6 @@
     const headerCells  = document.querySelectorAll("th.sortable");
     const btnExport    = document.getElementById("btnExport");
     const btnImport    = document.getElementById("btnImport");
-    const btnResetFixture = document.getElementById("btnResetFixture");
     const fileCsv      = document.getElementById("fileCsv");
 
     const btnSelectionMode = document.getElementById("btnSelectionMode");
@@ -579,7 +586,7 @@
         const cat = normalizeCategoria(d.categoria || d.category);
         const phase = (d.phase || "zonas").toString().trim().toLowerCase() || "zonas";
         if (cat !== rama) return;
-        if (phase !== "zonas") return;
+        if (phase === "maindraw") return;
         refs.push(docSnap.ref);
       });
 
@@ -1004,17 +1011,6 @@
     // ================= IMPORTAR CSV =================
     btnImport.addEventListener("click", () => fileCsv.click());
 
-    btnResetFixture.addEventListener("click", async () => {
-      const rama = selectedRama;
-      const confirmReset = confirm(
-        `¿Seguro que querés eliminar todos los partidos y resultados de la fase de zonas para ${rama === "F" ? "Femenino" : "Masculino"}?`
-      );
-      if (!confirmReset) return;
-
-      await deleteZoneMatchesForRama(rama);
-      alert(`Partidos y resultados de zonas eliminados para ${rama === "F" ? "Femenino" : "Masculino"}.`);
-    });
-
     fileCsv.addEventListener("change", async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -1049,10 +1045,6 @@
         headers.forEach((h,i) => idx[h] = i);
 
         await deleteZoneMatchesForRama(selectedRama);
-
-        if (deleteCount > 0) {
-          await batchDelete.commit();
-        }
 
         const promises = [];
 
