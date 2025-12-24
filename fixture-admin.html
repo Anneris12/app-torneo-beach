@@ -351,6 +351,7 @@
   <div class="admin-actions">
     <button id="btnExport" class="admin-btn">Exportar CSV</button>
     <button id="btnImport" class="admin-btn">Importar CSV</button>
+    <button id="btnResetFixture" class="admin-btn">Resetear partidos y resultados</button>
     <input type="file" id="fileCsv" accept=".csv" style="display:none;" />
   </div>
 
@@ -463,6 +464,7 @@
       onSnapshot,
       getDocs,
       addDoc,
+      writeBatch,
       updateDoc,
       deleteDoc,
       doc
@@ -490,6 +492,7 @@
     const headerCells  = document.querySelectorAll("th.sortable");
     const btnExport    = document.getElementById("btnExport");
     const btnImport    = document.getElementById("btnImport");
+    const btnResetFixture = document.getElementById("btnResetFixture");
     const fileCsv      = document.getElementById("fileCsv");
 
     const btnSelectionMode = document.getElementById("btnSelectionMode");
@@ -565,6 +568,29 @@
         if (d && m && y) return `${y.padStart(4,"0")}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`;
       }
       return fecha;
+    }
+
+    async function deleteZoneMatchesForRama(rama) {
+      const snap = await getDocs(collection(db, "matches"));
+      const refs = [];
+
+      snap.forEach(docSnap => {
+        const d = docSnap.data();
+        const cat = normalizeCategoria(d.categoria || d.category);
+        const phase = (d.phase || "zonas").toString().trim().toLowerCase() || "zonas";
+        if (cat !== rama) return;
+        if (phase !== "zonas") return;
+        refs.push(docSnap.ref);
+      });
+
+      const chunkSize = 450;
+      for (let i = 0; i < refs.length; i += chunkSize) {
+        const batch = writeBatch(db);
+        refs.slice(i, i + chunkSize).forEach(ref => batch.delete(ref));
+        await batch.commit();
+      }
+
+      return refs.length;
     }
 
     function renderEditZonaOptions() {
@@ -978,6 +1004,17 @@
     // ================= IMPORTAR CSV =================
     btnImport.addEventListener("click", () => fileCsv.click());
 
+    btnResetFixture.addEventListener("click", async () => {
+      const rama = selectedRama;
+      const confirmReset = confirm(
+        `¿Seguro que querés eliminar todos los partidos y resultados de la fase de zonas para ${rama === "F" ? "Femenino" : "Masculino"}?`
+      );
+      if (!confirmReset) return;
+
+      await deleteZoneMatchesForRama(rama);
+      alert(`Partidos y resultados de zonas eliminados para ${rama === "F" ? "Femenino" : "Masculino"}.`);
+    });
+
     fileCsv.addEventListener("change", async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -1011,18 +1048,7 @@
         const idx = {};
         headers.forEach((h,i) => idx[h] = i);
 
-        const snap = await getDocs(collection(db, "matches"));
-        const existing = new Map();
-        snap.forEach(docSnap => {
-          const d = docSnap.data();
-          const cat  = normalizeCategoria(d.categoria || d.category);
-          if (cat !== selectedRama) return;
-          const num  = d.numeroPartido?.toString().trim();
-          const phase = (d.phase || "").toString().trim().toLowerCase() || "zonas";
-          if (!num) return;
-          const key = `${cat}|${phase}|${num}`;
-          existing.set(key, docSnap.id);
-        });
+        await deleteZoneMatchesForRama(selectedRama);
 
         const promises = [];
 
@@ -1096,14 +1122,7 @@
           };
 
           const phase = "zonas";
-          const key = `${selectedRama}|${phase}|${numeroPartido}`;
-
-          if (existing.has(key)) {
-            const id = existing.get(key);
-            promises.push(updateDoc(doc(db, "matches", id), data));
-          } else {
-            promises.push(addDoc(collection(db, "matches"), data));
-          }
+          promises.push(addDoc(collection(db, "matches"), data));
         }
 
         await Promise.all(promises);
