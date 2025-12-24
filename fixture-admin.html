@@ -570,6 +570,29 @@
       return fecha;
     }
 
+    async function deleteZoneMatchesForRama(rama) {
+      const snap = await getDocs(collection(db, "matches"));
+      const refs = [];
+
+      snap.forEach(docSnap => {
+        const d = docSnap.data();
+        const cat = normalizeCategoria(d.categoria || d.category);
+        const phase = (d.phase || "zonas").toString().trim().toLowerCase() || "zonas";
+        if (cat !== rama) return;
+        if (phase !== "zonas") return;
+        refs.push(docSnap.ref);
+      });
+
+      const chunkSize = 450;
+      for (let i = 0; i < refs.length; i += chunkSize) {
+        const batch = writeBatch(db);
+        refs.slice(i, i + chunkSize).forEach(ref => batch.delete(ref));
+        await batch.commit();
+      }
+
+      return refs.length;
+    }
+
     function renderEditZonaOptions() {
       editZona.innerHTML = '<option value="">Zona</option>';
       zonasDisponibles.forEach(z => {
@@ -988,21 +1011,7 @@
       );
       if (!confirmReset) return;
 
-      const snap = await getDocs(collection(db, "matches"));
-      const deletions = [];
-
-      snap.forEach(docSnap => {
-        const d = docSnap.data();
-        const cat = normalizeCategoria(d.categoria || d.category);
-        const phase = (d.phase || "zonas").toString().trim().toLowerCase();
-
-        if (cat !== rama) return;
-        if (phase !== "zonas") return;
-
-        deletions.push(deleteDoc(docSnap.ref));
-      });
-
-      await Promise.all(deletions);
+      await deleteZoneMatchesForRama(rama);
       alert(`Partidos y resultados de zonas eliminados para ${rama === "F" ? "Femenino" : "Masculino"}.`);
     });
 
@@ -1039,18 +1048,7 @@
         const idx = {};
         headers.forEach((h,i) => idx[h] = i);
 
-        const snap = await getDocs(collection(db, "matches"));
-        const batchDelete = writeBatch(db);
-        let deleteCount = 0;
-        snap.forEach(docSnap => {
-          const d = docSnap.data();
-          const cat = normalizeCategoria(d.categoria || d.category);
-          const phase = (d.phase || "").toString().trim().toLowerCase() || "zonas";
-          if (cat !== selectedRama) return;
-          if (phase !== "zonas") return;
-          batchDelete.delete(docSnap.ref);
-          deleteCount++;
-        });
+        await deleteZoneMatchesForRama(selectedRama);
 
         if (deleteCount > 0) {
           await batchDelete.commit();
