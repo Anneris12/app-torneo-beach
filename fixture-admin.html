@@ -1050,6 +1050,10 @@
 
         await deleteZoneMatchesForRama(selectedRama);
 
+        if (deleteCount > 0) {
+          await batchDelete.commit();
+        }
+
         const promises = [];
 
         for (let i = 1; i < lines.length; i++) {
