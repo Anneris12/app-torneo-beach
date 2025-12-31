@@ -299,7 +299,6 @@
     <select id="filterPhase">
       <option value="groups">Fase de grupos</option>
       <option value="maindraw">Cuadro principal</option>
-      <option value="silver">Copa de Plata</option>
     </select>
 
     <!-- Zona (solo grupos) -->
@@ -725,14 +724,6 @@
     return up;
   }
 
-  function normalizePhase(p) {
-    const raw = (p || "").toString().trim().toLowerCase();
-    if (!raw) return "groups";
-    if (raw === "zonas" || raw === "zones" || raw === "groups") return "groups";
-    if (raw === "main" || raw === "main_draw" || raw === "main draw") return "maindraw";
-    return raw;
-  }
-
   function normalizeHora(horaRaw) {
     if (!horaRaw && horaRaw !== 0) return "";
     let str = String(horaRaw).trim();
@@ -1029,45 +1020,6 @@
     await batch.commit();
   }
 
-  // Propaga ganador de play-in de Copa de Plata (MASC)
-  async function propagateSilverPlayInResult(matchData, matchId) {
-    const phase = (matchData.phase || "").toString().trim().toLowerCase();
-    const round = (matchData.round || "").toString().trim().toLowerCase();
-    if (phase !== "silver" || round !== "playin") return;
-
-    const rama = (matchData.rama || matchData.categoria || matchData.category || "")
-      .toString()
-      .toUpperCase()
-      .charAt(0);
-    if (rama !== "M") return;
-
-    const wl = getWinnerLoserFromMatch(matchData);
-    if (!wl) return;
-
-    const winnerName = wl.winnerSide === 1
-      ? (matchData.team1Name || matchData.localName || "")
-      : (matchData.team2Name || matchData.visitanteName || "");
-
-    const winnerId = wl.winnerSide === 1
-      ? (matchData.team1Id || null)
-      : (matchData.team2Id || null);
-
-    const targetId = matchId === "SILVER_MASC_PLAYIN_1"
-      ? "SILVER_MASC_QF_2"
-      : matchId === "SILVER_MASC_PLAYIN_2"
-        ? "SILVER_MASC_QF_1"
-        : null;
-
-    if (!targetId) return;
-
-    const targetRef = doc(db, MATCHES_COLLECTION, targetId);
-    await updateDoc(targetRef, {
-      team2Id: winnerId,
-      team2Name: winnerName,
-      visitanteName: winnerName
-    });
-  }
-
   // Cerrar set automático según puntuación
   async function maybeAutoCloseSet(newLocal, newVisit) {
     if (!currentMatchId || !currentMatchData) return;
@@ -1151,7 +1103,6 @@
       try {
         const finalData = {
           ...currentMatchData,
-          round: currentMatchData.round,
           setsData: finalSetsData,
           setsLocal,
           setsVisitante,
@@ -1164,9 +1115,8 @@
           setsMode
         };
         await propagateMainDrawResult(finalData);
-        await propagateSilverPlayInResult(finalData, currentMatchId);
       } catch (e) {
-        console.error("Error propagando resultado del cuadro:", e);
+        console.error("Error propagando resultado en maindraw:", e);
       }
     }
   }
@@ -1182,9 +1132,8 @@
       const d = docSnap.data();
 
       const categoria = normalizeCategoria(d.categoria || d.category || d.rama || "");
-      const phase     = normalizePhase(d.phase || d.fase || "");
+      const phase     = (d.phase || "").toString().trim().toLowerCase();
       const roundLabelVal = (d.roundLabel || "").toString();
-      const roundKey = (d.round || "").toString().trim().toLowerCase();
 
       let estado = d.estado;
       if (!estado && d.status) {
@@ -1203,8 +1152,6 @@
         categoria,
         phase,          
         roundLabel: roundLabelVal,
-        round: roundKey,
-        slot: d.slot ?? null,
         zona: normalizeZone(d.zona),
         cancha: normalizeCancha(d.cancha),
         fecha: d.fecha || "",
@@ -1227,6 +1174,7 @@
       });
     });
 
+    buildRoundOptions();
     buildZoneOptions();
     buildCourtOptions();
     updatePhaseUI();
@@ -1236,21 +1184,13 @@
     return m.phase === "maindraw";
   }
 
-  function isSilver(m) {
-    return m.phase === "silver";
-  }
-
-  function isGroups(m) {
-    return m.phase === "groups";
-  }
-
-  function buildRoundOptions(phase) {
+  function buildRoundOptions() {
     selRound.innerHTML = `<option value="all">Todas</option>`;
 
     const roundsSet = new Set();
 
     allMatches
-      .filter(m => m.phase === phase)
+      .filter(isMainDraw)
       .forEach(m => {
         const r = m.roundLabel || "";
         if (r) roundsSet.add(r);
@@ -1271,7 +1211,7 @@
     const zonesSet = new Set();
 
     allMatches
-      .filter(isGroups)
+      .filter(m => !isMainDraw(m))
       .forEach(m => {
         const z = normalizeZone(m.zona);
         if (z) zonesSet.add(z);
@@ -1315,7 +1255,7 @@
   }
 
   function updatePhaseUI() {
-    const phase = selPhase.value; // groups | maindraw | silver
+    const phase = selPhase.value; // groups | maindraw
 
     selMatch.value = "";
     currentMatchId = null;
@@ -1331,7 +1271,6 @@
       selZone.style.display    = "none";
       roundLabel.style.display = "";
       selRound.style.display   = "";
-      buildRoundOptions(phase);
     }
 
     renderMatchList();
@@ -1344,9 +1283,9 @@
     let list = [...allMatches];
 
     list = list.filter(m => {
-      if (phaseFilter === "maindraw") return isMainDraw(m);
-      if (phaseFilter === "silver") return isSilver(m);
-      return isGroups(m);
+      const md = isMainDraw(m);
+      if (phaseFilter === "maindraw") return md;
+      return !md;
     });
 
     // Rama (obligatorio: siempre F o M)
@@ -1356,7 +1295,7 @@
       list = list.filter(m => m.zona === selZone.value);
     }
 
-    if ((phaseFilter === "maindraw" || phaseFilter === "silver") && selRound.value !== "all") {
+    if (phaseFilter === "maindraw" && selRound.value !== "all") {
       list = list.filter(m => m.roundLabel === selRound.value);
     }
 
@@ -1367,13 +1306,6 @@
     list = list.filter(m => m.estado !== "Finalizado");
 
     list.sort((a, b) => {
-      if (phaseFilter === "silver") {
-        const order = { playin: 0, qf: 1, sf: 2, final: 3 };
-        const ra = order[a.round] ?? 99;
-        const rb = order[b.round] ?? 99;
-        if (ra !== rb) return ra - rb;
-        return (a.slot ?? 99) - (b.slot ?? 99);
-      }
       const na = typeof a.numeroPartido === "number" ? a.numeroPartido : 9999;
       const nb = typeof b.numeroPartido === "number" ? b.numeroPartido : 9999;
       const ca = getCourtSortValue(a.cancha);
@@ -1386,14 +1318,11 @@
       const labelNumero = typeof m.numeroPartido === "number"
         ? `#${m.numeroPartido} – `
         : "";
-      const labelRound = !labelNumero && m.roundLabel
-        ? `${m.roundLabel}${m.slot ? " " + m.slot : ""} – `
-        : "";
       const labelCancha = m.cancha ? `Cancha ${m.cancha} · ` : "";
 
       selMatch.innerHTML += `
         <option value="${m.id}">
-          ${labelCancha}${labelNumero}${labelRound}${m.localName} vs ${m.visitanteName}
+          ${labelCancha}${labelNumero}${m.localName} vs ${m.visitanteName}
         </option>
       `;
     });

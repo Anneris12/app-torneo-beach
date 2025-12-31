@@ -277,27 +277,6 @@
     <!-- input de archivo oculto -->
     <input type="file" id="fileInput" accept=".csv" style="display:none" />
   </div>
-
-  <div class="panel">
-    <h2>Generar Copa de Plata</h2>
-    <p>
-      Acción independiente del Main Draw. Usa el ranking final de zonas y crea el cuadro "silver".
-    </p>
-
-    <div class="controls">
-      <label for="silverRama">Rama:</label>
-      <select id="silverRama">
-        <option value="F">Femenino</option>
-        <option value="M">Masculino</option>
-      </select>
-
-      <button id="btnGenerateSilver" type="button" class="btn-primary">
-        Generar Copa de Plata
-      </button>
-    </div>
-
-    <div id="silverStatus"></div>
-  </div>
 </main>
 
 
@@ -344,9 +323,6 @@
   const previewCard          = document.getElementById("previewCard");
   const previewBody          = document.getElementById("previewBody");
   const previewMeta          = document.getElementById("previewMeta");
-  const silverRamaSelect     = document.getElementById("silverRama");
-  const btnGenerateSilver    = document.getElementById("btnGenerateSilver");
-  const silverStatus         = document.getElementById("silverStatus");
 
   btnCheckMainDraw.addEventListener("click", () => {
     const rama = mainDrawRamaSelect.value;
@@ -378,11 +354,6 @@
   btnAssignFromRanking.addEventListener("click", () => {
     const rama = mainDrawRamaSelect.value;
     assignTeamsFromRanking(rama);
-  });
-
-  btnGenerateSilver.addEventListener("click", () => {
-    const rama = silverRamaSelect.value;
-    generateSilverBracket(rama);
   });
 
   /* ============================
@@ -1104,186 +1075,9 @@ async function fetchRankingForRama(rama) {
 }
 
 
-  /* ============================
-   * 6) GENERAR COPA DE PLATA
-   * ============================ */
-
-  function buildSilverMatches(rama, seedsByNumber) {
-    const gender = rama === "F" ? "fem" : "masc";
-    const base = {
-      phase: "silver",
-      rama,
-      categoria: rama,
-      gender,
-      status: "pending",
-      setsData: [],
-      zona: null
-    };
-
-    const matches = [];
-    const addMatch = (id, round, roundLabel, slot, team1, team2, extra = {}) => {
-      matches.push({
-        id,
-        data: {
-          ...base,
-          round,
-          roundLabel,
-          slot,
-          team1Id: team1?.teamId ?? null,
-          team1Name: team1?.teamName ?? null,
-          team2Id: team2?.teamId ?? null,
-          team2Name: team2?.teamName ?? null,
-          localName: team1?.teamName ?? null,
-          visitanteName: team2?.teamName ?? null,
-          ...extra
-        }
-      });
-    };
-
-    if (rama === "F") {
-      // Seeds 1..8 (plata) vienen del ranking final: posiciones 17..24.
-      const qfSeeds = [
-        { slot: 1, seed1: 1, seed2: 8 },
-        { slot: 2, seed1: 4, seed2: 5 },
-        { slot: 3, seed1: 3, seed2: 6 },
-        { slot: 4, seed1: 2, seed2: 7 }
-      ];
-
-      qfSeeds.forEach(({ slot, seed1, seed2 }) => {
-        addMatch(
-          `SILVER_FEM_QF_${slot}`,
-          "qf",
-          "Cuartos",
-          slot,
-          seedsByNumber[seed1],
-          seedsByNumber[seed2]
-        );
-      });
-
-      addMatch("SILVER_FEM_SF_1", "sf", "Semifinal", 1, null, null);
-      addMatch("SILVER_FEM_SF_2", "sf", "Semifinal", 2, null, null);
-      addMatch("SILVER_FEM_FINAL_1", "final", "Final", 1, null, null);
-      return matches;
-    }
-
-    // MASC: 10 equipos -> play-in + cuadro de 8
-    addMatch(
-      "SILVER_MASC_PLAYIN_1",
-      "playin",
-      "Play-in",
-      1,
-      seedsByNumber[7],
-      seedsByNumber[10]
-    );
-    addMatch(
-      "SILVER_MASC_PLAYIN_2",
-      "playin",
-      "Play-in",
-      2,
-      seedsByNumber[8],
-      seedsByNumber[9]
-    );
-
-    // sourceTeam2 se completa al cerrar el play-in correspondiente.
-    addMatch(
-      "SILVER_MASC_QF_1",
-      "qf",
-      "Cuartos",
-      1,
-      seedsByNumber[1],
-      null,
-      { sourceTeam2: { type: "winnerOf", matchId: "SILVER_MASC_PLAYIN_2" } }
-    );
-    addMatch(
-      "SILVER_MASC_QF_2",
-      "qf",
-      "Cuartos",
-      2,
-      seedsByNumber[2],
-      null,
-      { sourceTeam2: { type: "winnerOf", matchId: "SILVER_MASC_PLAYIN_1" } }
-    );
-    addMatch(
-      "SILVER_MASC_QF_3",
-      "qf",
-      "Cuartos",
-      3,
-      seedsByNumber[3],
-      seedsByNumber[6]
-    );
-    addMatch(
-      "SILVER_MASC_QF_4",
-      "qf",
-      "Cuartos",
-      4,
-      seedsByNumber[4],
-      seedsByNumber[5]
-    );
-
-    addMatch("SILVER_MASC_SF_1", "sf", "Semifinal", 1, null, null);
-    addMatch("SILVER_MASC_SF_2", "sf", "Semifinal", 2, null, null);
-    addMatch("SILVER_MASC_FINAL_1", "final", "Final", 1, null, null);
-
-    return matches;
-  }
-
-  async function generateSilverBracket(rama) {
-    try {
-      silverStatus.textContent = "Calculando ranking...";
-      const ranking = await fetchRankingForRama(rama);
-
-      if (!ranking || ranking.length === 0) {
-        silverStatus.textContent =
-          `❌ El ranking de ${rama === "F" ? "Femenino" : "Masculino"} no tiene equipos cargados.`;
-        return;
-      }
-
-      const startIndex = rama === "F" ? 16 : 32;
-      const silverCount = rama === "F" ? 8 : 10;
-      const silverTeams = ranking.slice(startIndex, startIndex + silverCount);
-
-      if (silverTeams.length === 0) {
-        silverStatus.textContent =
-          `❌ No hay suficientes equipos fuera del main draw para ${rama === "F" ? "Femenino" : "Masculino"}.`;
-        return;
-      }
-
-      // Seeds en plata: ordenados por ranking (seed1 = mejor rankeado fuera del main).
-      const seedsByNumber = {};
-      silverTeams.forEach((t, idx) => {
-        seedsByNumber[idx + 1] = {
-          teamId: t.teamId || null,
-          teamName: t.teamName || `Seed ${idx + 1}`
-        };
-      });
-
-      silverStatus.textContent =
-        `Generando partidos de Copa de Plata (${silverTeams.length} equipos)...`;
-
-      const matchesToCreate = buildSilverMatches(rama, seedsByNumber);
-      const batch = writeBatch(db);
-
-      matchesToCreate.forEach(m => {
-        const ref = doc(db, "matches", m.id);
-        batch.set(ref, m.data, { merge: false });
-      });
-
-      await batch.commit();
-
-      silverStatus.textContent =
-        `✅ Copa de Plata creada para ${rama === "F" ? "Femenino" : "Masculino"}.\n` +
-        `Equipos disponibles: ${silverTeams.length}.`;
-    } catch (err) {
-      console.error(err);
-      silverStatus.textContent =
-        "❌ Error generando la Copa de Plata. Revisá la consola para más detalles.";
-    }
-  }
-
-
 
   /* ============================
-   * 7) ASIGNAR EQUIPOS EN 1RA RONDA
+   * 6) ASIGNAR EQUIPOS EN 1RA RONDA
    * ============================ */
 
 async function assignTeamsFromRanking(rama) {
