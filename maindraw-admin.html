@@ -235,6 +235,10 @@
       <button id="btnAssignFromRanking" type="button" class="btn-primary">
         Asignar equipos según ranking
       </button>
+
+      <button id="btnGenerateSilver" type="button" class="btn-secondary">
+        Generar Copa de Plata
+      </button>
     </div>
 
     <p style="font-size:13px; color:#b0b0b0; margin-top:0;">
@@ -318,6 +322,7 @@
   const btnExportMainDraw    = document.getElementById("btnExportMainDraw");
   const btnResetMainDraw     = document.getElementById("btnResetMainDraw");
   const btnAssignFromRanking = document.getElementById("btnAssignFromRanking");
+  const btnGenerateSilver    = document.getElementById("btnGenerateSilver");
   const mainDrawStatus       = document.getElementById("mainDrawStatus");
   const fileInput            = document.getElementById("fileInput");
   const previewCard          = document.getElementById("previewCard");
@@ -354,6 +359,14 @@
   btnAssignFromRanking.addEventListener("click", () => {
     const rama = mainDrawRamaSelect.value;
     assignTeamsFromRanking(rama);
+  });
+
+  btnGenerateSilver.addEventListener("click", () => {
+    const rama = mainDrawRamaSelect.value;
+    const confirmText = `¿Generar Copa de Plata para ${rama === "F" ? "Femenino" : "Masculino"}?\n` +
+      "Esto va a pisar los partidos de la Copa de Plata.";
+    if (!confirm(confirmText)) return;
+    generateSilverBracket(rama);
   });
 
   /* ============================
@@ -1205,6 +1218,174 @@ async function assignTeamsFromRanking(rama) {
     console.error(err);
     mainDrawStatus.textContent =
       "❌ Error al asignar equipos desde el ranking. Revisá la consola para más detalles.";
+  }
+}
+
+/* ============================
+ * 7) GENERAR COPA DE PLATA
+ * ============================ */
+
+function getSilverTeamsFromRanking(rama, ranking) {
+  const startIndex = rama === "F" ? 16 : 32;
+  const count = rama === "F" ? 8 : 10;
+  const slice = ranking.slice(startIndex, startIndex + count);
+
+  return slice.map((item, idx) => ({
+    seed: idx + 1,
+    teamId: item.teamId || null,
+    teamName: item.teamName || `Seed ${idx + 1}`
+  }));
+}
+
+function buildSilverMatchData({ rama, gender, round, slot, team1, team2, cruce, sourceTeam1, sourceTeam2 }) {
+  return {
+    phase: "silver",
+    round,
+    slot,
+    rama,
+    gender,
+    team1Id: team1?.teamId ?? null,
+    team1Name: team1?.teamName ?? null,
+    team2Id: team2?.teamId ?? null,
+    team2Name: team2?.teamName ?? null,
+    cruce: cruce ?? null,
+    sourceTeam1: sourceTeam1 ?? null,
+    sourceTeam2: sourceTeam2 ?? null,
+    estado: "Pendiente",
+    status: "pending"
+  };
+}
+
+async function generateSilverBracket(rama) {
+  try {
+    mainDrawStatus.textContent = "Calculando ranking para Copa de Plata...";
+
+    const ranking = await fetchRankingForRama(rama);
+    if (!ranking || ranking.length === 0) {
+      mainDrawStatus.textContent =
+        `❌ El ranking de ${rama === "F" ? "Femenino" : "Masculino"} no tiene equipos cargados.`;
+      return;
+    }
+
+    const silverTeams = getSilverTeamsFromRanking(rama, ranking);
+    const requiredCount = rama === "F" ? 8 : 10;
+
+    if (silverTeams.length < requiredCount) {
+      mainDrawStatus.textContent =
+        `❌ Ranking insuficiente: se necesitan ${requiredCount} equipos para Copa de Plata.`;
+      return;
+    }
+
+    const gender = rama === "F" ? "fem" : "masc";
+    const docs = [];
+
+    if (rama === "F") {
+      const [s1, s2, s3, s4, s5, s6, s7, s8] = silverTeams;
+      docs.push({
+        id: "SILVER_FEM_QF_1",
+        data: buildSilverMatchData({ rama, gender, round: "qf", slot: 1, team1: s1, team2: s8, cruce: "1 vs 8" })
+      });
+      docs.push({
+        id: "SILVER_FEM_QF_2",
+        data: buildSilverMatchData({ rama, gender, round: "qf", slot: 2, team1: s4, team2: s5, cruce: "4 vs 5" })
+      });
+      docs.push({
+        id: "SILVER_FEM_QF_3",
+        data: buildSilverMatchData({ rama, gender, round: "qf", slot: 3, team1: s3, team2: s6, cruce: "3 vs 6" })
+      });
+      docs.push({
+        id: "SILVER_FEM_QF_4",
+        data: buildSilverMatchData({ rama, gender, round: "qf", slot: 4, team1: s2, team2: s7, cruce: "2 vs 7" })
+      });
+
+      docs.push({
+        id: "SILVER_FEM_SF_1",
+        data: buildSilverMatchData({ rama, gender, round: "sf", slot: 1, cruce: "Ganador QF1 vs Ganador QF2" })
+      });
+      docs.push({
+        id: "SILVER_FEM_SF_2",
+        data: buildSilverMatchData({ rama, gender, round: "sf", slot: 2, cruce: "Ganador QF3 vs Ganador QF4" })
+      });
+
+      docs.push({
+        id: "SILVER_FEM_FINAL_1",
+        data: buildSilverMatchData({ rama, gender, round: "final", slot: 1, cruce: "Ganador SF1 vs Ganador SF2" })
+      });
+    } else {
+      const [s1, s2, s3, s4, s5, s6, s7, s8, s9, s10] = silverTeams;
+
+      docs.push({
+        id: "SILVER_MASC_PLAYIN_1",
+        data: buildSilverMatchData({ rama, gender, round: "playin", slot: 1, team1: s7, team2: s10, cruce: "7 vs 10" })
+      });
+      docs.push({
+        id: "SILVER_MASC_PLAYIN_2",
+        data: buildSilverMatchData({ rama, gender, round: "playin", slot: 2, team1: s8, team2: s9, cruce: "8 vs 9" })
+      });
+
+      docs.push({
+        id: "SILVER_MASC_QF_1",
+        data: buildSilverMatchData({
+          rama,
+          gender,
+          round: "qf",
+          slot: 1,
+          team1: s1,
+          cruce: "1 vs Ganador P2",
+          sourceTeam2: { type: "winnerOf", matchId: "SILVER_MASC_PLAYIN_2" }
+        })
+      });
+      docs.push({
+        id: "SILVER_MASC_QF_2",
+        data: buildSilverMatchData({
+          rama,
+          gender,
+          round: "qf",
+          slot: 2,
+          team1: s2,
+          cruce: "2 vs Ganador P1",
+          sourceTeam2: { type: "winnerOf", matchId: "SILVER_MASC_PLAYIN_1" }
+        })
+      });
+      docs.push({
+        id: "SILVER_MASC_QF_3",
+        data: buildSilverMatchData({ rama, gender, round: "qf", slot: 3, team1: s3, team2: s6, cruce: "3 vs 6" })
+      });
+      docs.push({
+        id: "SILVER_MASC_QF_4",
+        data: buildSilverMatchData({ rama, gender, round: "qf", slot: 4, team1: s4, team2: s5, cruce: "4 vs 5" })
+      });
+
+      docs.push({
+        id: "SILVER_MASC_SF_1",
+        data: buildSilverMatchData({ rama, gender, round: "sf", slot: 1, cruce: "Ganador QF1 vs Ganador QF2" })
+      });
+      docs.push({
+        id: "SILVER_MASC_SF_2",
+        data: buildSilverMatchData({ rama, gender, round: "sf", slot: 2, cruce: "Ganador QF3 vs Ganador QF4" })
+      });
+
+      docs.push({
+        id: "SILVER_MASC_FINAL_1",
+        data: buildSilverMatchData({ rama, gender, round: "final", slot: 1, cruce: "Ganador SF1 vs Ganador SF2" })
+      });
+    }
+
+    const batch = writeBatch(db);
+
+    docs.forEach(item => {
+      const ref = doc(db, "matches", item.id);
+      batch.set(ref, item.data, { merge: false });
+    });
+
+    await batch.commit();
+
+    mainDrawStatus.textContent =
+      `✅ Copa de Plata generada para ${rama === "F" ? "Femenino" : "Masculino"}.\n` +
+      `Equipos usados: ${requiredCount} (desde el ranking ${rama === "F" ? "17-24" : "33-42"}).`;
+  } catch (err) {
+    console.error(err);
+    mainDrawStatus.textContent = "❌ Error generando la Copa de Plata. Revisá la consola.";
   }
 }
 

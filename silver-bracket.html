@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Copa de Plata</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  margin: 0;
+  background: #031926;
+  color: white;
+  font-family: system-ui, sans-serif;
+  padding: 20px;
+}
+
+/* Botones superiores */
+.top-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.top-btn {
+  background: #ffe36a;
+  color: #000;
+  font-weight: bold;
+  padding: 10px 16px;
+  border-radius: 12px;
+  text-decoration: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Título */
+h1 {
+  text-align: center;
+  margin-top: 0;
+  text-transform: uppercase;
+}
+
+/* Filtros */
+.filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+  align-items: center;
+}
+
+/* Tabs F / M */
+.tab-btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.tab-active {
+  background: #ffe36a;
+  color: #000;
+  border-color: #ffe36a;
+}
+
+.tab-inactive {
+  background: #052235;
+  color: #fff;
+}
+
+.filters select,
+.filters input[type="text"] {
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
+  font-size: 14px;
+}
+
+.filters input::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
+/* CONTENEDOR TABLA */
+.fixture-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* TABLA */
+.fixture-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.fixture-table th,
+.fixture-table td {
+  padding: 4px 6px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.fixture-table th {
+  font-size: 13px;
+  font-weight: 600;
+  color: #eee;
+  background: rgba(255,255,255,0.1);
+}
+
+/* Columna por columna */
+.col-num     { width: 32px; }
+.col-cruce   { width: 70px; }
+.col-fase    { width: 90px; }
+.col-cancha  { width: 45px; }
+.col-hora    { width: 55px; }
+.col-fecha   { width: 60px; }
+.col-eq1     { width: 140px; text-align:left; }
+.col-res     { width: 150px; text-align:left; }
+.col-estado  { width: 80px; }
+
+/* Estado */
+.estado-pill {
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.estado-finalizado { background:#7cffc1; color:#000; }
+.estado-enjuego    { background:#ffe36a; color:#000; }
+.estado-pendiente  { background:#aaa;   color:#000; }
+
+/* Eq1 + Eq2 en dos líneas */
+.eq2 {
+  display: block;
+  margin-top: 2px;
+}
+
+/* Resultado por equipo: solo números */
+.res-team-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+
+.set-num {
+  display: inline-block;
+  min-width: 18px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.set-num.ganador {
+  color: #7cffc1;
+  font-weight: 700;
+}
+
+.credit {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.credit a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.credit a:hover {
+  text-decoration: underline;
+}
+
+/* Celular */
+@media (max-width:480px){
+  .fixture-table { font-size: 12px; }
+  .fixture-table th { font-size: 11px; }
+  .set-num { font-size:10px; min-width:16px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="top-buttons">
+  <a class="top-btn" href="index.html">Inicio</a>
+  <a class="top-btn" href="fixture.html">Fixture (Zonas)</a>
+  <a class="top-btn" href="bracket-visual.html">Vista de llaves</a>
+</div>
+
+<h1>COPA DE PLATA</h1>
+
+<!-- FILTROS -->
+<div class="filters">
+  <div id="tabF" class="tab-btn tab-active">Femenino</div>
+  <div id="tabM" class="tab-btn tab-inactive">Masculino</div>
+
+  <select id="filterCourt"></select>
+
+  <select id="filterStatus">
+    <option value="all">Estado: Todos</option>
+    <option value="Pendiente">Pendiente</option>
+    <option value="En juego">En juego</option>
+    <option value="Finalizado">Finalizado</option>
+  </select>
+
+  <input id="filterSearch" type="text" placeholder="Buscar equipo..." />
+</div>
+
+<!-- TABLA -->
+<div class="fixture-wrapper">
+  <table class="fixture-table">
+    <thead>
+      <tr>
+        <th class="col-num">#</th>
+        <th class="col-cruce">Cruce</th>
+        <th class="col-fase">Fase</th>
+        <th class="col-cancha">C</th>
+        <th class="col-hora">Hora</th>
+        <th class="col-fecha">Fecha</th>
+        <th class="col-eq1">Eq1 / Eq2</th>
+        <th class="col-res">Resultado</th>
+        <th class="col-estado">Estado</th>
+      </tr>
+    </thead>
+    <tbody id="fixtureBody"></tbody>
+  </table>
+</div>
+
+<footer class="credit">
+  Sistema Torneo Beach Volley · MacaErlan® 2026 ·
+  <a href="https://wa.me/541168319095" target="_blank" rel="noopener">WhatsApp +54 11 6831-9095</a>
+</footer>
+
+
+<!-- FIREBASE + SCRIPT -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
+  authDomain: "torneo-beach.firebaseapp.com",
+  projectId: "torneo-beach",
+  storageBucket: "torneo-beach.firebasestorage.app",
+  messagingSenderId: "21136645638",
+  appId: "1:21136645638:web:52c3b06affc2ee151eed87"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const tabF         = document.getElementById("tabF");
+const tabM         = document.getElementById("tabM");
+const filterCourt  = document.getElementById("filterCourt");
+const filterStatus = document.getElementById("filterStatus");
+const filterSearch = document.getElementById("filterSearch");
+const fixtureBody  = document.getElementById("fixtureBody");
+
+let currentRama = "F";
+let allMatches  = [];
+let canchas = new Set();
+
+/* ---------- Seeds ---------- */
+
+const FIRST_ROUND_SEED_MAP_16 = [
+  { match: 1, seed1: 1,  seed2: 16 },
+  { match: 2, seed1: 8,  seed2: 9 },
+  { match: 3, seed1: 5,  seed2: 12 },
+  { match: 4, seed1: 4,  seed2: 13 },
+  { match: 5, seed1: 3,  seed2: 14 },
+  { match: 6, seed1: 6,  seed2: 11 },
+  { match: 7, seed1: 7,  seed2: 10 },
+  { match: 8, seed1: 2,  seed2: 15 }
+];
+
+const FIRST_ROUND_SEED_MAP_32 = [
+  { match: 1,  seed1: 1,  seed2: 32 },
+  { match: 2,  seed1: 17, seed2: 16 },
+  { match: 3,  seed1: 9,  seed2: 24 },
+  { match: 4,  seed1: 25, seed2: 8 },
+  { match: 5,  seed1: 5,  seed2: 28 },
+  { match: 6,  seed1: 21, seed2: 12 },
+  { match: 7,  seed1: 13, seed2: 20 },
+  { match: 8,  seed1: 29, seed2: 4 },
+  { match: 9,  seed1: 3,  seed2: 30 },
+  { match: 10, seed1: 19, seed2: 14 },
+  { match: 11, seed1: 11, seed2: 22 },
+  { match: 12, seed1: 27, seed2: 6 },
+  { match: 13, seed1: 7,  seed2: 26 },
+  { match: 14, seed1: 23, seed2: 10 },
+  { match: 15, seed1: 15, seed2: 18 },
+  { match: 16, seed1: 31, seed2: 2 }
+];
+
+function getFirstRoundSeedMap(rama){
+  return rama === "F" ? FIRST_ROUND_SEED_MAP_16 : FIRST_ROUND_SEED_MAP_32;
+}
+
+/* ---------- Normalizadores ---------- */
+
+function normalizeCategoria(c){
+  if(!c) return "";
+  const up = c.toString().toUpperCase();
+  if(up.startsWith("F")) return "F";
+  if(up.startsWith("M")) return "M";
+  return up;
+}
+
+function normalizeHora(h){
+  if(!h) return "";
+  let s = String(h);
+
+  if(/^\d{1,2}:\d{2}$/.test(s)) return s; 
+  const dig = s.replace(/\D/g,"");
+  if(dig.length===3) return dig[0]+":"+dig.substring(1).padEnd(2,"0");
+  if(dig.length===4) return dig.substring(0,2)+":"+dig.substring(2);
+  return s;
+}
+
+function formatFecha(f){
+  if(!f) return "";
+  const s = String(f);
+
+  if(/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)){
+    const [y,m,d]=s.split("-");
+    return `${d}/${m}/${y.slice(-2)}`;
+  }
+  if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)){
+    const [d,m,y]=s.split("/");
+    return `${d}/${m}/${y.slice(-2)}`;
+  }
+  return s;
+}
+
+/* ---------- Resultado ---------- */
+
+function buildResultadoHTML(match){
+  if(match.estado!=="Finalizado" || !match.setsData || match.setsData.length===0)
+    return "—";
+
+  const sets  = match.setsData;
+  const localNums=[];
+  const visitNums=[];
+
+  sets.forEach(s=>{
+    const pl=s.puntosLocal??0;
+    const pv=s.puntosVisitante??0;
+
+    const lcls = pl>pv ? "ganador":"";
+    const vcls = pv>pl ? "ganador":"";
+
+    localNums.push(`<span class="set-num ${lcls}">${pl}</span>`);
+    visitNums.push(`<span class="set-num ${vcls}">${pv}</span>`);
+  });
+
+  return `
+    <div class="res-team-line">
+      ${localNums.join("")}
+    </div>
+    <div class="res-team-line">
+      ${visitNums.join("")}
+    </div>
+  `;
+}
+
+/* ---------- Estado visual ---------- */
+
+function estClass(e){
+  if(e==="Finalizado") return "estado-finalizado";
+  if(e==="En juego") return "estado-enjuego";
+  return "estado-pendiente";
+}
+
+/* ---------- Cruce (1 vs 32, etc.) ---------- */
+
+function getCruceForMatch(m){
+  if (m.cruce) return m.cruce;
+
+  const num = m.numeroPartido || m.drawMatchNumber;
+  const found = getFirstRoundSeedMap(m.rama || currentRama).find(x => x.match === num);
+  if (found) return `${found.seed1} vs ${found.seed2}`;
+
+  return "";
+}
+
+/* ---------- Filtros dinámicos ---------- */
+
+function renderFilterOptions(){
+  filterCourt.innerHTML = `<option value="all">Cancha: Todas</option>`;
+  [...canchas].sort((a,b)=> Number(a)-Number(b))
+    .forEach(c=>{
+      filterCourt.innerHTML += `<option value="${c}">Cancha ${c}</option>`;
+    });
+}
+
+/* ---------- Render tabla ---------- */
+
+function renderTable(){
+  let list=[...allMatches];
+
+  list = list.filter(m => m.categoria === currentRama);
+
+  if(filterCourt.value!=="all")
+    list=list.filter(m=>String(m.cancha)===filterCourt.value);
+
+  if(filterStatus.value!=="all")
+    list=list.filter(m=>m.estado===filterStatus.value);
+
+  const search = filterSearch.value.trim().toLowerCase();
+  if (search) {
+    list = list.filter(m => {
+      const l = (m.localName || "").toLowerCase();
+      const v = (m.visitanteName || "").toLowerCase();
+      return l.includes(search) || v.includes(search);
+    });
+  }
+
+  const roundOrder = {
+    playin: 0,
+    qf: 1,
+    sf: 2,
+    final: 3
+  };
+
+  list.sort((a, b) => {
+    const ra = roundOrder[a.round] ?? 99;
+    const rb = roundOrder[b.round] ?? 99;
+    if (ra !== rb) return ra - rb;
+    return (a.slot ?? 9999) - (b.slot ?? 9999);
+  });
+
+  if(list.length===0){
+    fixtureBody.innerHTML =
+      `<tr><td colspan="9">No hay partidos con estos filtros.</td></tr>`;
+    return;
+  }
+
+  fixtureBody.innerHTML="";
+
+  list.forEach(m=>{
+    const tr=document.createElement("tr");
+
+    const horaFmt  = normalizeHora(m.hora);
+    const fechaFmt = formatFecha(m.fecha);
+    const estCls   = estClass(m.estado || "Pendiente");
+    const cruceStr = getCruceForMatch(m);
+
+    tr.innerHTML = `
+      <td class="col-num">${m.slot ?? ""}</td>
+      <td class="col-cruce">${cruceStr||""}</td>
+      <td class="col-fase">${m.fase||""}</td>
+      <td class="col-cancha">${m.cancha||""}</td>
+      <td class="col-hora">${horaFmt}</td>
+      <td class="col-fecha">${fechaFmt}</td>
+
+      <td class="col-eq1">
+        ${m.localName||""}
+        <span class="eq2">${m.visitanteName||""}</span>
+      </td>
+
+      <td class="col-res">
+        ${buildResultadoHTML(m)}
+      </td>
+
+      <td class="col-estado">
+        <span class="estado-pill ${estCls}">
+          ${m.estado||"Pendiente"}
+        </span>
+      </td>
+    `;
+
+    fixtureBody.appendChild(tr);
+  });
+}
+
+/* ---------- Cargar MAINDRAW ---------- */
+
+onSnapshot(collection(db,"matches"), snap=>{
+  allMatches=[];
+  canchas.clear();
+
+  snap.forEach(docSnap=>{
+    const d = docSnap.data();
+
+    const phase = (d.phase || "").toString().toLowerCase();
+    if (phase !== "silver") return;
+
+    const categoria = normalizeCategoria(d.categoria || d.category || d.rama);
+    const round     = (d.round || "").toString().toLowerCase();
+    const fase      = round === "playin"
+      ? "Play-in"
+      : round === "qf"
+        ? "Cuartos"
+        : round === "sf"
+          ? "Semifinal"
+          : round === "final"
+            ? "Final"
+            : "";
+    const cancha    = d.cancha || "";
+
+    if(cancha!=="") canchas.add(String(cancha));
+
+    let estado = d.estado;
+    if (!estado && d.status) {
+      if (d.status === "finished")    estado = "Finalizado";
+      else if (d.status === "in_progress") estado = "En juego";
+      else estado = "Pendiente";
+    }
+    if (!estado) estado = "Pendiente";
+
+    allMatches.push({
+      id: docSnap.id,
+      slot: d.slot ?? null,
+      localName: d.team1Name || d.localName,
+      visitanteName: d.team2Name || d.visitanteName,
+      categoria,
+      fase,
+      round,
+      cancha,
+      fecha: d.fecha,
+      hora: d.hora,
+      estado,
+      setsData: d.setsData || [],
+      cruce: d.cruce || null
+    });
+  });
+
+  renderFilterOptions();
+  renderTable();
+});
+
+/* Eventos filtros */
+filterCourt.onchange  = renderTable;
+filterStatus.onchange = renderTable;
+filterSearch.addEventListener("input", renderTable);
+
+/* Tabs F / M */
+tabF.addEventListener("click", ()=>{
+  currentRama = "F";
+  tabF.classList.add("tab-active");
+  tabF.classList.remove("tab-inactive");
+  tabM.classList.add("tab-inactive");
+  tabM.classList.remove("tab-active");
+  renderTable();
+});
+
+tabM.addEventListener("click", ()=>{
+  currentRama = "M";
+  tabM.classList.add("tab-active");
+  tabM.classList.remove("tab-inactive");
+  tabF.classList.add("tab-inactive");
+  tabF.classList.remove("tab-active");
+  renderTable();
+});
+
+</script>
+
+</body>
+</html>

@@ -1020,6 +1020,57 @@
     await batch.commit();
   }
 
+  async function propagateSilverPlayInResult(matchData) {
+    if (matchData.phase !== "silver") return;
+
+    const round = (matchData.round || "").toString().toLowerCase();
+    if (round !== "playin") return;
+
+    const rama = (matchData.rama || matchData.categoria || matchData.category || "")
+      .toString()
+      .toUpperCase()
+      .charAt(0);
+
+    const wl = getWinnerLoserFromMatch(matchData);
+    if (!wl) {
+      console.warn("No se pudo determinar ganador del play-in de plata.");
+      return;
+    }
+
+    const winnerName = wl.winnerSide === 1
+      ? (matchData.team1Name || matchData.localName || "")
+      : (matchData.team2Name || matchData.visitanteName || "");
+
+    const winnerId = wl.winnerSide === 1
+      ? (matchData.team1Id ?? null)
+      : (matchData.team2Id ?? null);
+
+    const targetQuery = query(
+      collection(db, MATCHES_COLLECTION),
+      where("phase", "==", "silver"),
+      where("rama", "==", rama),
+      where("sourceTeam2.matchId", "==", matchData.id)
+    );
+
+    const snap = await getDocs(targetQuery);
+    if (snap.empty) {
+      console.warn("No se encontraron partidos de plata para completar con play-in.");
+      return;
+    }
+
+    const batch = writeBatch(db);
+
+    snap.forEach(docSnap => {
+      batch.update(docSnap.ref, {
+        team2Name: winnerName || null,
+        team2Id: winnerId,
+        status: "pending"
+      });
+    });
+
+    await batch.commit();
+  }
+
   // Cerrar set automático según puntuación
   async function maybeAutoCloseSet(newLocal, newVisit) {
     if (!currentMatchId || !currentMatchData) return;
@@ -1115,8 +1166,9 @@
           setsMode
         };
         await propagateMainDrawResult(finalData);
+        await propagateSilverPlayInResult(finalData);
       } catch (e) {
-        console.error("Error propagando resultado en maindraw:", e);
+        console.error("Error propagando resultado de cierre:", e);
       }
     }
   }
@@ -1149,9 +1201,12 @@
         drawMatchNumber: d.drawMatchNumber ?? null,
         localName: d.localName ?? d.team1Name ?? "",
         visitanteName: d.visitanteName ?? d.team2Name ?? "",
+        team1Id: d.team1Id ?? null,
+        team2Id: d.team2Id ?? null,
         categoria,
         phase,          
         roundLabel: roundLabelVal,
+        round: d.round ?? null,
         zona: normalizeZone(d.zona),
         cancha: normalizeCancha(d.cancha),
         fecha: d.fecha || "",
