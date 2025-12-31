@@ -63,28 +63,6 @@
       background: #7cffc1;
     }
 
-    .phase-switch {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
-    .phase-btn {
-      background: #ffe36a;
-      color: #000;
-      font-weight: 600;
-      padding: 6px 14px;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      font-size: 13px;
-    }
-
-    .phase-btn.active {
-      background: #7cffc1;
-    }
-
     .filters-row {
       display: flex;
       flex-wrap: wrap;
@@ -253,18 +231,12 @@
     <a href="positions.html" class="top-btn">Posiciones</a>
   </div>
 
-  <h1 id="fixtureTitle">Fixture – Fase de Zonas</h1>
+  <h1>Fixture – Fase de Zonas</h1>
 
   <!-- Botones F/M (nunca mezcla ramas) -->
   <div class="rama-switch">
     <button id="btnRamaF" class="rama-btn active">Femenino</button>
     <button id="btnRamaM" class="rama-btn">Masculino</button>
-  </div>
-
-  <div class="phase-switch">
-    <button id="btnPhaseZones" class="phase-btn active">Zonas</button>
-    <button id="btnPhaseMain" class="phase-btn">Main Draw</button>
-    <button id="btnPhaseSilver" class="phase-btn">Copa de Plata</button>
   </div>
 
   <div class="card">
@@ -335,10 +307,6 @@
 
     const btnRamaF     = document.getElementById("btnRamaF");
     const btnRamaM     = document.getElementById("btnRamaM");
-    const btnPhaseZones = document.getElementById("btnPhaseZones");
-    const btnPhaseMain = document.getElementById("btnPhaseMain");
-    const btnPhaseSilver = document.getElementById("btnPhaseSilver");
-    const fixtureTitle = document.getElementById("fixtureTitle");
     const filterZone   = document.getElementById("filterZone");
     const filterCourt  = document.getElementById("filterCourt");
     const filterStatus = document.getElementById("filterStatus");
@@ -348,7 +316,6 @@
 
     let allMatches   = [];
     let selectedRama = "F";
-    let selectedPhase = "zonas";
 
     let sortField = "numeroPartido";
     let sortDir   = "asc";
@@ -359,14 +326,6 @@
       if (up.startsWith("F")) return "F";
       if (up.startsWith("M")) return "M";
       return up;
-    }
-
-    function normalizePhase(p) {
-      const raw = (p || "").toString().trim().toLowerCase();
-      if (!raw) return "zonas";
-      if (raw === "zones" || raw === "zonas" || raw === "groups") return "zonas";
-      if (raw === "main" || raw === "main_draw" || raw === "main draw") return "maindraw";
-      return raw;
     }
 
     function normalizeZona(z) {
@@ -426,45 +385,24 @@
       btnRamaM.classList.toggle("active", selectedRama === "M");
     }
 
-    function updatePhaseButtons() {
-      btnPhaseZones.classList.toggle("active", selectedPhase === "zonas");
-      btnPhaseMain.classList.toggle("active", selectedPhase === "maindraw");
-      btnPhaseSilver.classList.toggle("active", selectedPhase === "silver");
-
-      const phaseLabel = selectedPhase === "maindraw"
-        ? "Main Draw"
-        : selectedPhase === "silver"
-          ? "Copa de Plata"
-          : "Fase de Zonas";
-      fixtureTitle.textContent = `Fixture – ${phaseLabel}`;
-
-      const showZones = selectedPhase === "zonas";
-      filterZone.style.display = showZones ? "" : "none";
-      if (!showZones) {
-        filterZone.value = "all";
-      }
-    }
-
     function rebuildFilterOptions() {
       const zonas = new Set();
       const canchas = new Set();
 
       allMatches
-        .filter(m => m.categoria === selectedRama && m.phase === selectedPhase)
+        .filter(m => m.categoria === selectedRama)
         .forEach(m => {
-          if (selectedPhase === "zonas" && m.zona) zonas.add(m.zona);
+          if (m.zona) zonas.add(m.zona);
           if (m.cancha) canchas.add(m.cancha.toString());
         });
 
       filterZone.innerHTML = '<option value="all">Zona: Todas</option>';
-      if (selectedPhase === "zonas") {
-        Array.from(zonas).sort().forEach(z => {
-          const opt = document.createElement("option");
-          opt.value = z;
-          opt.textContent = "Zona " + z;
-          filterZone.appendChild(opt);
-        });
-      }
+      Array.from(zonas).sort().forEach(z => {
+        const opt = document.createElement("option");
+        opt.value = z;
+        opt.textContent = "Zona " + z;
+        filterZone.appendChild(opt);
+      });
 
       filterCourt.innerHTML = '<option value="all">Cancha: Todas</option>';
       Array.from(canchas).sort((a,b)=>a.localeCompare(b, "es", {numeric:true})).forEach(c => {
@@ -486,11 +424,10 @@
 
     function renderTable() {
       updateRamaButtons();
-      updatePhaseButtons();
 
-      let list = allMatches.filter(m => m.categoria === selectedRama && m.phase === selectedPhase);
+      let list = allMatches.filter(m => m.categoria === selectedRama);
 
-      if (selectedPhase === "zonas" && filterZone.value !== "all") {
+      if (filterZone.value !== "all") {
         list = list.filter(m => m.zona === filterZone.value);
       }
       if (filterCourt.value !== "all") {
@@ -510,14 +447,6 @@
 
       // orden
       list.sort((a,b) => {
-        if (selectedPhase === "silver" && sortField === "numeroPartido") {
-          const order = { playin: 0, qf: 1, sf: 2, final: 3 };
-          const ra = order[a.round] ?? 99;
-          const rb = order[b.round] ?? 99;
-          if (ra !== rb) return ra - rb;
-          return (a.slot ?? 99) - (b.slot ?? 99);
-        }
-
         let valA = a[sortField];
         let valB = b[sortField];
 
@@ -565,8 +494,6 @@
         const horaFmt  = normalizeHora(m.hora);
         const fechaFmt = formatFecha(m.fecha);
         const clsEst   = estadoClass(m.estado || "Pendiente");
-        const team1Name = m.localName || m.team1Name || "";
-        const team2Name = m.visitanteName || m.team2Name || "";
         tr.innerHTML = `
           <td class="col-num">${m.numeroPartido ?? ""}</td>
           <td class="col-fecha">${fechaFmt}</td>
@@ -574,8 +501,8 @@
           <td class="col-cancha">${m.cancha || ""}</td>
           <td class="col-zona">${m.zona || ""}</td>
           <td class="col-team">
-            ${team1Name}
-            <span class="eq2">${team2Name}</span>
+            ${m.localName || ""}
+            <span class="eq2">${m.visitanteName || ""}</span>
           </td>
           <td class="col-res">
             ${buildResultadoHTML(m)}
@@ -592,13 +519,14 @@
       updateHeaderSortClasses();
     }
 
-    // Trae partidos de todas las fases
+    // Trae solo partidos de fase "zonas"
     onSnapshot(collection(db, "matches"), snap => {
       allMatches = [];
       snap.forEach(docSnap => {
         const d = docSnap.data();
 
-        const phase = normalizePhase(d.phase);
+        const phase = d.phase || "zonas";
+        if (phase !== "zonas") return;
 
         const categoria = normalizeCategoria(d.categoria || d.category);
         const zona      = normalizeZona(d.zona || d.zone);
@@ -609,19 +537,14 @@
           id: docSnap.id,
           numeroPartido: d.numeroPartido,
           categoria,
-          phase,
           zona,
           cancha,
           hora: d.hora || "",
           fecha: d.fecha || "",
-          localName: d.localName || d.team1Name || "",
-          visitanteName: d.visitanteName || d.team2Name || "",
-          team1Name: d.team1Name || "",
-          team2Name: d.team2Name || "",
+          localName: d.localName || "",
+          visitanteName: d.visitanteName || "",
           estado,
-          setsData: Array.isArray(d.setsData) ? d.setsData : [],
-          round: (d.round || "").toString().trim().toLowerCase(),
-          slot: d.slot ?? null
+          setsData: Array.isArray(d.setsData) ? d.setsData : []
         });
       });
 
@@ -638,24 +561,6 @@
 
     btnRamaM.addEventListener("click", () => {
       selectedRama = "M";
-      rebuildFilterOptions();
-      renderTable();
-    });
-
-    btnPhaseZones.addEventListener("click", () => {
-      selectedPhase = "zonas";
-      rebuildFilterOptions();
-      renderTable();
-    });
-
-    btnPhaseMain.addEventListener("click", () => {
-      selectedPhase = "maindraw";
-      rebuildFilterOptions();
-      renderTable();
-    });
-
-    btnPhaseSilver.addEventListener("click", () => {
-      selectedPhase = "silver";
       rebuildFilterOptions();
       renderTable();
     });
