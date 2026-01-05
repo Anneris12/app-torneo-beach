@@ -492,11 +492,8 @@
 
 <!-- FIREBASE -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-  import {
-    getAuth,
-    onAuthStateChanged
-  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     getFirestore,
     collection,
@@ -510,6 +507,7 @@
     where,
     writeBatch
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import { requireLogged } from "./js/admin-guard.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
@@ -520,7 +518,9 @@
     appId: "1:21136645638:web:52c3b06affc2ee151eed87"
   };
 
-  const app = initializeApp(firebaseConfig);
+  await requireLogged(firebaseConfig);
+
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
   const MATCHES_COLLECTION = "matches";
@@ -708,11 +708,6 @@
   const btnSaveJerseys    = document.getElementById("btnSaveJerseys");
   const setsCurrentLabel  = document.getElementById("setsCurrentLabel");
   const setsChips         = document.getElementById("setsChips");
-
-  // Proteger acceso
-  onAuthStateChanged(auth, u => { 
-    if (!u) location.href = "login.html"; 
-  });
 
   /* ------- Helpers de normalización ------- */
 
