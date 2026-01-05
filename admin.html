@@ -123,19 +123,19 @@
 
   <div class="dashboard">
 
-    <a class="card" href="fixture-admin.html">
+    <a class="card admin-only" href="fixture-admin.html">
       <div class="icon">🗓️</div>
       <div class="card-title">Fixture</div>
       <div class="card-sub">Cargar y editar partidos.</div>
     </a>
 
-    <a class="card" href="match-admin.html">
+    <a class="card logged-only" href="match-admin.html">
       <div class="icon">🎮</div>
       <div class="card-title">Panel de Partido</div>
       <div class="card-sub">Actualizar sets y puntos en vivo.</div>
     </a>
 	
-	<a class="card" href="maindraw-admin.html">
+	<a class="card admin-only" href="maindraw-admin.html">
 		<div class="icon">🏆</div>
 		<div class="card-title">Cuadro Principal</div>
 	<div class="card-sub">Generar y administrar el Main Draw</div>
@@ -147,7 +147,7 @@
 
   <!-- Firebase -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
     import {
       getAuth,
       signOut,
@@ -163,14 +163,24 @@
       appId: "1:21136645638:web:52c3b06affc2ee151eed87"
     };
 
-    const app = initializeApp(firebaseConfig);
+    const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // PROTECCIÓN: si no está logueado → volver al login
+    const ADMIN_UID = "93f4Gdnr1bX7vMbu6ih5cBTm3Mg2";
+    const adminOnlyCards = document.querySelectorAll(".admin-only");
+    const loggedOnlyCards = document.querySelectorAll(".logged-only");
+
     onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        window.location.href = "login.html";
-      }
+      const isAdmin = user && user.uid === ADMIN_UID;
+      const isLogged = !!user;
+
+      adminOnlyCards.forEach((card) => {
+        card.style.display = isAdmin ? "" : "none";
+      });
+
+      loggedOnlyCards.forEach((card) => {
+        card.style.display = isLogged ? "" : "none";
+      });
     });
 
     // LOGOUT
