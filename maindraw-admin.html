@@ -285,8 +285,8 @@
 
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     getFirestore,
     collection,
@@ -296,6 +296,7 @@
     writeBatch,
     doc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import { requireAdmin } from "./js/admin-guard.js";
 
   // Firebase config
   const firebaseConfig = {
@@ -307,14 +308,11 @@
     appId: "1:21136645638:web:52c3b06affc2ee151eed87"
   };
 
-  const app = initializeApp(firebaseConfig);
+  await requireAdmin(firebaseConfig);
+
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db   = getFirestore(app);
-
-  // proteger acceso
-  onAuthStateChanged(auth, u => {
-    if (!u) location.href = "login.html";
-  });
 
   const mainDrawRamaSelect   = document.getElementById("mainDrawRama");
   const btnCheckMainDraw     = document.getElementById("btnCheckMainDraw");
