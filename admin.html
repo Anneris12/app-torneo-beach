@@ -147,12 +147,12 @@
 
   <!-- Firebase -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
     import {
       getAuth,
-      signOut,
-      onAuthStateChanged
+      signOut
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+    import { requireAdmin } from "./js/admin-guard.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCDLMrgeu3pNs-hOM1vf006wMzWPqfQ_lQ",
@@ -163,15 +163,10 @@
       appId: "1:21136645638:web:52c3b06affc2ee151eed87"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+    await requireAdmin(firebaseConfig);
 
-    // PROTECCIÓN: si no está logueado → volver al login
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        window.location.href = "login.html";
-      }
-    });
+    const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
     // LOGOUT
     document.getElementById("logoutBtn").addEventListener("click", () => {

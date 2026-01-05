@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+
+    function isAdmin() {
+      return signedIn() && uid() == "93f4Gdnr1bX7vMbu6ih5cBTm3Mg2";
+    }
+
+    function isScorer() {
+      return signedIn() && uid() in [
+        // "UID_PLANILLERO_1",
+        // "UID_PLANILLERO_2"
+      ];
+    }
+
+    function adminOrScorer() {
+      return isAdmin() || isScorer();
+    }
+
+    match /matches/{doc=**} {
+      allow read: if true;
+      allow write: if adminOrScorer();
+    }
+
+    match /teams/{doc=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /positions_general/{doc=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /rankingGeneral/{doc=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /prodeUsers/{doc=**} {
+      allow read, write: if false;
+    }
+
+    match /prodePredictions/{doc=**} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
