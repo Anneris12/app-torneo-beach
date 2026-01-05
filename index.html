@@ -210,6 +210,11 @@
     <div id="loginError" class="login-error"></div>
   </div>
 
+  <div id="logoutBox" class="login-box" style="display:none;">
+    <div class="login-title">Sesión iniciada</div>
+    <button id="logoutBtn">Cerrar sesión</button>
+  </div>
+
   <footer class="credit">
     Sistema Torneo Beach Volley · MacaErlan® 2026 ·
     <a href="https://wa.me/541168319095" target="_blank" rel="noopener">WhatsApp +54 11 6831-9095</a>
@@ -220,6 +225,7 @@
     import {
       getAuth,
       signInWithEmailAndPassword,
+      signOut,
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
@@ -236,6 +242,8 @@
     const auth = getAuth(app);
 
     const loginBox  = document.getElementById("loginBox");
+    const logoutBox = document.getElementById("logoutBox");
+    const logoutBtn = document.getElementById("logoutBtn");
     const adminCard = document.getElementById("adminCard");
     const emailInput = document.getElementById("email");
     const passInput  = document.getElementById("password");
@@ -247,9 +255,11 @@
       if (user) {
         loginBox.style.display = "none";     // ocultar barritas
         adminCard.style.display = "flex";    // mostrar tarjeta admin
+        logoutBox.style.display = "flex";
       } else {
         loginBox.style.display = "flex";     // mostrar barritas
         adminCard.style.display = "none";    // ocultar admin
+        logoutBox.style.display = "none";
       }
     });
 
@@ -281,6 +291,11 @@
     loginBtn.addEventListener("click", (e) => {
       e.preventDefault();
       doLogin();
+    });
+
+    logoutBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await signOut(auth);
     });
 
     [emailInput, passInput].forEach(input => {
