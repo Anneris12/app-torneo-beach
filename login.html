@@ -96,11 +96,20 @@
     const emailInput = document.getElementById("email");
     const passInput = document.getElementById("password");
     const errorMsg = document.getElementById("errorMsg");
+    const ADMIN_EMAIL = "erlanmacarena@gmail.com";
+
+    function redirectByEmail(email) {
+      if (email && email.toLowerCase() === ADMIN_EMAIL) {
+        window.location.href = "admin.html";
+        return;
+      }
+      window.location.href = "match-admin.html";
+    }
 
     // Si ya está logueado, lo mando directo al admin
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        window.location.href = "admin.html";
+        redirectByEmail(user.email);
       }
     });
 
@@ -112,8 +121,9 @@
       const password = passInput.value.trim();
 
       try {
-        await signInWithEmailAndPassword(auth, email, password);
-        // onAuthStateChanged hará el redirect
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const userEmail = auth.currentUser?.email || userCredential.user.email;
+        redirectByEmail(userEmail);
       } catch (err) {
         console.error(err);
         let msg = "Error al iniciar sesión.";
