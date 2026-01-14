@@ -462,8 +462,8 @@
       visitP1Icon.textContent = "";
       visitP2Icon.textContent = "";
 
-      const team = currentMatchData?.currentServerTeam;
-      const player = currentMatchData?.currentServerPlayer;
+      const team = currentMatchData?.serveTeam;
+      const player = currentMatchData?.servePlayer;
       if (!team || !player) return;
 
       if (team === "local") {
@@ -558,8 +558,8 @@
         visitFirstServer,
         localNextServer: localFirstServer,
         visitNextServer: visitFirstServer,
-        currentServerTeam: null,
-        currentServerPlayer: null,
+        serveTeam: null,
+        servePlayer: null,
       };
 
       stateHistory.length = 0;
@@ -575,8 +575,8 @@
       currentMatchData.visitFirstServer = getRadioValue('visitStarter') || 1;
       currentMatchData.localNextServer = currentMatchData.localFirstServer;
       currentMatchData.visitNextServer = currentMatchData.visitFirstServer;
-      currentMatchData.currentServerTeam = null;
-      currentMatchData.currentServerPlayer = null;
+      currentMatchData.serveTeam = null;
+      currentMatchData.servePlayer = null;
 
       const setPlayingBtn = document.getElementById('btnSetPlaying');
       if (setPlayingBtn) {
@@ -593,8 +593,8 @@
       currentMatchData.visitFirstServer = getRadioValue('visitStarter') || 1;
       currentMatchData.localNextServer = currentMatchData.localFirstServer;
       currentMatchData.visitNextServer = currentMatchData.visitFirstServer;
-      currentMatchData.currentServerTeam = null;
-      currentMatchData.currentServerPlayer = null;
+      currentMatchData.serveTeam = null;
+      currentMatchData.servePlayer = null;
       renderServeIcons();
     }
 
@@ -663,35 +663,35 @@
     function updateServe(pointWinner) {
       if (!currentMatchData) return;
 
-      let { currentServerTeam, currentServerPlayer, localNextServer, visitNextServer, localFirstServer, visitFirstServer } = currentMatchData;
+      let { serveTeam, servePlayer, localNextServer, visitNextServer, localFirstServer, visitFirstServer } = currentMatchData;
 
       if (!localFirstServer) localFirstServer = 1;
       if (!visitFirstServer) visitFirstServer = 1;
       if (!localNextServer) localNextServer = localFirstServer;
       if (!visitNextServer) visitNextServer = visitFirstServer;
 
-      if (!currentServerTeam) {
-        currentServerTeam = pointWinner;
-        currentServerPlayer = pointWinner === 'local' ? localNextServer : visitNextServer;
+      if (!serveTeam) {
+        serveTeam = pointWinner;
+        servePlayer = pointWinner === 'local' ? localNextServer : visitNextServer;
         if (pointWinner === 'local') {
           localNextServer = localNextServer === 1 ? 2 : 1;
         } else {
           visitNextServer = visitNextServer === 1 ? 2 : 1;
         }
-      } else if (pointWinner !== currentServerTeam) {
+      } else if (pointWinner !== serveTeam) {
         if (pointWinner === 'local') {
-          currentServerTeam = 'local';
-          currentServerPlayer = localNextServer;
+          serveTeam = 'local';
+          servePlayer = localNextServer;
           localNextServer = localNextServer === 1 ? 2 : 1;
         } else {
-          currentServerTeam = 'visit';
-          currentServerPlayer = visitNextServer;
+          serveTeam = 'visit';
+          servePlayer = visitNextServer;
           visitNextServer = visitNextServer === 1 ? 2 : 1;
         }
       }
 
-      currentMatchData.currentServerTeam = currentServerTeam;
-      currentMatchData.currentServerPlayer = currentServerPlayer;
+      currentMatchData.serveTeam = serveTeam;
+      currentMatchData.servePlayer = servePlayer;
       currentMatchData.localNextServer = localNextServer;
       currentMatchData.visitNextServer = visitNextServer;
       renderServeIcons();
@@ -726,8 +726,8 @@
       currentMatchData.puntosLocal = 0;
       currentMatchData.puntosVisitante = 0;
       currentMatchData.setActual = (currentMatchData.setActual || 1) + 1;
-      currentMatchData.currentServerTeam = null;
-      currentMatchData.currentServerPlayer = null;
+      currentMatchData.serveTeam = null;
+      currentMatchData.servePlayer = null;
       currentMatchData.localNextServer = currentMatchData.localFirstServer;
       currentMatchData.visitNextServer = currentMatchData.visitFirstServer;
       renderMatchPanel();

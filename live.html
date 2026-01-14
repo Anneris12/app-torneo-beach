@@ -208,6 +208,10 @@
     );
 
     onSnapshot(q, snap => {
+      console.log("[live] snapshot", {
+        total: snap.size,
+        empty: snap.empty
+      });
       box.innerHTML = "";
 
       if (snap.empty) {
@@ -227,8 +231,16 @@
         const puntosLocal = m.puntosLocal ?? 0;
         const puntosVisitante = m.puntosVisitante ?? 0;
 
-        const localServeIcon = (m.currentServerTeam === "local") ? "🏐" : "";
-        const visitServeIcon = (m.currentServerTeam === "visit") ? "🏐" : "";
+        console.log("[live] match update", {
+          id: docSnap.id,
+          puntosLocal,
+          puntosVisitante,
+          serveTeam: m.serveTeam ?? null,
+          servePlayer: m.servePlayer ?? null
+        });
+
+        const localServeIcon = (m.serveTeam === "local") ? "🏐" : "";
+        const visitServeIcon = (m.serveTeam === "visit") ? "🏐" : "";
 
         const localSetChips = getSetChipsHtmlForSide(m, "local");
         const visitSetChips = getSetChipsHtmlForSide(m, "visit");
