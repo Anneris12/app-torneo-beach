@@ -836,8 +836,8 @@
     visitP1Icon.textContent = "";
     visitP2Icon.textContent = "";
 
-    const team = currentMatchData?.currentServerTeam;
-    const player = currentMatchData?.currentServerPlayer;
+    const team = currentMatchData?.serveTeam;
+    const player = currentMatchData?.servePlayer;
 
     if (!team || !player) return;
 
@@ -1135,8 +1135,8 @@
       setActual: newSetActual,
       puntosLocal: 0,
       puntosVisitante: 0,
-      currentServerTeam: null,
-      currentServerPlayer: null,
+      serveTeam: null,
+      servePlayer: null,
       localNextServer: null,
       visitNextServer: null,
       estado,
@@ -1215,8 +1215,8 @@
         setActual: d.setActual ?? 1,
         puntosLocal: d.puntosLocal ?? 0,
         puntosVisitante: d.puntosVisitante ?? 0,
-        currentServerTeam: d.currentServerTeam ?? null,
-        currentServerPlayer: d.currentServerPlayer ?? null,
+        serveTeam: d.serveTeam ?? null,
+        servePlayer: d.servePlayer ?? null,
         localNextServer: d.localNextServer ?? null,
         visitNextServer: d.visitNextServer ?? null,
         localFirstServer: d.localFirstServer ?? null,
@@ -1403,6 +1403,13 @@
     const ref = doc(db, MATCHES_COLLECTION, currentMatchId);
     unsubscribeMatch = onSnapshot(ref, snap => {
       currentMatchData = snap.data();
+      console.log("[match-admin] snapshot", {
+        matchId: currentMatchId,
+        puntosLocal: currentMatchData?.puntosLocal ?? 0,
+        puntosVisitante: currentMatchData?.puntosVisitante ?? 0,
+        serveTeam: currentMatchData?.serveTeam ?? null,
+        servePlayer: currentMatchData?.servePlayer ?? null
+      });
       renderPanel();
     });
   };
@@ -1568,74 +1575,57 @@
     });
   });
 
-  async function updateServe(pointWinner) {
-    const matchRef = doc(db, MATCHES_COLLECTION, currentMatchId);
+  function getServeUpdates(pointWinner) {
+    if (!currentMatchData) return {};
 
+    const updates = {};
     let {
-      currentServerTeam,
-      currentServerPlayer,
+      serveTeam,
+      servePlayer,
       localNextServer,
       visitNextServer,
       localFirstServer,
       visitFirstServer
-    } = currentMatchData || {};
+    } = currentMatchData;
 
-    if (currentServerTeam && currentServerPlayer) {
-      return;
-    }
+    const defaultLocalFirst = getRadioValue("localStarter") || 1;
+    const defaultVisitFirst = getRadioValue("visitStarter") || 1;
 
-    if (!localFirstServer) {
-      localFirstServer = getRadioValue("localStarter") || 1;
-    }
-    if (!visitFirstServer) {
-      visitFirstServer = getRadioValue("visitStarter") || 1;
-    }
-
+    if (!localFirstServer) localFirstServer = defaultLocalFirst;
+    if (!visitFirstServer) visitFirstServer = defaultVisitFirst;
     if (!localNextServer) localNextServer = localFirstServer;
     if (!visitNextServer) visitNextServer = visitFirstServer;
 
-    const updates = {
-      localFirstServer,
-      visitFirstServer,
-      localNextServer,
-      visitNextServer
+    const setIfChanged = (key, value) => {
+      if (currentMatchData[key] !== value) {
+        updates[key] = value;
+      }
     };
 
-    if (!currentServerTeam) {
+    setIfChanged("localFirstServer", localFirstServer);
+    setIfChanged("visitFirstServer", visitFirstServer);
+    setIfChanged("localNextServer", localNextServer);
+    setIfChanged("visitNextServer", visitNextServer);
+
+    const receiverWon = serveTeam && pointWinner !== serveTeam;
+    if (!serveTeam || receiverWon) {
+      serveTeam = pointWinner;
       if (pointWinner === "local") {
-        currentServerTeam = "local";
-        currentServerPlayer = localNextServer;
+        servePlayer = localNextServer;
         localNextServer = localNextServer === 1 ? 2 : 1;
+        setIfChanged("localNextServer", localNextServer);
       } else {
-        currentServerTeam = "visit";
-        currentServerPlayer = visitNextServer;
+        servePlayer = visitNextServer;
         visitNextServer = visitNextServer === 1 ? 2 : 1;
+        setIfChanged("visitNextServer", visitNextServer);
       }
-      updates.currentServerTeam = currentServerTeam;
-      updates.currentServerPlayer = currentServerPlayer;
-      updates.localNextServer = localNextServer;
-      updates.visitNextServer = visitNextServer;
-    } else if (pointWinner === currentServerTeam) {
-      // mismo sacador
-    } else {
-      if (pointWinner === "local") {
-        currentServerTeam = "local";
-        currentServerPlayer = localNextServer;
-        localNextServer = localNextServer === 1 ? 2 : 1;
-        updates.currentServerTeam = currentServerTeam;
-        updates.currentServerPlayer = currentServerPlayer;
-        updates.localNextServer = localNextServer;
-      } else {
-        currentServerTeam = "visit";
-        currentServerPlayer = visitNextServer;
-        visitNextServer = visitNextServer === 1 ? 2 : 1;
-        updates.currentServerTeam = currentServerTeam;
-        updates.currentServerPlayer = currentServerPlayer;
-        updates.visitNextServer = visitNextServer;
+      setIfChanged("serveTeam", serveTeam);
+      if (servePlayer !== null && servePlayer !== undefined) {
+        setIfChanged("servePlayer", servePlayer);
       }
     }
 
-    await updateDoc(matchRef, updates);
+    return updates;
   }
 
   window.addPoint = async side => {
@@ -1663,9 +1653,12 @@
 
     maybeShowSideChangeAlert(newLocal, newVisit);
 
+    const serveUpdates = getServeUpdates(side);
+
     await updateDoc(matchRef, {
       puntosLocal: newLocal,
-      puntosVisitante: newVisit
+      puntosVisitante: newVisit,
+      ...serveUpdates
     });
 
     await maybeAutoCloseSet(newLocal, newVisit);
@@ -1716,8 +1709,8 @@
       visitFirstServer: visitFirst,
       localJerseyFirst,
       visitJerseyFirst,
-      currentServerTeam: null,
-      currentServerPlayer: null,
+      serveTeam: null,
+      servePlayer: null,
       localNextServer: localFirst,
       visitNextServer: visitFirst,
       setsMode,
@@ -1743,8 +1736,8 @@
       "setActual",
       "puntosLocal",
       "puntosVisitante",
-      "currentServerTeam",
-      "currentServerPlayer",
+      "serveTeam",
+      "servePlayer",
       "localNextServer",
       "visitNextServer",
       "estado",
