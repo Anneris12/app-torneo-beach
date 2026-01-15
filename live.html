@@ -179,6 +179,98 @@
     const db = getFirestore(app);
 
     const box = document.getElementById("liveContainer");
+    const DEFAULT_TEAM_LABEL = "A definir";
+
+    function normalizePhase(phaseRaw) {
+      if (!phaseRaw) return "";
+      return phaseRaw.toString().trim().toLowerCase();
+    }
+
+    function isZoneMatch(phaseRaw) {
+      const phase = normalizePhase(phaseRaw);
+      return phase.includes("zona") || phase.includes("group");
+    }
+
+    function getCandidateValues(matchData, side) {
+      if (side === "local") {
+        return [
+          matchData.localName,
+          matchData.team1Name,
+          matchData.team1,
+          matchData.labelTeam1,
+          matchData.team1Label,
+          matchData.slot1,
+          matchData.slot1Label,
+          matchData.seedText,
+          matchData.seedText1,
+          matchData.ref,
+          matchData.ref1,
+          matchData.refTeam1,
+          matchData.sourceTeam1
+        ];
+      }
+      return [
+        matchData.visitanteName,
+        matchData.team2Name,
+        matchData.team2,
+        matchData.labelTeam2,
+        matchData.team2Label,
+        matchData.slot2,
+        matchData.slot2Label,
+        matchData.seedText,
+        matchData.seedText2,
+        matchData.ref,
+        matchData.ref2,
+        matchData.refTeam2,
+        matchData.sourceTeam2
+      ];
+    }
+
+    function pickFirstValue(values) {
+      for (const value of values) {
+        if (value === null || value === undefined) continue;
+        const str = String(value).trim();
+        if (str) return str;
+      }
+      return "";
+    }
+
+    function splitTeamPlayers(teamName) {
+      if (!teamName) return [];
+      const raw = String(teamName).trim();
+      if (!raw) return [];
+      const parts = raw.split(/\s*[-/]\s*/).map(p => p.trim()).filter(Boolean);
+      if (parts.length >= 2) return parts.slice(0, 2);
+      return [raw];
+    }
+
+    function getLastName(fullName) {
+      if (!fullName) return "";
+      const parts = String(fullName).trim().split(/\s+/);
+      return parts[parts.length - 1] || "";
+    }
+
+    function buildDuoLabel(teamName) {
+      const players = splitTeamPlayers(teamName);
+      if (players.length < 2) return "";
+      const lastNames = players.map(getLastName).filter(Boolean);
+      if (lastNames.length < 2) return "";
+      return `${lastNames[0]} / ${lastNames[1]}`;
+    }
+
+    function getTeamLabel(matchData, side, zoneMatch) {
+      const candidates = getCandidateValues(matchData, side);
+      for (const candidate of candidates) {
+        const duoLabel = buildDuoLabel(candidate);
+        if (duoLabel) return duoLabel;
+      }
+
+      if (zoneMatch) {
+        return pickFirstValue(candidates) || DEFAULT_TEAM_LABEL;
+      }
+
+      return pickFirstValue(candidates) || DEFAULT_TEAM_LABEL;
+    }
 
     function getSetChipsHtmlForSide(m, side) {
       const setsData = m.setsData || [];
@@ -221,6 +313,7 @@
 
       snap.forEach(docSnap => {
         const m = docSnap.data();
+        const zoneMatch = isZoneMatch(m.phase || m.fase);
 
         const setsMode = m.setsMode || "ONE";
         const setsMax = (setsMode === "BEST_OF_3") ? 3 : 1;
@@ -244,6 +337,8 @@
 
         const localSetChips = getSetChipsHtmlForSide(m, "local");
         const visitSetChips = getSetChipsHtmlForSide(m, "visit");
+        const localLabel = getTeamLabel(m, "local", zoneMatch);
+        const visitLabel = getTeamLabel(m, "visit", zoneMatch);
 
         box.innerHTML += `
           <div class="match-card">
@@ -258,7 +353,7 @@
             <div class="row">
               <div class="team">
                 ${localServeIcon ? `<span class="serve-ball">${localServeIcon}</span>` : ""}
-                <span>${m.localName}</span>
+                <span>${localLabel}</span>
               </div>
               <div class="score-block">
                 <div class="score">${puntosLocal}</div>
@@ -271,7 +366,7 @@
             <div class="row">
               <div class="team">
                 ${visitServeIcon ? `<span class="serve-ball">${visitServeIcon}</span>` : ""}
-                <span>${m.visitanteName}</span>
+                <span>${visitLabel}</span>
               </div>
               <div class="score-block">
                 <div class="score">${puntosVisitante}</div>
