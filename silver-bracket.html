@@ -49,6 +49,23 @@ h1 {
   align-items: center;
 }
 
+.admin-actions {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0 15px;
+}
+
+.admin-btn {
+  background: #7cffc1;
+  color: #000;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+}
+
 /* Tabs F / M */
 .tab-btn {
   padding: 8px 14px;
@@ -198,6 +215,11 @@ h1 {
 
 <h1>COPA DE PLATA</h1>
 
+<div class="admin-actions">
+  <button id="btnImport" class="admin-btn">Importar CSV</button>
+  <input type="file" id="fileCsv" accept=".csv" style="display:none;" />
+</div>
+
 <!-- FILTROS -->
 <div class="filters">
   <div id="tabF" class="tab-btn tab-active">Femenino</div>
@@ -247,8 +269,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
   getFirestore,
+  addDoc,
   collection,
-  onSnapshot
+  deleteDoc,
+  doc,
+  getDocs,
+  onSnapshot,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -270,6 +298,8 @@ const filterCourt  = document.getElementById("filterCourt");
 const filterStatus = document.getElementById("filterStatus");
 const filterSearch = document.getElementById("filterSearch");
 const fixtureBody  = document.getElementById("fixtureBody");
+const btnImport    = document.getElementById("btnImport");
+const fileCsv      = document.getElementById("fileCsv");
 
 let currentRama = "F";
 let allMatches  = [];
@@ -345,6 +375,28 @@ function formatFecha(f){
     return `${d}/${m}/${y.slice(-2)}`;
   }
   return s;
+}
+
+function normalizeRound(r){
+  if(!r) return "";
+  const up = r.toString().trim().toLowerCase();
+  if(up.startsWith("q") || up.includes("cuarto")) return "qf";
+  if(up.startsWith("s") || up.includes("semi")) return "sf";
+  if(up.includes("play")) return "playin";
+  if(up.includes("final")) return "final";
+  return up;
+}
+
+async function deleteSilverMatchesForRama(rama){
+  const snap = await getDocs(query(collection(db,"matches"), where("phase","==","silver")));
+  const deletions = [];
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+    const categoria = normalizeCategoria(d.categoria || d.category || d.rama);
+    if (categoria !== rama) return;
+    deletions.push(deleteDoc(doc(db, "matches", docSnap.id)));
+  });
+  await Promise.all(deletions);
 }
 
 /* ---------- Resultado ---------- */
@@ -548,6 +600,114 @@ onSnapshot(collection(db,"matches"), snap=>{
 filterCourt.onchange  = renderTable;
 filterStatus.onchange = renderTable;
 filterSearch.addEventListener("input", renderTable);
+
+btnImport.addEventListener("click", () => fileCsv.click());
+
+fileCsv.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const text = ev.target.result;
+    const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+    if (lines.length === 0) {
+      alert("CSV vacío.");
+      return;
+    }
+
+    const firstLine = lines[0].replace(/^\uFEFF/, "");
+    let delimiter = ",";
+    const countSemi = (firstLine.match(/;/g) || []).length;
+    const countComma = (firstLine.match(/,/g) || []).length;
+    if (countSemi > countComma) delimiter = ";";
+
+    const headersRaw = firstLine.split(delimiter).map(h => h.trim());
+    const headers = headersRaw.map(h => h.toLowerCase());
+
+    const hasTeam1 = headers.includes("team1name") || headers.includes("team1")
+      || headers.includes("localname") || headers.includes("eq1");
+    const hasTeam2 = headers.includes("team2name") || headers.includes("team2")
+      || headers.includes("visitantename") || headers.includes("eq2");
+    const required = ["round","slot"];
+    const missing = required.filter(c => !headers.includes(c));
+    if (missing.length > 0 || !hasTeam1 || !hasTeam2) {
+      alert("CSV incorrecto. Faltan columnas obligatorias.");
+      return;
+    }
+
+    const idx = {};
+    headers.forEach((h,i) => idx[h] = i);
+
+    const getValue = (row, key) => {
+      const ix = idx[key];
+      return ix == null ? "" : (row[ix] || "").toString().trim();
+    };
+
+    const getAny = (row, keys) => {
+      for (const key of keys) {
+        const value = getValue(row, key);
+        if (value) return value;
+      }
+      return "";
+    };
+
+    await deleteSilverMatchesForRama(currentRama);
+
+    const promises = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i].trim();
+      if (!row) continue;
+      const rowCols = row.split(delimiter);
+
+      const categoriaRaw = getAny(rowCols, ["categoria","rama","gender"]);
+      const categoriaCsv = normalizeCategoria(categoriaRaw) || currentRama;
+      if (categoriaCsv !== currentRama) continue;
+
+      const roundRaw = getAny(rowCols, ["round","fase"]);
+      const slotRaw = getAny(rowCols, ["slot","numero","match"]);
+      const team1Name = getAny(rowCols, ["team1name","team1","localname","eq1"]);
+      const team2Name = getAny(rowCols, ["team2name","team2","visitantename","eq2"]);
+      const cancha = getAny(rowCols, ["cancha","court"]);
+      const fecha = getAny(rowCols, ["fecha","date"]);
+      const hora = getAny(rowCols, ["hora","time"]);
+      const cruce = getAny(rowCols, ["cruce","crucename"]);
+
+      const round = normalizeRound(roundRaw);
+      const slot = Number(slotRaw || i);
+
+      if (!round || (!team1Name && !team2Name)) continue;
+
+      const data = {
+        phase: "silver",
+        round,
+        slot,
+        rama: currentRama,
+        categoria: currentRama,
+        team1Name: team1Name || null,
+        team2Name: team2Name || null,
+        localName: team1Name || null,
+        visitanteName: team2Name || null,
+        cancha,
+        fecha,
+        hora,
+        cruce,
+        estado: "Pendiente",
+        status: "pending",
+        setsData: []
+      };
+
+      promises.push(addDoc(collection(db, "matches"), data));
+    }
+
+    await Promise.all(promises);
+    fileCsv.value = "";
+    alert(`Importación completada para Copa de Plata ${currentRama}.`);
+  };
+
+  reader.readAsText(file, "ISO-8859-1");
+});
 
 /* Tabs F / M */
 tabF.addEventListener("click", ()=>{
