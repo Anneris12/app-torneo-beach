@@ -217,6 +217,10 @@
       background: #ff9c9c;
     }
 
+    .row-btn.reset {
+      background: #b7d7ff;
+    }
+
     .selection-hidden .col-select,
     .selection-hidden .cell-select {
       display: none;
@@ -901,6 +905,7 @@
           </td>
           <td class="col-actions">
             <button class="row-btn edit" data-id="${m.id}">Editar</button>
+            <button class="row-btn reset" data-id="${m.id}">Pasar a pendiente</button>
             <button class="row-btn delete" data-id="${m.id}">Borrar</button>
           </td>
         `;
@@ -914,6 +919,21 @@
         });
 
         tr.querySelector(".row-btn.edit").addEventListener("click", () => startEditMatch(m));
+
+        tr.querySelector(".row-btn.reset").addEventListener("click", async () => {
+          if (!confirm(`¿Pasar el partido #${m.numeroPartido} a Pendiente?`)) return;
+          await updateDoc(doc(db, "matches", m.id), {
+            estado: "Pendiente",
+            setsData: [],
+            setsLocal: 0,
+            setsVisitante: 0,
+            totalPointsLocal: 0,
+            totalPointsVisitante: 0,
+            puntosLocal: 0,
+            puntosVisitante: 0,
+            setActual: 1
+          });
+        });
 
         tr.querySelector(".row-btn.delete").addEventListener("click", async () => {
           if (confirm(`¿Eliminar el partido #${m.numeroPartido}?`)) {
