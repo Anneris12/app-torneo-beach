@@ -303,6 +303,36 @@
       font-size: 13px;
     }
 
+    .edit-sets {
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .set-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr);
+      gap: 6px;
+      align-items: center;
+    }
+
+    .set-row label {
+      grid-column: 1 / -1;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .set-row input {
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(3,25,38,0.85);
+      color: white;
+      font-size: 13px;
+      text-align: center;
+    }
+
     .btn-save { background:#7cffc1; color:#000; }
     .btn-cancel { background:#ffe36a; color:#000; }
 
@@ -412,6 +442,14 @@
               </select>
             </div>
             <div>
+              <label for="editEstado">Estado</label>
+              <select id="editEstado">
+                <option value="Pendiente">Pendiente</option>
+                <option value="En juego">En juego</option>
+                <option value="Finalizado">Finalizado</option>
+              </select>
+            </div>
+            <div>
               <label for="editLocal">Equipo local</label>
               <select id="editLocal">
                 <option value="">Equipo local</option>
@@ -424,11 +462,28 @@
               </select>
             </div>
           </div>
+          <div class="edit-sets">
+            <div class="set-row">
+              <label>Set 1 (Local / Visitante)</label>
+              <input type="number" id="editSet1Local" min="0" />
+              <input type="number" id="editSet1Visit" min="0" />
+            </div>
+            <div class="set-row">
+              <label>Set 2 (Local / Visitante)</label>
+              <input type="number" id="editSet2Local" min="0" />
+              <input type="number" id="editSet2Visit" min="0" />
+            </div>
+            <div class="set-row">
+              <label>Set 3 (Local / Visitante)</label>
+              <input type="number" id="editSet3Local" min="0" />
+              <input type="number" id="editSet3Visit" min="0" />
+            </div>
+          </div>
           <div class="edit-actions">
             <button id="btnSaveMatch" class="btn-save">Guardar cambios</button>
             <button id="btnCancelEdit" class="btn-cancel" type="button">Cancelar</button>
           </div>
-          <p style="font-size:12px; opacity:0.8; margin:8px 0 0;">Seleccioná un partido para editarlo. Los campos usan formato de fecha y hora, y la cancha solo admite 1, 2 o 3.</p>
+          <p style="font-size:12px; opacity:0.8; margin:8px 0 0;">Seleccioná un partido para editarlo. Si el estado es "Finalizado", cargá los sets para actualizar el resultado.</p>
         </div>
       </div>
 
@@ -508,8 +563,15 @@
     const editFecha = document.getElementById("editFecha");
     const editHora = document.getElementById("editHora");
     const editCancha = document.getElementById("editCancha");
+    const editEstado = document.getElementById("editEstado");
     const editLocal = document.getElementById("editLocal");
     const editVisitante = document.getElementById("editVisitante");
+    const editSet1Local = document.getElementById("editSet1Local");
+    const editSet1Visit = document.getElementById("editSet1Visit");
+    const editSet2Local = document.getElementById("editSet2Local");
+    const editSet2Visit = document.getElementById("editSet2Visit");
+    const editSet3Local = document.getElementById("editSet3Local");
+    const editSet3Visit = document.getElementById("editSet3Visit");
     const btnSaveMatch = document.getElementById("btnSaveMatch");
     const btnCancelEdit = document.getElementById("btnCancelEdit");
 
@@ -597,6 +659,10 @@
     }
 
     function renderEditZonaOptions() {
+      const currentZona = editZona.value;
+      const currentLocal = editLocal.value;
+      const currentVisitante = editVisitante.value;
+
       editZona.innerHTML = '<option value="">Zona</option>';
       zonasDisponibles.forEach(z => {
         const opt = document.createElement("option");
@@ -604,7 +670,16 @@
         opt.textContent = `Zona ${z}`;
         editZona.appendChild(opt);
       });
+      if (currentZona) {
+        editZona.value = currentZona;
+      }
       refreshTeamSelects();
+      if (currentLocal) {
+        editLocal.value = currentLocal;
+      }
+      if (currentVisitante) {
+        editVisitante.value = currentVisitante;
+      }
     }
 
     function refreshTeamSelects() {
@@ -689,8 +764,8 @@
       const local = [];
       const visit = [];
       sets.forEach(s => {
-        const pl = s.puntosLocal ?? s.local ?? 0;
-        const pv = s.puntosVisitante ?? s.visitante ?? 0;
+        const pl = s.puntosLocal ?? s.local ?? s.pointsA ?? 0;
+        const pv = s.puntosVisitante ?? s.visitante ?? s.pointsB ?? 0;
         const lCls = pl > pv ? "ganador" : "";
         const vCls = pv > pl ? "ganador" : "";
         local.push(`<span class="set-num ${lCls}">${pl}</span>`);
@@ -859,9 +934,23 @@
       editFecha.value = "";
       editHora.value = "";
       editCancha.value = "";
+      editEstado.value = "Pendiente";
       refreshTeamSelects();
       editLocal.value = "";
       editVisitante.value = "";
+      editSet1Local.value = "";
+      editSet1Visit.value = "";
+      editSet2Local.value = "";
+      editSet2Visit.value = "";
+      editSet3Local.value = "";
+      editSet3Visit.value = "";
+    }
+
+    function getSetPoints(setData) {
+      if (!setData) return { local: "", visit: "" };
+      const local = setData.puntosLocal ?? setData.local ?? setData.pointsA ?? "";
+      const visit = setData.puntosVisitante ?? setData.visitante ?? setData.pointsB ?? "";
+      return { local, visit };
     }
 
     function startEditMatch(m) {
@@ -874,7 +963,73 @@
       editFecha.value = toInputDate(m.fecha);
       editHora.value = normalizeHora(m.hora);
       editCancha.value = m.cancha || "";
+      editEstado.value = m.estado || "Pendiente";
+      const set1 = getSetPoints(m.setsData?.[0]);
+      const set2 = getSetPoints(m.setsData?.[1]);
+      const set3 = getSetPoints(m.setsData?.[2]);
+      editSet1Local.value = set1.local !== "" ? set1.local : "";
+      editSet1Visit.value = set1.visit !== "" ? set1.visit : "";
+      editSet2Local.value = set2.local !== "" ? set2.local : "";
+      editSet2Visit.value = set2.visit !== "" ? set2.visit : "";
+      editSet3Local.value = set3.local !== "" ? set3.local : "";
+      editSet3Visit.value = set3.visit !== "" ? set3.visit : "";
       window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function parseSetValue(value) {
+      if (value === "" || value == null) return null;
+      const num = Number(value);
+      if (Number.isNaN(num)) return null;
+      return num;
+    }
+
+    function buildSetsDataFromInputs() {
+      const inputs = [
+        { local: editSet1Local.value, visit: editSet1Visit.value },
+        { local: editSet2Local.value, visit: editSet2Visit.value },
+        { local: editSet3Local.value, visit: editSet3Visit.value }
+      ];
+
+      const sets = [];
+      let hasAny = false;
+
+      inputs.forEach((set, index) => {
+        const local = parseSetValue(set.local);
+        const visit = parseSetValue(set.visit);
+        if (local == null && visit == null) return;
+        hasAny = true;
+        if (local == null || visit == null) {
+          throw new Error(`Completá ambos puntajes del set ${index + 1}.`);
+        }
+        sets.push({
+          puntosLocal: local,
+          puntosVisitante: visit,
+          local,
+          visitante: visit,
+          pointsA: local,
+          pointsB: visit
+        });
+      });
+
+      return { sets, hasAny };
+    }
+
+    function summarizeSets(sets) {
+      let setsLocal = 0;
+      let setsVisitante = 0;
+      let totalPointsLocal = 0;
+      let totalPointsVisitante = 0;
+
+      sets.forEach(s => {
+        const pl = s.puntosLocal ?? s.local ?? s.pointsA ?? 0;
+        const pv = s.puntosVisitante ?? s.visitante ?? s.pointsB ?? 0;
+        totalPointsLocal += pl;
+        totalPointsVisitante += pv;
+        if (pl > pv) setsLocal += 1;
+        if (pv > pl) setsVisitante += 1;
+      });
+
+      return { setsLocal, setsVisitante, totalPointsLocal, totalPointsVisitante };
     }
 
     async function saveCurrentMatch() {
@@ -888,6 +1043,7 @@
       const fecha = editFecha.value;
       const hora = editHora.value;
       const cancha = editCancha.value;
+      const estado = editEstado.value || "Pendiente";
       const localName = editLocal.value;
       const visitanteName = editVisitante.value;
 
@@ -897,7 +1053,19 @@
       }
 
       const match = allMatches.find(m => m.id === editingMatchId);
-      const estadoActual = match?.estado || "Pendiente";
+      let setsData = Array.isArray(match?.setsData) ? match.setsData : [];
+
+      if (estado === "Finalizado") {
+        try {
+          const { sets, hasAny } = buildSetsDataFromInputs();
+          if (hasAny) {
+            setsData = sets;
+          }
+        } catch (error) {
+          alert(error.message);
+          return;
+        }
+      }
 
       const data = {
         numeroPartido,
@@ -909,9 +1077,18 @@
         fecha,
         hora,
         cancha,
-        estado: estadoActual,
+        estado,
         phase: "zonas"
       };
+
+      if (estado === "Finalizado") {
+        const { setsLocal, setsVisitante, totalPointsLocal, totalPointsVisitante } = summarizeSets(setsData);
+        data.setsData = setsData;
+        data.setsLocal = setsLocal;
+        data.setsVisitante = setsVisitante;
+        data.totalPointsLocal = totalPointsLocal;
+        data.totalPointsVisitante = totalPointsVisitante;
+      }
 
       await updateDoc(doc(db, "matches", editingMatchId), data);
       alert("Partido actualizado.");
@@ -924,9 +1101,11 @@
 
     // Trae solo partidos de fase "zonas"
     onSnapshot(collection(db, "matches"), snap => {
+      const activeEditId = editingMatchId;
       allMatches = [];
-      selectedMatches.clear();
-      resetEditForm();
+      if (!modoSeleccion) {
+        selectedMatches.clear();
+      }
       snap.forEach(docSnap => {
         const d = docSnap.data();
 
@@ -957,6 +1136,13 @@
       updateSelectionUI();
       renderTable();
       loadTeams();
+
+      if (activeEditId) {
+        const stillExists = allMatches.some(m => m.id === activeEditId);
+        if (!stillExists) {
+          resetEditForm();
+        }
+      }
     });
 
     // ================= EXPORTAR CSV =================
