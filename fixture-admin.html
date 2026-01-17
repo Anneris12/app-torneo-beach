@@ -1088,9 +1088,11 @@
 
     // Trae solo partidos de fase "zonas"
     onSnapshot(collection(db, "matches"), snap => {
+      const activeEditId = editingMatchId;
       allMatches = [];
-      selectedMatches.clear();
-      resetEditForm();
+      if (!modoSeleccion) {
+        selectedMatches.clear();
+      }
       snap.forEach(docSnap => {
         const d = docSnap.data();
 
@@ -1121,6 +1123,13 @@
       updateSelectionUI();
       renderTable();
       loadTeams();
+
+      if (activeEditId) {
+        const stillExists = allMatches.some(m => m.id === activeEditId);
+        if (!stillExists) {
+          resetEditForm();
+        }
+      }
     });
 
     // ================= EXPORTAR CSV =================
