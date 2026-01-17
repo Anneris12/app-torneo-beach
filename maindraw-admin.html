@@ -236,8 +236,12 @@
         Asignar equipos según ranking
       </button>
 
-      <button id="btnGenerateSilver" type="button" class="btn-secondary">
-        Generar Copa de Plata
+      <button id="btnImportSilver" type="button" class="btn-secondary">
+        Importar Copa de Plata (CSV)
+      </button>
+
+      <button id="btnExportSilver" type="button" class="btn-secondary">
+        Exportar Copa de Plata (CSV)
       </button>
     </div>
 
@@ -280,6 +284,7 @@
 
     <!-- input de archivo oculto -->
     <input type="file" id="fileInput" accept=".csv" style="display:none" />
+    <input type="file" id="fileSilverInput" accept=".csv" style="display:none" />
   </div>
 </main>
 
@@ -289,7 +294,9 @@
   import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     getFirestore,
+    addDoc,
     collection,
+    deleteDoc,
     query,
     where,
     getDocs,
@@ -320,9 +327,11 @@
   const btnExportMainDraw    = document.getElementById("btnExportMainDraw");
   const btnResetMainDraw     = document.getElementById("btnResetMainDraw");
   const btnAssignFromRanking = document.getElementById("btnAssignFromRanking");
-  const btnGenerateSilver    = document.getElementById("btnGenerateSilver");
+  const btnImportSilver      = document.getElementById("btnImportSilver");
+  const btnExportSilver      = document.getElementById("btnExportSilver");
   const mainDrawStatus       = document.getElementById("mainDrawStatus");
   const fileInput            = document.getElementById("fileInput");
+  const fileSilverInput      = document.getElementById("fileSilverInput");
   const previewCard          = document.getElementById("previewCard");
   const previewBody          = document.getElementById("previewBody");
   const previewMeta          = document.getElementById("previewMeta");
@@ -344,9 +353,26 @@
     fileInput.value = "";
   });
 
+  btnImportSilver.addEventListener("click", () => {
+    fileSilverInput.click();
+  });
+
+  fileSilverInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const rama = mainDrawRamaSelect.value;
+    await importSilverFromFile(file, rama);
+    fileSilverInput.value = "";
+  });
+
   btnExportMainDraw.addEventListener("click", () => {
     const rama = mainDrawRamaSelect.value;
     exportMainDrawToCSV(rama);
+  });
+
+  btnExportSilver.addEventListener("click", () => {
+    const rama = mainDrawRamaSelect.value;
+    exportSilverToCSV(rama);
   });
 
   btnResetMainDraw.addEventListener("click", () => {
@@ -357,14 +383,6 @@
   btnAssignFromRanking.addEventListener("click", () => {
     const rama = mainDrawRamaSelect.value;
     assignTeamsFromRanking(rama);
-  });
-
-  btnGenerateSilver.addEventListener("click", () => {
-    const rama = mainDrawRamaSelect.value;
-    const confirmText = `¿Generar Copa de Plata para ${rama === "F" ? "Femenino" : "Masculino"}?\n` +
-      "Esto va a pisar los partidos de la Copa de Plata.";
-    if (!confirm(confirmText)) return;
-    generateSilverBracket(rama);
   });
 
   /* ============================
@@ -392,6 +410,24 @@
 
     // Si es raro, lo dejamos como vino
     return s;
+  }
+
+  function normalizeCategoria(c){
+    if(!c) return "";
+    const up = c.toString().trim().toUpperCase();
+    if(up.startsWith("F")) return "F";
+    if(up.startsWith("M")) return "M";
+    return up;
+  }
+
+  function normalizeRound(r){
+    if(!r) return "";
+    const up = r.toString().trim().toLowerCase();
+    if(up.startsWith("q") || up.includes("cuarto")) return "qf";
+    if(up.startsWith("s") || up.includes("semi")) return "sf";
+    if(up.includes("play")) return "playin";
+    if(up.includes("final")) return "final";
+    return up;
   }
 
   function renderPreview(matches, rama){
@@ -812,7 +848,132 @@
   }
 
   /* ============================
-   * 4) EXPORTAR PARTIDOS A CSV
+   * 4) IMPORTAR COPA DE PLATA DESDE CSV
+   * ============================ */
+
+  async function deleteSilverMatchesForRama(rama) {
+    const snap = await getDocs(query(collection(db, "matches"), where("phase", "==", "silver")));
+    const deletions = [];
+
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      const categoria = normalizeCategoria(d.categoria || d.category || d.rama);
+      if (categoria !== rama) return;
+      deletions.push(deleteDoc(doc(db, "matches", docSnap.id)));
+    });
+
+    await Promise.all(deletions);
+  }
+
+  async function importSilverFromFile(file, rama) {
+    try {
+      mainDrawStatus.textContent = "Leyendo CSV de Copa de Plata...";
+
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+      if (lines.length < 2) {
+        mainDrawStatus.textContent = "El archivo no tiene datos (necesita encabezados y filas).";
+        return;
+      }
+
+      const headerLine = lines[0].replace(/^\uFEFF/, "");
+      const delimiter = headerLine.includes(";") ? ";" : ",";
+      const headersRaw = headerLine.split(delimiter).map(h => h.trim());
+      const headers = headersRaw.map(h => h.toLowerCase());
+
+      const hasTeam1 = headers.includes("team1name") || headers.includes("team1")
+        || headers.includes("localname") || headers.includes("eq1");
+      const hasTeam2 = headers.includes("team2name") || headers.includes("team2")
+        || headers.includes("visitantename") || headers.includes("eq2");
+      const required = ["round", "slot"];
+      const missing = required.filter(c => !headers.includes(c));
+
+      if (missing.length > 0 || !hasTeam1 || !hasTeam2) {
+        mainDrawStatus.textContent =
+          "CSV incorrecto. Faltan columnas obligatorias para Copa de Plata.\n" +
+          "Formato esperado: round;slot;team1Name;team2Name;cancha;fecha;hora;cruce;categoria";
+        return;
+      }
+
+      const idx = {};
+      headers.forEach((h, i) => {
+        idx[h] = i;
+      });
+
+      const getValue = (row, key) => {
+        const ix = idx[key];
+        return ix == null ? "" : (row[ix] || "").toString().trim();
+      };
+
+      const getAny = (row, keys) => {
+        for (const key of keys) {
+          const value = getValue(row, key);
+          if (value) return value;
+        }
+        return "";
+      };
+
+      await deleteSilverMatchesForRama(rama);
+
+      const promises = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].trim();
+        if (!row) continue;
+        const rowCols = row.split(delimiter);
+
+        const categoriaRaw = getAny(rowCols, ["categoria", "rama", "gender"]);
+        const categoriaCsv = normalizeCategoria(categoriaRaw) || rama;
+        if (categoriaCsv !== rama) continue;
+
+        const roundRaw = getAny(rowCols, ["round", "fase"]);
+        const slotRaw = getAny(rowCols, ["slot", "numero", "match"]);
+        const team1Name = getAny(rowCols, ["team1name", "team1", "localname", "eq1"]);
+        const team2Name = getAny(rowCols, ["team2name", "team2", "visitantename", "eq2"]);
+        const cancha = getAny(rowCols, ["cancha", "court"]);
+        const fecha = getAny(rowCols, ["fecha", "date"]);
+        const horaRaw = getAny(rowCols, ["hora", "time"]);
+        const cruce = getAny(rowCols, ["cruce", "crucename"]);
+
+        const round = normalizeRound(roundRaw);
+        const slot = Number(slotRaw || i);
+        const hora = normalizeHoraImport(horaRaw) || null;
+
+        if (!round || (!team1Name && !team2Name)) continue;
+
+        const data = {
+          phase: "silver",
+          round,
+          slot,
+          rama,
+          categoria: rama,
+          team1Name: team1Name || null,
+          team2Name: team2Name || null,
+          localName: team1Name || null,
+          visitanteName: team2Name || null,
+          cancha: cancha || null,
+          fecha: fecha || null,
+          hora,
+          cruce: cruce || null,
+          estado: "Pendiente",
+          status: "pending",
+          setsData: []
+        };
+
+        promises.push(addDoc(collection(db, "matches"), data));
+      }
+
+      await Promise.all(promises);
+      mainDrawStatus.textContent =
+        `✅ Copa de Plata importada para ${rama === "F" ? "Femenino" : "Masculino"}.`;
+    } catch (err) {
+      console.error(err);
+      mainDrawStatus.textContent = "❌ Error al importar Copa de Plata. Revisá la consola.";
+    }
+  }
+
+  /* ============================
+   * 5) EXPORTAR PARTIDOS A CSV
    * ============================ */
 
   async function exportMainDrawToCSV(rama) {
@@ -871,6 +1032,65 @@
     } catch (error) {
       console.error(error);
       mainDrawStatus.textContent = "❌ Error exportando el cuadro.";
+    }
+  }
+
+  async function exportSilverToCSV(rama) {
+    try {
+      mainDrawStatus.textContent = "Exportando Copa de Plata…";
+
+      const q = query(
+        collection(db, "matches"),
+        where("phase", "==", "silver"),
+        where("rama", "==", rama)
+      );
+
+      const snap = await getDocs(q);
+
+      const rows = [
+        ["round", "slot", "team1Name", "team2Name", "cancha", "fecha", "hora", "cruce", "categoria"]
+      ];
+
+      if (!snap.empty) {
+        const items = snap.docs
+          .map(d => d.data())
+          .sort((a, b) => (a.slot || 0) - (b.slot || 0));
+
+        items.forEach(m => {
+          rows.push([
+            m.round || "",
+            m.slot || "",
+            m.team1Name || m.localName || "",
+            m.team2Name || m.visitanteName || "",
+            m.cancha || "",
+            m.fecha || "",
+            m.hora || "",
+            m.cruce || "",
+            m.categoria || m.rama || rama
+          ]);
+        });
+      }
+
+      const csvContent = rows
+        .map(r => r.map(v => String(v)).join(";"))
+        .join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `copa_plata_${rama}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      mainDrawStatus.textContent = snap.empty
+        ? "✔ Exportación lista (solo encabezados, sin partidos)."
+        : "✔ Exportación de Copa de Plata lista.";
+    } catch (error) {
+      console.error(error);
+      mainDrawStatus.textContent = "❌ Error exportando la Copa de Plata.";
     }
   }
 
