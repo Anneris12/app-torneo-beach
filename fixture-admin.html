@@ -659,6 +659,10 @@
     }
 
     function renderEditZonaOptions() {
+      const currentZona = editZona.value;
+      const currentLocal = editLocal.value;
+      const currentVisitante = editVisitante.value;
+
       editZona.innerHTML = '<option value="">Zona</option>';
       zonasDisponibles.forEach(z => {
         const opt = document.createElement("option");
@@ -666,7 +670,16 @@
         opt.textContent = `Zona ${z}`;
         editZona.appendChild(opt);
       });
+      if (currentZona) {
+        editZona.value = currentZona;
+      }
       refreshTeamSelects();
+      if (currentLocal) {
+        editLocal.value = currentLocal;
+      }
+      if (currentVisitante) {
+        editVisitante.value = currentVisitante;
+      }
     }
 
     function refreshTeamSelects() {
